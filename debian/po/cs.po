@@ -1,0 +1,68 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssl\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-03-22 18:34+0100\n"
+"PO-Revision-Date: 2004-09-26 17:40+0200\n"
+"Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
+"Language-Team: Czech <provoz@debian.cz>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-2\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid "Which services should be restarted to make them use the new libraries?"
+msgstr "Které slu¾by se mají restartovat, aby zaèaly vyu¾ívat nové knihovny?"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"Security holes were fixed with this release. Services may not use these "
+"fixes until they are restarted. Note: restarting sshd should not affect any "
+"existing connections."
+msgstr ""
+"V této verzi balíku byly opraveny bezbeènostní chyby. Tyto opravy se v "
+"programech projeví a¾ po jejich restartu. Poznámka: restart sshd by nemìl "
+"ovlivnit stávající spojení."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"Following is a list of detected services that need to be restarted. Please "
+"correct the list, if you think it is incorrect. The services names must be "
+"identical to the script names in /etc/init.d and must be separated by "
+"spaces. If you clear the list, no services will be restarted."
+msgstr ""
+"Následuje seznam rozpoznaných slu¾eb, které je tøeba restartovat. Pokud se "
+"vám zdá, ¾e je tento seznam chybný, mù¾ete jej opravit. Názvy slu¾eb musí "
+"být shodné s názvy skriptù v adresáøi /etc/init.d a musí být oddìleny "
+"mezerami. Pokud seznam vyma¾ete, nebude restartována ¾ádná slu¾ba."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"If other services begin to fail mysteriously after this upgrade, it may be "
+"necessary to restart them too.  We strongly recommend you to reboot your "
+"machine to avoid the SSL related trouble."
+msgstr ""
+"Jestli¾e po této aktualizaci zaènou selhávat nìkteré slu¾by, mo¾ná bude "
+"nutné je takté¾ restartovat. Abyste se vyhnuli problémùm spojených se SSL, "
+"doporuèujeme restartovat celý poèítaè."

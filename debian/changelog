@@ -1,3 +1,68 @@
+openssl (0.9.7e-3) unstable; urgency=high
+
+  * really fix der_chop. The fix from -1 was not really included (closes:
+    #281212) 
+  * still fixes security problem CAN-2004-0975 etc.
+    - tempfile raise condition in der_chop
+    - Avoid a race condition when CRLs are checked in a multi threaded 
+      environment.
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Thu, 16 Dec 2004 18:41:29 +0100
+
+openssl (0.9.7e-2) unstable; urgency=high
+
+  * fix perl path in der_chop and c_rehash (closes: #281212)
+  * still fixes security problem CAN-2004-0975 etc.
+    - tempfile raise condition in der_chop
+    - Avoid a race condition when CRLs are checked in a multi threaded 
+      environment.
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Sun, 14 Nov 2004 20:16:21 +0100
+
+openssl (0.9.7e-1) unstable; urgency=high
+
+  * SECURITY UPDATE: fix insecure temporary file handling
+  * apps/der_chop: 
+    - replaced $$-style creation of temporary files with
+      File::Temp::tempfile()
+    - removed unused temporary file name in do_certificate()
+  * References:
+    CAN-2004-0975 (closes: #278260)
+  * fix ASN1_STRING_to_UTF8 with UTF8 (closes: #260357)
+  * New upstream release with security fixes
+    - Avoid a race condition when CRLs are checked in a multi threaded 
+      environment.
+    - Various fixes to s3_pkt.c so alerts are sent properly.
+    - Reduce the chances of duplicate issuer name and serial numbers (in
+      violation of RFC3280) using the OpenSSL certificate creation
+      utilities. 
+  * depends openssl on perl-base instead of perl (closes: #280225)
+  * support powerpc64 in Configure (closes: #275224)
+  * include cs translation (closes: #273517)
+  * include nl translation (closes: #272479)
+  * Fix default dir of c_rehash (closes: #253126)
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Fri, 12 Nov 2004 14:11:15 +0100
+
+openssl (0.9.7d-5) unstable; urgency=low
+
+  * Make S/MIME encrypt work again (backport from CVS) (closes: #241407,
+    #241386)
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Mon, 26 Jul 2004 17:22:42 +0200
+
+openssl (0.9.7d-4) unstable; urgency=low
+
+  * add Catalan translation (closes: #248749)
+  * add Spanish translation (closes: #254561)
+  * include NMU fixes: see below
+  * decrease optimisation level for debian-arm to work around gcc bug
+    (closes: #253848) (thanks to Steve Langasek and Thom May)
+  * Add libcrypto0.9.7-udeb. (closes: #250010) (thanks to Bastian Blank)
+  * Add watchfile
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Wed, 14 Jul 2004 14:31:02 +0200
+
 openssl (0.9.7d-3) unstable; urgency=low
 
   * rename -pic.a libraries to _pic.a (closes: #250016)
