@@ -33,28 +33,28 @@ build:
 #	perl util/ssldir.pl /usr/lib/ssl
 #	chmod +x debian/libtool
 	./Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
-	make -f Makefile.ssl DIRS="crypto ssl" all
+	make -f Makefile DIRS="crypto ssl" all
 	mv libcrypto.a libcrypto.static
 	mv libssl.a libssl.static
-	make -f Makefile.ssl DIRS="crypto ssl" clean
+	make -f Makefile DIRS="crypto ssl" clean
 	test -z "$(OPTS)" || for opt in $(OPTS); \
 	do \
 		set -xe; \
 		./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)-$$opt; \
-		make -f Makefile.ssl DIRS="crypto ssl" all; \
+		make -f Makefile DIRS="crypto ssl" all; \
 		mkdir -p $$opt; \
 		mv libcrypto.so* libssl.so* $$opt/; \
-		make -f Makefile.ssl DIRS="crypto ssl" clean; \
+		make -f Makefile DIRS="crypto ssl" clean; \
 	done
 	./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
-	#make -f Makefile.ssl depend
+	#make -f Makefile depend
 	ln -sf apps/openssl.pod crypto/crypto.pod ssl/ssl.pod doc/
-#	make -f Makefile.ssl linux-shared
-	make -f Makefile.ssl all
+#	make -f Makefile linux-shared
+	make -f Makefile all
 #	strip apps/openssl
-#	make -f Makefile.ssl clean DIRS="crypto ssl"
+#	make -f Makefile clean DIRS="crypto ssl"
 #	./Configure --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 debian-$(DEB_HOST_ARCH)
-#	make -f Makefile.ssl all DIRS="crypto ssl"
+#	make -f Makefile all DIRS="crypto ssl"
 	touch build
 
 clean:
@@ -63,8 +63,8 @@ clean:
 	-rm -f build
 	perl util/perlpath.pl /usr/bin
 	./Configure $(CONFARGS) debian-$(DEB_HOST_ARCH)
-	-make -f Makefile.ssl  clean clean-shared
-	#-make -f Makefile.ssl  dclean
+	-make -f Makefile  clean clean-shared
+	#-make -f Makefile  dclean
 	perl util/perlpath.pl /usr/local/bin
 #	perl util/ssldir.pl /usr/local/ssl
 	-rm -f test/.rnd test/testkey.pem test/testreq.pem test/certCA.srl
@@ -97,7 +97,7 @@ binary-arch:	build
 #	cd debian/libssl09-dev && install -d `cat ../libssl09-dev.dirs`
 	dh_installdirs
 #openssl install
-	make -f Makefile.ssl  install INSTALL_PREFIX=`pwd`/debian/tmp
+	make -f Makefile  install INSTALL_PREFIX=`pwd`/debian/tmp
 	rm debian/tmp/usr/share/man/man1/openssl.1
 	rm debian/tmp/usr/share/man/man3/crypto.3
 	rm debian/tmp/usr/share/man/man3/ssl.3
@@ -120,6 +120,7 @@ binary-arch:	build
 	mkdir -p debian/tmp/etc/ssl
 	mv debian/tmp/usr/lib/ssl/{certs,openssl.cnf,private} debian/tmp/etc/ssl/
 	ln -s /etc/ssl/{certs,openssl.cnf,private} debian/tmp/usr/lib/ssl/
+	cp -pf debian/tmp/usr/lib/libcrypto.so.* debian/libcrypto0.9.7-udeb/usr/lib/
 #ssleay install
 	#ln -s openssl debian/ssleay/usr/share/doc/ssleay
 #libssl install
@@ -155,7 +156,7 @@ binary-arch:	build
 	dh_compress
 	chmod 700 debian/openssl/etc/ssl/private
 	dh_fixperms -X etc/ssl/private
-	dh_perl
+	dh_perl -d
 #	dh_suidregister
 	dh_shlibdeps -l`pwd` -Xlibssl.so
 	# Hack, to depend on version of libc6 which supports the i686 directory
