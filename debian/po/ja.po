@@ -1,0 +1,69 @@
+#
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'
+#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+#
+#    Developers do not need to manually edit POT or PO files.
+#
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssl 0.9.7d-1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-03-22 18:34+0100\n"
+"PO-Revision-Date: 2004-03-24 23:41+0900\n"
+"Last-Translator: Hideki Yamane <henrich@samba.gr.jp>\n"
+"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=EUC-JP\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid "Which services should be restarted to make them use the new libraries?"
+msgstr "どのサービスを新しいライブラリを使うために再起動しますか?"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"Security holes were fixed with this release. Services may not use these "
+"fixes until they are restarted. Note: restarting sshd should not affect any "
+"existing connections."
+msgstr ""
+"今回のリリースでセキュリティホールが修正されました。各サービスは再起動を行う"
+"までこの修正されたライブラリを利用しません。注意: sshd の再起動は現状の接続に"
+"は何ら影響しません。"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"Following is a list of detected services that need to be restarted. Please "
+"correct the list, if you think it is incorrect. The services names must be "
+"identical to the script names in /etc/init.d and must be separated by "
+"spaces. If you clear the list, no services will be restarted."
+msgstr ""
+"以下が再起動が必要だと判断されたサービスのリストです。間違っていると思ったら"
+"修正してください。サービス名は /etc/init.d にあるスクリプトの名前を指し、空白"
+"で区切る必要があります。リストが空の場合は、サービスの再起動は必要ありませ"
+"ん。"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"If other services begin to fail mysteriously after this upgrade, it may be "
+"necessary to restart them too.  We strongly recommend you to reboot your "
+"machine to avoid the SSL related trouble."
+msgstr ""
+"他のサービスがここでのアップグレードの後に何故かエラーを起こし始めた場合、そ"
+"れらも再起動する必要があります。SSL 関連のトラブルを避けるためにマシンを再起"
+"動するのを強くお勧めします。"
