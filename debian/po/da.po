@@ -54,8 +54,8 @@ msgid ""
 msgstr ""
 "Herunder ser du en liste over fundne services, som bør genstartes. Ret "
 "listen, hvis du mener at den ikke er korrekt. Servicenavnene skal være "
-"identiske med skriptnavnene i /etc/init.d, og skal adskilles med "
-"mellemrum. Hvis du sletter listen, vil ingen services blive genstartet."
+"identiske med skriptnavnene i /etc/init.d, og skal adskilles med mellemrum. "
+"Hvis du sletter listen, vil ingen services blive genstartet."
 
 #. Type: string
 #. Description
@@ -65,7 +65,6 @@ msgid ""
 "necessary to restart them too.  We strongly recommend you to reboot your "
 "machine to avoid the SSL related trouble."
 msgstr ""
-"Hvis andre services begynder at fejle på mystisk vis efter denne opgradering, "
-"kan det være nødvendigt også at genstarte disse. Vi anbefaler dig kraftigt "
-"at genstarte din maskine for at undgå SSL-relaterede problemer."
-
+"Hvis andre services begynder at fejle på mystisk vis efter denne "
+"opgradering, kan det være nødvendigt også at genstarte disse. Vi anbefaler "
+"dig kraftigt at genstarte din maskine for at undgå SSL-relaterede problemer."

@@ -1,0 +1,15 @@
+Template: libssl0.9.8/restart-services
+Type: string
+_Description: Which services should be restarted to make them use the new libraries?
+ Security holes were fixed with this release. Services may not use these
+ fixes until they are restarted. Note: restarting sshd should not affect any
+ existing connections.
+ .
+ Following is a list of detected services that need to be restarted. Please
+ correct the list, if you think it is incorrect. The services names must be
+ identical to the script names in /etc/init.d and must be separated by
+ spaces. If you clear the list, no services will be restarted.
+ .
+ If other services begin to fail mysteriously after this upgrade, it may be
+ necessary to restart them too.  We strongly recommend you to reboot your
+ machine to avoid the SSL related trouble.

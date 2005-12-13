@@ -1,0 +1,139 @@
+#!/bin/sh -e
+
+. /usr/share/debconf/confmodule
+
+package_name()
+{
+    echo $(basename $0 .postinst)
+}
+
+# element() is a helper function for file-rc:
+element() {
+    local element list IFS
+
+    element="$1"
+
+    [ "$2" = "in" ] && shift
+    list="$2"
+    [ "$list" = "-" ] && return 1
+    [ "$list" = "*" ] && return 0
+
+    IFS=","
+    set -- $list
+    case $element in
+	"$1"|"$2"|"$3"|"$4"|"$5"|"$6"|"$7"|"$8"|"$9")
+	    return 0
+    esac
+    return 1
+}
+
+# filerc (runlevel, service) returns /etc/init.d/service, if service is
+# running in $runlevel:
+filerc() {
+    local runlevel basename
+    runlevel=$1
+    basename=$2
+    while read LINE
+    do
+	case $LINE in
+	    \#*|"") continue
+	esac
+
+	set -- $LINE
+	SORT_NO="$1"; STOP="$2"; START="$3"; CMD="$4"
+	[ "$CMD" = "/etc/init.d/$basename" ] || continue
+
+	if element "$runlevel" in "$START" || element "S" in "$START"
+	then
+	    echo "/etc/init.d/$basename"
+	    return 0
+	fi
+    done < /etc/runlevel.conf
+    echo ""
+}
+
+if [ "$1" = "configure" ]
+then
+    if [ ! -z "$2" ]; then
+	if dpkg --compare-versions "$2" lt 0.9.8-1; then
+	    echo -n "Checking for services that may need to be restarted..."
+
+	    check="sendmail ssh"
+	    check="$check apache2-common ssh-nonfree exim4"
+	    check="$check apache-ssl libapache-mod-ssl openvpn spamassassin"
+	    check="$check courier-imap-ssl courier-mta-ssl courier-pop-ssl"
+	    check="$check postfix-tls cyrus21-imapd cyrus21-pop3d"
+	    check="$check postgresql racoon"
+	    # Only get the ones that are installed, and configured
+	    check=$(dpkg -s $check 2> /dev/null | sed '/^$/{N;/^\n$/D;}' | awk 'BEGIN{RS="\n\n";FS="\n"}{if ( $2 ~ /Status: .* installed$/ ) { print $1 } }' | cut -f 2 -d ' ')
+	    # apache2 ships its init script in apache2-common, but the
+	    # script is apache2
+	    check=$(echo $check | sed 's/apache2-common/apache2/g')
+	    # For mod-ssl apache has to be restarted
+	    check=$(echo $check | sed 's/libapache-mod-ssl/apache/g')
+	    rl=$(runlevel | awk '{print $2}')
+	    for service in $check; do
+		if [ -f /usr/share/file-rc/rc -o -f /usr/lib/file-rc/rc ] && [ -f /etc/runlevel.conf ]; then
+		    idl=$(filerc $rl $service)
+		else
+		    idl=$(ls /etc/rc${rl}.d/S??${service} 2> /dev/null | head -n 1)
+		fi
+		if [ -n "$idl" ] && [ -x $idl ]; then
+		    services="$service $services"
+		fi
+	    done
+	    echo "done."
+	    if [ -n "$services" ]; then
+		db_version 2.0
+
+		db_reset libssl0.9.8/restart-services
+		db_set libssl0.9.8/restart-services "$services"
+		db_input critical libssl0.9.8/restart-services || true
+		db_go || true
+		db_get libssl0.9.8/restart-services
+		# Arghhh, close all the stupid debconf pipes
+		db_stop
+		
+		if [ "x$RET" != "x" ]
+		then
+		    services=$RET
+		    answer=yes
+		else
+		    answer=no
+		fi
+		echo
+		if [ "$answer" = yes ] && [ "$services" != "" ]; then
+		    echo "Restarting services possibly affected by the upgrade:"
+		    failed=""
+		    for service in $services; do
+			idl=$(ls /etc/rc${rl}.d/S??${service} 2> /dev/null | head -n 1)
+			echo -n "  $service: stopping..."
+			$idl stop > /dev/null 2>&1 || true
+			sleep 1
+			echo -n "starting..."
+			if $idl start > /dev/null 2>&1; then
+			    echo "done."
+			else
+			    echo "FAILED! ($?)"
+			    failed="$service $failed"
+			fi
+		    done
+		    echo
+		    if [ -n "$failed" ]; then
+			# Ruh roh, George
+			echo "The following services failed to start: $failed"
+			echo
+			echo "You will need to start these manually by running \`/etc/init.d/<service> start'"
+			echo "If the service still fails to start, you may need to file a bug on"
+			echo "$(package_name) or the service involved."
+		    else
+			echo "Services restarted successfully."
+		    fi
+		    echo
+		fi
+	    fi
+	fi # end upgrading and $2 lt 0.9.8-1
+    fi # Upgrading
+fi
+
+#DEBHELPER#

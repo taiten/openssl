@@ -1,3 +1,147 @@
+openssl (0.9.8a-5) unstable; urgency=low
+
+  * Stop ssh from crashing randomly on sparc (Closes: #335912)
+    Patch from upstream cvs.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 13 Dec 2005 21:37:42 +0100
+
+openssl (0.9.8a-4) unstable; urgency=low
+
+  * Call dh_makeshlibs with the proper version instead of putting
+    it in shlibs.local, which doesn't seem to do anything.  0.9.8a-1
+    added symbol versioning, so it should have bumped the shlibs.
+    (Closes: #338284)
+  * The openssl package had a duplicate dependency on libssl0.9.8,
+    only require the version as required by the shlibs.
+  * Make libssl-dev depend on zlib1g-dev, since it's now required for
+    static linking. (Closes: #338313)
+  * Generate .pc files that make use of Libs.private, so things only
+    link to the libraries they should when linking shared.
+  * Use -m64 instead of -bpowerpc64-linux on ppc64. (Closes: #335486)
+  * Make powerpc and ppc64 use the assembler version for bn.  ppc64
+    had the location in the string wrong, powerpc had it missing.
+  * Add includes for stddef to get size_t in md2.h, md4.h, md5.h,
+    ripemd.h and sha.h.  (Closes: #333101)
+  * Run make test for each of the versions we build, make it 
+    not fail the build process if an error is found.
+  * Add build dependency on bc for the regression tests.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 13 Nov 2005 16:01:05 +0100
+
+openssl (0.9.8a-3) unstable; urgency=high
+
+  * Link to libz instead of dynamicly loading it.  It gets loaded
+    at the moment the library is initialised, so there is no point
+    in not linking to it.  It's now failing in some cases since
+    it's not opened by it's soname, but by the symlink to it.
+    This should hopefully solve most of the bugs people have reported
+    since the move to libssl0.9.8.
+    (Closes: #334180, #336140, #335271)
+  * Urgency set to high because it fixes a grave bug affecting testing.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue,  1 Nov 2005 14:56:40 +0100
+
+openssl (0.9.8a-2) unstable; urgency=low
+
+  * Add Build-Dependency on m4, since sparc needs it to generate
+    it's assembler files.  (Closes: #334542)
+  * Don't use rc4-x86_64.o on amd64 for now, it seems to be broken
+    and causes a segfault.  (Closes: #334501, #334502)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 18 Oct 2005 19:05:53 +0200
+
+openssl (0.9.8a-1) unstable; urgency=low
+
+  Christoph Martin:
+  * fix asm entries for some architectures, fixing #332758 properly.
+  * add noexecstack option to i386 subarch
+  * include symbol versioning in Configure (closes: #330867)
+  * include debian-armeb arch (closes: #333579)
+  * include new upstream patches; includes some minor fixes
+  * fix dh_shlibdeps line, removing the redundant dependency on
+    libssl0.9.8 (closes: #332755)
+  * add swedish debconf template (closes: #330554)
+
+  Kurt Roeckx:
+  * Also add noexecstack option for amd64, since it now has an 
+    executable stack with the assembler fixes for amd64.
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Mon, 17 Oct 2005 17:01:06 +0200
+
+openssl (0.9.8-3) unstable; urgency=low
+
+  * Apply security fix for CAN-2005-2969. (Closes: #333500)
+  * Change priority of -dbg package to extra.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 12 Oct 2005 22:38:58 +0200
+
+openssl (0.9.8-2) unstable; urgency=low
+
+  * Don't use arch specific assembler.  Should fix build failure on
+    ia64, sparc and amd64. (Closes: #332758)
+  * Add myself to the uploaders.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 10 Oct 2005 19:22:36 +0200
+
+openssl (0.9.8-1) unstable; urgency=low
+
+  * New upstream release (closes: #311826)
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Thu, 29 Sep 2005 14:20:04 +0200
+
+openssl (0.9.7g-3) unstable; urgency=low
+
+  * change Configure line for debian-freebsd-i386 to debian-kfreebsd-i386
+    (closes: #327692)
+  * include -dbg version. That implies compiling with -g and without
+    -fomit-frame-pointer (closes: #293823, #153811)
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Fri, 23 Sep 2005 13:51:57 +0200
+
+openssl (0.9.7g-2) unstable; urgency=low
+
+  * really include nl translation
+  * remove special ia64 code from rc4 code to make the abi compatible to
+    older 0.9.7 versions (closes: #310489, #309274)
+  * fix compile flag for debian-ppc64 (closes: #318750)
+  * small fix in libssl0.9.7.postinst (closes: #239956)
+  * fix pk7_mime.c to prevent garbled messages because of to early memory
+    free (closes: #310184)
+  * include vietnamese debconf translation (closes: #316689)
+  * make optimized i386 libraries have non executable stack (closes:
+    #321721)
+  * remove leftover files from ssleay
+  * move from dh_installmanpages to dh_installman
+  * change Maintainer to pkg-openssl-devel@lists.alioth.debian.org
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Wed,  7 Sep 2005 15:32:54 +0200
+
+openssl (0.9.7g-1) unstable; urgency=low
+
+  * New upstream release
+    * Added support for proxy certificates according to RFC 3820.
+      Because they may be a security thread to unaware applications,
+      they must be explicitely allowed in run-time.  See
+      docs/HOWTO/proxy_certificates.txt for further information.
+    * Prompt for pass phrases when appropriate for PKCS12 input format.
+    * Back-port of selected performance improvements from development
+      branch, as well as improved support for PowerPC platforms.
+    * Add lots of checks for memory allocation failure, error codes to indicate
+      failure and freeing up memory if a failure occurs.
+    * Perform some character comparisons of different types in X509_NAME_cmp:
+      this is needed for some certificates that reencode DNs into UTF8Strings
+      (in violation of RFC3280) and can't or wont issue name rollover
+      certificates.
+  * corrected watchfile
+  * added upstream source url (closes: #292904)
+  * fix typo in CA.pl.1 (closes: #290271)
+  * change debian-powerpc64 to debian-ppc64 and adapt the configure
+    options to be the same like upstream (closes: #289841)
+  * include -signcert option in CA.pl usage
+  * compile with zlib-dynamic to use system zlib (closes: #289872)
+
+ -- Christoph Martin <christoph.martin@uni-mainz.de>  Mon,  9 May 2005 23:32:03 +0200
+
 openssl (0.9.7e-3) unstable; urgency=high
 
   * really fix der_chop. The fix from -1 was not really included (closes:
