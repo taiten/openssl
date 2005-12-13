@@ -1,0 +1,61 @@
+# Translators, if you are not familiar with the PO format, gettext
+# documentation is worth reading, especially sections dedicated to
+# this format, e.g. by running:
+# info -n '(gettext)PO Files'
+# info -n '(gettext)Header Entry'
+# Some information specific to po-debconf are available at
+# /usr/share/doc/po-debconf/README-trans
+# or http://www.debian.org/intl/l10n/po-debconf/README-trans
+# Developers do not need to manually edit POT or PO files.
+# , fuzzy
+# 
+# 
+msgid ""
+msgstr ""
+"Project-Id-Version: openssl 0.9.7g-2\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2004-03-22 18:34+0100\n"
+"PO-Revision-Date: 2005-09-28 19:22-0700\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <sv@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Transfer-Encoding: 8bit"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid "Which services should be restarted to make them use the new libraries?"
+msgstr "Vilka tjänster ska startas om för att få dom att använda de nya biblioteken?"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"Security holes were fixed with this release. Services may not use these "
+"fixes until they are restarted. Note: restarting sshd should not affect any "
+"existing connections."
+msgstr ""
+"Säkerhetshålen fixades i denna versionen. Tjänster kommer inte att använda denna version förrän de har startats om. Notera: startar du om sshd kommer inte fixen aktiveras för redan etablerade anslutningar."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"Following is a list of detected services that need to be restarted. Please "
+"correct the list, if you think it is incorrect. The services names must be "
+"identical to the script names in /etc/init.d and must be separated by "
+"spaces. If you clear the list, no services will be restarted."
+msgstr ""
+"Följande är en lista på upptäcka tjänster som behöver startas om. Vänligen undersök listan och du tror den är felaktig. Namnen på tjänsterna måste vara identiska som skriptnamnen i /etc/init.d och måste separeras med mellanslag. Om du rensar listan kommer inga tjänster att startas om."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.7.templates:3
+msgid ""
+"If other services begin to fail mysteriously after this upgrade, it may be "
+"necessary to restart them too.  We strongly recommend you to reboot your "
+"machine to avoid the SSL related trouble."
+msgstr ""
+"Om andra tjänster börjar att få underliga problem efter denna uppgradering kanske de måste startas om också.  Vi rekommenderar att du startar om din maskin för att inte få SSL-relaterade problem."
+

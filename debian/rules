@@ -19,7 +19,7 @@ export VERSION=$(shell dpkg-parsechangelog | grep '^Version:' | sed -e 's/^.*://
 # The binary architeture
 DEB_HOST_ARCH = $(shell dpkg-architecture -qDEB_HOST_ARCH)
 
-CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5
+CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib
 OPT_alpha = ev4 ev5
 OPT_i386  = i486 i586 i686/cmov
 OPT_sparc = v8 v9
@@ -34,6 +34,7 @@ build:
 #	chmod +x debian/libtool
 	./Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	make -f Makefile DIRS="crypto ssl" all
+	-make test
 	mv libcrypto.a libcrypto.static
 	mv libssl.a libssl.static
 	make -f Makefile DIRS="crypto ssl" clean
@@ -42,6 +43,7 @@ build:
 		set -xe; \
 		./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)-$$opt; \
 		make -f Makefile DIRS="crypto ssl" all; \
+		make test || /bin/true; \
 		mkdir -p $$opt; \
 		mv libcrypto.so* libssl.so* $$opt/; \
 		make -f Makefile DIRS="crypto ssl" clean; \
@@ -51,6 +53,7 @@ build:
 	ln -sf apps/openssl.pod crypto/crypto.pod ssl/ssl.pod doc/
 #	make -f Makefile linux-shared
 	make -f Makefile all
+	-make test
 #	strip apps/openssl
 #	make -f Makefile clean DIRS="crypto ssl"
 #	./Configure --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 debian-$(DEB_HOST_ARCH)
@@ -61,11 +64,11 @@ clean:
 	dh_testdir
 	dh_testroot
 	-rm -f build
-	perl util/perlpath.pl /usr/bin
-	./Configure $(CONFARGS) debian-$(DEB_HOST_ARCH)
+	-perl util/perlpath.pl /usr/bin
+	-./Configure $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	-make -f Makefile  clean clean-shared
 	#-make -f Makefile  dclean
-	perl util/perlpath.pl /usr/local/bin
+	-perl util/perlpath.pl /usr/local/bin/perl
 #	perl util/ssldir.pl /usr/local/ssl
 	-rm -f test/.rnd test/testkey.pem test/testreq.pem test/certCA.srl
 	-rm -f util/mk1mf.bak Makefile.bak `find . -name Makefile.save` 
@@ -77,6 +80,7 @@ clean:
 	-rm -rf core $(OPTS)
 	-rm doc/*.pod
 	-rm -f libcrypto.* libssl.*
+	-cd test && rm -f .rnd tmp.bntest tmp.bctest *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff bntest ectest  ecdsatest ecdhtest ideatest md2test  md4test md5test hmactest rc2test rc4test rc5test destest shatest sha1test sha256t sha512t mdc2test rmdtest randtest dhtest enginetest bftest casttest ssltest exptest dsatest rsa_test evp_test *.ss *.srl log dummytest newkey.pem
 	dh_clean
 
 binary-indep:	build
@@ -91,16 +95,16 @@ binary-arch:	build
 	dh_testroot
 	dh_clean
 #	-rm -rf debian/tmp `find debian/* -type d`
-	install -d debian/tmp debian/libssl0.9.7 debian/libssl-dev debian/ssleay/usr/share/doc
+	install -d debian/tmp debian/libssl0.9.8 debian/libssl-dev
 #	cd debian/tmp && install -d `cat ../dirs`
 #	cd debian/libssl09 && install -d `cat ../libssl09.dirs`
 #	cd debian/libssl09-dev && install -d `cat ../libssl09-dev.dirs`
 	dh_installdirs
 #openssl install
 	make -f Makefile  install INSTALL_PREFIX=`pwd`/debian/tmp
-	rm debian/tmp/usr/share/man/man1/openssl.1
-	rm debian/tmp/usr/share/man/man3/crypto.3
-	rm debian/tmp/usr/share/man/man3/ssl.3
+#	rm debian/tmp/usr/share/man/man1/openssl.1
+#	rm debian/tmp/usr/share/man/man3/crypto.3
+#	rm debian/tmp/usr/share/man/man3/ssl.3
 #	rm debian/tmp/usr/lib/libcrypto.a
 #	rm debian/tmp/usr/lib/libssl.a
 	mv debian/tmp/usr/lib/libcrypto.a debian/tmp/usr/lib/libcrypto_pic.a
@@ -120,31 +124,23 @@ binary-arch:	build
 	mkdir -p debian/tmp/etc/ssl
 	mv debian/tmp/usr/lib/ssl/{certs,openssl.cnf,private} debian/tmp/etc/ssl/
 	ln -s /etc/ssl/{certs,openssl.cnf,private} debian/tmp/usr/lib/ssl/
-	cp -pf debian/tmp/usr/lib/libcrypto.so.* debian/libcrypto0.9.7-udeb/usr/lib/
-#ssleay install
-	#ln -s openssl debian/ssleay/usr/share/doc/ssleay
-#libssl install
-#	install -m 644 libcrypto.so.08.1 libssl.so.08.1 debian/libssl08/usr/lib/
-#	ln -s libssl.so.08 debian/libssl08-dev/usr/lib/libssl.so
-#	ln -s libcrypto.so.08 debian/libssl08-dev/usr/lib/libcrypto.so
-#	debian/libtool install -m 644 crypto/libcrypto.la
-#	debian/libtool install -m 644 ssl/libssl.la
+	cp -pf debian/tmp/usr/lib/libcrypto.so.* debian/libcrypto0.9.8-udeb/usr/lib/
 	cp -auv lib*.so* debian/tmp/usr/lib/
 #	cp -auv lib*.a debian/tmp/usr/lib/
 	for opt in $(OPTS); do set -xe; mkdir -p debian/tmp/usr/lib/$$opt; cp -auv $$opt/lib*.so* debian/tmp/usr/lib/$$opt/; done
-	install debian/copyright debian/libssl0.9.7/usr/share/doc/libssl0.9.7/
-	install debian/changelog debian/libssl0.9.7/usr/share/doc/libssl0.9.7/changelog.Debian
+	install debian/copyright debian/libssl0.9.8/usr/share/doc/libssl0.9.8/
+	install debian/changelog debian/libssl0.9.8/usr/share/doc/libssl0.9.8/changelog.Debian
 	install debian/copyright debian/libssl-dev/usr/share/doc/libssl-dev/
 	install debian/changelog debian/libssl-dev/usr/share/doc/libssl-dev/changelog.Debian
 #	(cd debian/tmp/usr/doc/openssl/doc; for f in *.doc*; do mv "$$f" "$$(echo $$f | sed -e 's/doc/txt/')";done)
 #	(cd doc; for f in *; do install "$$f" ../debian/tmp/usr/share/doc/openssl/doc/"$$(echo $$f | sed -e 's/doc/txt/')";done)
 #	debstd -u CHANGES* LICENSE README NEWS
-	dh_installdocs -Nssleay CHANGES.SSLeay LICENSE README NEWS debian/README.optimization
+	dh_installdocs CHANGES.SSLeay LICENSE README NEWS debian/README.optimization
 	dh_installexamples
-	dh_installchangelogs -Nssleay CHANGES
+	dh_installchangelogs CHANGES
 #	dh_installmenu
 #	dh_installcron
-	dh_installmanpages -popenssl
+	dh_installman -popenssl
 	dh_installdebconf
 #	dh_undocumented c_rehash.1
 	dh_movefiles
@@ -152,25 +148,15 @@ binary-arch:	build
 #	rmdir debian/tmp/usr/include/openssl
 #	rmdir debian/tmp/usr/include
 #	for opt in $(OPTS); do set -xe; rm -fr debian/tmp/usr/lib/$$opt; done
-	dh_strip
 	dh_compress
 	chmod 700 debian/openssl/etc/ssl/private
 	dh_fixperms -X etc/ssl/private
+	dh_strip --dbg-package=libssl0.9.8
 	dh_perl -d
 #	dh_suidregister
-	dh_shlibdeps -l`pwd` -Xlibssl.so
-	# Hack, to depend on version of libc6 which supports the i686 directory
-	if [ "${DEB_HOST_ARCH}" == "i386" ]; \
-	then \
-	  SHLIB=`cat debian/libssl0.9.7.substvars`; \
-	  LIBC_VERSION=`echo $$SHLIB | sed s'/.*libc6 (>= \(.*\))/\1/'`; \
-	  if dpkg --compare-versions ${WANTED_LIBC_VERSION} gt $$LIBC_VERSION; \
-	  then \
-	    echo $$SHLIB | sed s'/libc6 (>= \(.*\))/libc6 (>= ${WANTED_LIBC_VERSION})/' > debian/libssl0.9.7.substvars; \
-	  fi \
-	fi
+	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8a-1)"
+	dh_shlibdeps -L libssl0.9.8 -l debian/libssl0.9.8/usr/lib
 	dh_gencontrol
-	dh_makeshlibs -m 0.9.7
 	dh_installdeb
 	dh_md5sums
 	dh_builddeb

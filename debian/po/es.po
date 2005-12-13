@@ -28,6 +28,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl 0.9.7d-3\n"
+"Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2004-03-22 18:34+0100\n"
 "PO-Revision-Date: 2004-06-12 15:23-0300\n"
 "Last-Translator: Lucas Wall <kthulhu@kadath.com.ar>\n"
@@ -67,8 +68,8 @@ msgid ""
 msgstr ""
 "Una lista de los servicios que deben ser reiniciados se presenta a "
 "continuación. Si cree que no es correcta haga los ajustes necesarios. Los "
-"nombres de los servicios deben ser iguales a los nombres de los ficheros "
-"en «/etc/init.d» y debe estar separados por espacios. Ningún servicio será "
+"nombres de los servicios deben ser iguales a los nombres de los ficheros en "
+"«/etc/init.d» y debe estar separados por espacios. Ningún servicio será "
 "reiniciado si deja la lista en blanco."
 
 #. Type: string
