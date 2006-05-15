@@ -1,10 +1,10 @@
 Source: openssl
-Build-Depends: debhelper (>= 4.2.0), binutils (>= 2.14.90.0.7), zlib1g-dev, m4, bc
+Build-Depends: debhelper (>= 5.0.22), binutils (>= 2.14.90.0.7), zlib1g-dev, m4, bc
 Section: utils
 Priority: optional
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
 Uploaders: Christoph Martin <christoph.martin@uni-mainz.de>, Kurt Roeckx <kurt@roeckx.be>
-Standards-Version: 3.6.1
+Standards-Version: 3.7.0
 
 Package: openssl
 Priority: optional

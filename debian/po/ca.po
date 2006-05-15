@@ -4,8 +4,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl_0.9.7d-1_templates\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2004-03-22 18:34+0100\n"
+"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
+"POT-Creation-Date: 2006-04-06 20:34+0200\n"
 "PO-Revision-Date: 2004-04-08 19:46GMT\n"
 "Last-Translator: Aleix Badia i Bosch <abadia@ica.es>\n"
 "Language-Team: Catalan <debian-l10n-catalan@lists.debian.org>\n"
@@ -15,14 +15,14 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.7.templates:3
+#: ../libssl0.9.8.templates:3
 msgid "Which services should be restarted to make them use the new libraries?"
 msgstr ""
 "Quina serveis s'han de reiniciar perquè utilitzin les noves biblioteques?"
 
 #. Type: string
 #. Description
-#: ../libssl0.9.7.templates:3
+#: ../libssl0.9.8.templates:3
 msgid ""
 "Security holes were fixed with this release. Services may not use these "
 "fixes until they are restarted. Note: restarting sshd should not affect any "
@@ -34,7 +34,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.7.templates:3
+#: ../libssl0.9.8.templates:3
 msgid ""
 "Following is a list of detected services that need to be restarted. Please "
 "correct the list, if you think it is incorrect. The services names must be "
@@ -48,7 +48,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.7.templates:3
+#: ../libssl0.9.8.templates:3
 msgid ""
 "If other services begin to fail mysteriously after this upgrade, it may be "
 "necessary to restart them too.  We strongly recommend you to reboot your "

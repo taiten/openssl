@@ -33,31 +33,31 @@ build:
 #	perl util/ssldir.pl /usr/lib/ssl
 #	chmod +x debian/libtool
 	./Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
-	make -f Makefile DIRS="crypto ssl" all
-	-make test
+	make -f Makefile all
+	make test
 	mv libcrypto.a libcrypto.static
 	mv libssl.a libssl.static
-	make -f Makefile DIRS="crypto ssl" clean
+	make -f Makefile clean
 	test -z "$(OPTS)" || for opt in $(OPTS); \
 	do \
 		set -xe; \
 		./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)-$$opt; \
-		make -f Makefile DIRS="crypto ssl" all; \
-		make test || /bin/true; \
+		make -f Makefile all; \
+		make test; \
 		mkdir -p $$opt; \
 		mv libcrypto.so* libssl.so* $$opt/; \
-		make -f Makefile DIRS="crypto ssl" clean; \
+		make -f Makefile clean; \
 	done
 	./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	#make -f Makefile depend
 	ln -sf apps/openssl.pod crypto/crypto.pod ssl/ssl.pod doc/
 #	make -f Makefile linux-shared
 	make -f Makefile all
-	-make test
+	make test
 #	strip apps/openssl
-#	make -f Makefile clean DIRS="crypto ssl"
+#	make -f Makefile clean
 #	./Configure --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 debian-$(DEB_HOST_ARCH)
-#	make -f Makefile all DIRS="crypto ssl"
+#	make -f Makefile all
 	touch build
 
 clean:
@@ -107,8 +107,9 @@ binary-arch:	build
 #	rm debian/tmp/usr/share/man/man3/ssl.3
 #	rm debian/tmp/usr/lib/libcrypto.a
 #	rm debian/tmp/usr/lib/libssl.a
-	mv debian/tmp/usr/lib/libcrypto.a debian/tmp/usr/lib/libcrypto_pic.a
-	mv debian/tmp/usr/lib/libssl.a debian/tmp/usr/lib/libssl_pic.a
+	# pic static libraries, nobody should need them
+#	mv debian/tmp/usr/lib/libcrypto.a debian/tmp/usr/lib/libcrypto_pic.a
+#	mv debian/tmp/usr/lib/libssl.a debian/tmp/usr/lib/libssl_pic.a
 	cp -pf libcrypto.static debian/tmp/usr/lib/libcrypto.a
 	cp -pf libssl.static debian/tmp/usr/lib/libssl.a
 #	mv debian/tmp/usr/lib/ssl/bin debian/tmp/usr/bin/ssl
@@ -135,7 +136,7 @@ binary-arch:	build
 #	(cd debian/tmp/usr/doc/openssl/doc; for f in *.doc*; do mv "$$f" "$$(echo $$f | sed -e 's/doc/txt/')";done)
 #	(cd doc; for f in *; do install "$$f" ../debian/tmp/usr/share/doc/openssl/doc/"$$(echo $$f | sed -e 's/doc/txt/')";done)
 #	debstd -u CHANGES* LICENSE README NEWS
-	dh_installdocs CHANGES.SSLeay LICENSE README NEWS debian/README.optimization
+	dh_installdocs CHANGES.SSLeay README NEWS debian/README.optimization
 	dh_installexamples
 	dh_installchangelogs CHANGES
 #	dh_installmenu
@@ -154,7 +155,7 @@ binary-arch:	build
 	dh_strip --dbg-package=libssl0.9.8
 	dh_perl -d
 #	dh_suidregister
-	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8a-1)"
+	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8b-1)" --add-udeb="libcrypto0.9.8-udeb"
 	dh_shlibdeps -L libssl0.9.8 -l debian/libssl0.9.8/usr/lib
 	dh_gencontrol
 	dh_installdeb

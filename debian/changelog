@@ -1,3 +1,97 @@
+openssl (0.9.8b-2) unstable; urgency=low
+
+  * Don't call gcc with -mcpu on i386, we already use -march, so no need for
+    -mtune either.
+  * Always make all directories when building something:
+    - The engines directory didn't get build for the static directory, so
+      where missing in libcrypo.a
+    - The apps directory didn't always get build, so we didn't have an openssl
+      and a small part of the regression tests failed.
+  * Make the package fail to build if the regression tests fail.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 15 May 2006 16:00:58 +0000
+
+openssl (0.9.8b-1) unstable; urgency=low
+
+  * New upstream release
+    - New functions added (EVP_CIPHER_CTX_new, EVP_CIPHER_CTX_free), bump shlibs.
+    - CA.pl/CA.sh now calls openssl ca with -extensions v3_ca, setting CA:TRUE
+      instead of FALSE.
+    - CA.pl/CA.sh creates crlnumber now.  (Closes: #347612)
+  * Run debconf-updatepo, which really already was in the 0.9.8a-8 version
+    as it was uploaded.
+  * Add Galician debconf translation.  Patch from
+    Jacobo Tarrio <jtarrio@trasno.net>  (Closes: #361266)
+  * libssl0.9.8.postinst makes uses of bashisms (local variables)
+    so use #!/bin/bash
+  * libssl0.9.8.postinst: Call set -e after sourcing the debconf
+    script.
+  * libssl0.9.8.postinst: Change list of service that may need
+    to be restarted:
+    - Replace ssh by openssh-server
+    - Split postgresql in postgresql-7.4 postgresql-8.0 postgresql-8.1
+    - Add: dovecot-common bind9 ntp-refclock ntp-simple openntpd clamcour
+      fetchmail ftpd-ssl proftpd proftpd-ldap proftpd-mysql proftpd-pgsql
+  * libssl0.9.8.postinst: The check to see if something was installed
+    wasn't working.
+  * libssl0.9.8.postinst: Add workaround to find the name of the init 
+    script for proftpd and dovecot.
+  * libssl0.9.8.postinst: Use invoke-rc.d when it's available.
+  * Change Standards-Version to 3.7.0:
+    - Make use of invoke-rc.d
+  * Add comment to README.Debian that rc5, mdc2 and idea have been
+    disabled (since 0.9.6b-3)  (Closes: #362754)
+  * Don't add uninitialised data to the random number generator.  This stop
+    valgrind from giving error messages in unrelated code.
+    (Closes: #363516)
+  * Put the FAQ in the openssl docs.
+  * Add russian debconf translations from Yuriy Talakan <yt@amur.elektra.ru>
+    (Closes #367216)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu,  4 May 2006 20:40:03 +0200
+
+openssl (0.9.8a-8) unstable; urgency=low
+
+  * Call pod2man with the proper section.  Section changed
+    from 1/3/5/7 to 1SSL/3SSL/5SSL/7SSL.  The name of the files
+    already had the ssl in, the section didn't.  The references
+    to other manpage is still wrong.
+  * Don't install the LICENSE file, it's already in the copyright file.
+  * Don't set an rpath on openssl to point to /usr/lib.
+  * Add support for kfreebsd-amd64. (Closes: #355277)
+  * Add udeb to the shlibs.  Patch from Frans Pop <aragorn@tiscali.nl>
+    (Closes: #356908)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 11 Feb 2006 14:14:37 +0100
+
+openssl (0.9.8a-7) unstable; urgency=high
+
+  * Add italian debconf templates.  Thanks to Luca Monducci.
+    (Closes: #350249)
+  * Change the debconf question to use version 0.9.8-3
+    instead of 0.9.8-1, since that's the last version
+    with a security fix.
+  * Call conn_state() if the BIO is not in the BIO_CONN_S_OK state
+    (Closes: #352047).  RC bug affecting testing, so urgency high.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat,  9 Feb 2006 19:07:56 +0100
+
+openssl (0.9.8a-6) unstable; urgency=low
+
+  * Remove empty postinst/preinst/prerm scripts.  There is no need
+    to have empty ones, debhelper will add them when needed.
+  * Remove the static pic libraries.  Nobody should be linking
+    it's shared libraries static to libssl or libcrypto.
+    This was added for opensc who now links to it shared.
+  * Do not assume that in case the sequence number is 0 and the
+    packet has an odd number of bytes that the other side has
+    the block padding bug, but try to check that it actually
+    has the bug.  The wrong detection of this bug resulted
+    in an "decryption failed or bad record mac" error in case
+    both sides were using zlib compression.  (Closes: #338006)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 21 Jan 2006 16:25:41 +0100
+
 openssl (0.9.8a-5) unstable; urgency=low
 
   * Stop ssh from crashing randomly on sparc (Closes: #335912)

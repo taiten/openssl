@@ -2,8 +2,6 @@ usr/lib/libssl.so
 usr/lib/libcrypto.so
 usr/lib/libssl.a
 usr/lib/libcrypto.a
-usr/lib/libssl_pic.a
-usr/lib/libcrypto_pic.a
 usr/lib/pkgconfig
 usr/include
 usr/share/man/man3
