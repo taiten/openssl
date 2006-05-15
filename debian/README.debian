@@ -11,11 +11,21 @@ Instead of `<application>` please call now `openssl <application>`
 eg: 
 instead of `req` please call `openssl req`
 
-NOTE: The libssl library version for debian-i386 is optimized for
-486-processors and better. It will not run on 386-processors.
 
-----
+PATENT ISSUES
+-------------
+
+Some algorithms used in the library are covered by patents.  As
+a result, the following algorithms in libcrypto have been disabled:
+- RC5
+- MDC2
+- IDEA
+
+Also see the patents section in the README file.
+
+
 Self-signed certs and webservers:
+---------------------------------
 
 If you get with a selfsigned certificate and a webserver:
  > "The certificate is not approved for the attempted operation."

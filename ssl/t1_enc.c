@@ -632,7 +632,9 @@ int tls1_enc(SSL *s, int send)
 				{
 				/* First packet is even in size, so check */
 				if ((memcmp(s->s3->read_sequence,
-					"\0\0\0\0\0\0\0\0",8) == 0) && !(ii & 1))
+					"\0\0\0\0\0\0\0\0",8) == 0) &&
+					!(ii & 1) &&
+					rec->data[l-i] != ii)
 					s->s3->flags|=TLS1_FLAGS_TLS_PADDING_BUG;
 				if (s->s3->flags & TLS1_FLAGS_TLS_PADDING_BUG)
 					i--;
