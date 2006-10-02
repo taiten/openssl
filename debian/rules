@@ -155,7 +155,7 @@ binary-arch:	build
 	dh_strip --dbg-package=libssl0.9.8
 	dh_perl -d
 #	dh_suidregister
-	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8b-1)" --add-udeb="libcrypto0.9.8-udeb"
+	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8c-1)" --add-udeb="libcrypto0.9.8-udeb"
 	dh_shlibdeps -L libssl0.9.8 -l debian/libssl0.9.8/usr/lib
 	dh_gencontrol
 	dh_installdeb

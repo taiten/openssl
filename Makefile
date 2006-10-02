@@ -4,7 +4,7 @@
 ## Makefile for OpenSSL
 ##
 
-VERSION=0.9.8b
+VERSION=0.9.8c
 MAJOR=0
 MINOR=9.8
 SHLIB_VERSION_NUMBER=0.9.8
@@ -12,9 +12,9 @@ SHLIB_VERSION_HISTORY=
 SHLIB_MAJOR=0
 SHLIB_MINOR=9.8
 SHLIB_EXT=.so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
-PLATFORM=debian-i386
-OPTIONS=--prefix=/usr --openssldir=/usr/lib/ssl enable-zlib no-gmp no-idea no-krb5 no-mdc2 no-rc5 no-shared no-zlib-dynamic
-CONFIGURE_ARGS=--prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib debian-i386
+PLATFORM=debian-amd64
+OPTIONS=--prefix=/usr --openssldir=/usr/lib/ssl enable-zlib no-camellia no-gmp no-idea no-krb5 no-mdc2 no-rc5 no-shared no-zlib-dynamic
+CONFIGURE_ARGS=--prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib debian-amd64
 SHLIB_TARGET=linux-shared
 
 # HERE indicates where this Makefile lives.  This can be used to indicate
@@ -60,8 +60,8 @@ OPENSSLDIR=/usr/lib/ssl
 # PKCS1_CHECK - pkcs1 tests.
 
 CC= gcc
-CFLAG= -DZLIB -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -DL_ENDIAN -DTERMIO -O3 -Wa,--noexecstack -g -Wall
-DEPFLAG= -DOPENSSL_NO_GMP -DOPENSSL_NO_IDEA -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 
+CFLAG= -DZLIB -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -m64 -DL_ENDIAN -DTERMIO -O3 -Wa,--noexecstack -g -Wall -DMD32_REG_T=int -DMD5_ASM
+DEPFLAG= -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_GMP -DOPENSSL_NO_IDEA -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 
 PEX_LIBS= 
 EX_LIBS= -ldl -lz
 EXE_EXT= 
@@ -86,15 +86,15 @@ ASFLAG=$(CFLAG)
 PROCESSOR= 
 
 # CPUID module collects small commonly used assembler snippets
-CPUID_OBJ= 
-BN_ASM= bn_asm.o
+CPUID_OBJ= x86_64cpuid.o
+BN_ASM= x86_64-gcc.o
 DES_ENC= des_enc.o fcrypt_b.o
 AES_ASM_OBJ= aes_core.o aes_cbc.o
 BF_ENC= bf_enc.o
 CAST_ENC= c_enc.o
 RC4_ENC= rc4_enc.o
 RC5_ENC= rc5_enc.o
-MD5_ASM_OBJ= 
+MD5_ASM_OBJ= md5-x86_64.o
 SHA1_ASM_OBJ= 
 RMD160_ASM_OBJ= 
 
@@ -143,7 +143,7 @@ SHARED_CRYPTO=libcrypto$(SHLIB_EXT)
 SHARED_SSL=libssl$(SHLIB_EXT)
 SHARED_LIBS=
 SHARED_LIBS_LINK_EXTS=.so
-SHARED_LDFLAGS= -Wl,--version-script=openssl.ld
+SHARED_LDFLAGS=-m64 -Wl,--version-script=openssl.ld
 
 GENERAL=        Makefile
 BASENAME=       openssl

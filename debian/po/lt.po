@@ -1,0 +1,63 @@
+# translation of openssl_0.9.8b-2_templates.po to Lithuanian
+# opensll debconf translation templates.
+# Copyright (C) 2003 Christoph Martin <christoph.martin@uni-mainz.de>
+# This file is distributed under the same license as the openssl package.
+#    Translators, if you are not familiar with the PO format, gettext
+#    documentation is worth reading, especially sections dedicated to
+#    this format, e.g. by running:
+#         info -n '(gettext)PO Files'
+#         info -n '(gettext)Header Entry'#
+#    Some information specific to po-debconf are available at
+#            /usr/share/doc/po-debconf/README-trans
+#         or http://www.debian.org/intl/l10n/po-debconf/README-trans#
+#    Developers do not need to manually edit POT or PO files.
+#
+# Gintautas Miliauskas <gintas@akl.lt>, 2006.
+msgid ""
+msgstr ""
+"Project-Id-Version: openssl_0.9.8b-2_templates\n"
+"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
+"POT-Creation-Date: 2006-04-06 20:34+0200\n"
+"PO-Revision-Date: 2006-06-19 01:32+0300\n"
+"Last-Translator: Gintautas Miliauskas <gintas@akl.lt>\n"
+"Language-Team: Lithuanian <komp_lt@konferencijos.lt>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.2\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid "Which services should be restarted to make them use the new libraries?"
+msgstr "Kuriuos servisus norėtumėte paleisti iš naujo, kad jie naudotų naujas bibliotekas?"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid ""
+"Security holes were fixed with this release. Services may not use these "
+"fixes until they are restarted. Note: restarting sshd should not affect any "
+"existing connections."
+msgstr "Šioje versijoje ištaisytos saugumo skylės. Servisai nenaudos šių pataisymų, kol nebus iš naujo paleisti. Pastaba: sshd paleidimas iš naujo neturėtų turėti įtakos esamiems prisijungimams."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid ""
+"Following is a list of detected services that need to be restarted. Please "
+"correct the list, if you think it is incorrect. The services names must be "
+"identical to the script names in /etc/init.d and must be separated by "
+"spaces. If you clear the list, no services will be restarted."
+msgstr "Pateiktas servisų, kuriuos reikėtų paleisti iš naujo, sąrašas. Jei matote klaidų, sąrašą pataisykite. Servisų vardai turi būti identiški atitinkamų paleidžiamųjų failų /etc/init.d kataloge vardams ir turi būti atskirti tarpais. Jei sąrašą paliksite tuščią, nė vienas servisas nebus iš naujo paleistas."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid ""
+"If other services begin to fail mysteriously after this upgrade, it may be "
+"necessary to restart them too.  We strongly recommend you to reboot your "
+"machine to avoid the SSL related trouble."
+msgstr "Jei kiti servisai po šio atnaujinimo sutriks, gali reikėti ir juos paleisti iš naujo. Rekomenduojame perkrauti sistemą, jei norite išvengti problemų, susijusių su SSL."
+
