@@ -57,19 +57,20 @@ filerc() {
 if [ "$1" = "configure" ]
 then
     if [ ! -z "$2" ]; then
-	if dpkg --compare-versions "$2" lt 0.9.8-3; then
+	if dpkg --compare-versions "$2" lt 0.9.8c-2; then
 	    echo -n "Checking for services that may need to be restarted..."
 
 	    check="sendmail openssh-server"
 	    check="$check apache2-common ssh-nonfree exim4"
 	    check="$check apache-ssl libapache-mod-ssl openvpn spamassassin"
 	    check="$check courier-imap-ssl courier-mta-ssl courier-pop-ssl"
-	    check="$check postfix-tls cyrus21-imapd cyrus21-pop3d"
+	    check="$check postfix cyrus21-imapd cyrus21-pop3d"
 	    check="$check postgresql-7.4 postgresql-8.0 postgresql-8.1"
 	    check="$check racoon dovecot-common bind9"
-	    check="$check ntp-refclock ntp-simple openntpd clamcour"
+	    check="$check ntp openntpd clamcour"
 	    check="$check fetchmail ftpd-ssl"
 	    check="$check proftpd proftpd-ldap proftpd-mysql proftpd-pgsql"
+	    check="$check partimage-server conserver-server tor"
 	    # Only get the ones that are installed, and configured
 	    check=$(dpkg -s $check 2> /dev/null | egrep '^Package:|^Status:' | awk '{if ($1 ~ /^Package:/) { package=$2 } else if ($0 ~ /^Status: .* installed$/) { print package }}')
 	    # apache2 ships its init script in apache2-common, but the
@@ -83,6 +84,8 @@ then
             # dovecot-common ships its init script, but the
 	    # script name is dovecot for dovecot-{imapd,pop3d}.
 	    check=$(echo $check | sed 's/dovecot-common/dovecot/g')
+	    # openssh-server's init script it called ssh
+	    check=$(echo $check | sed 's/openssh-server/ssh/g')
 	    echo "done."
 
 	    echo "Checking init scripts..."
@@ -165,7 +168,7 @@ then
 	    else
 		echo "Nothing to restart."
 	    fi
-	fi # end upgrading and $2 lt 0.9.8-3
+	fi # end upgrading and $2 lt 0.9.8c-2
     fi # Upgrading
 fi
 

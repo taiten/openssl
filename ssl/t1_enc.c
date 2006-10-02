@@ -628,13 +628,19 @@ int tls1_enc(SSL *s, int send)
 			{
 			ii=i=rec->data[l-1]; /* padding_length */
 			i++;
-			if (s->options&SSL_OP_TLS_BLOCK_PADDING_BUG)
+			/* NB: if compression is in operation the first packet
+			 * may not be of even length so the padding bug check
+			 * cannot be performed. This bug workaround has been
+			 * around since SSLeay so hopefully it is either fixed
+			 * now or no buggy implementation supports compression 
+			 * [steve]
+			 */
+			if ( (s->options&SSL_OP_TLS_BLOCK_PADDING_BUG)
+				&& !s->expand)
 				{
 				/* First packet is even in size, so check */
 				if ((memcmp(s->s3->read_sequence,
-					"\0\0\0\0\0\0\0\0",8) == 0) &&
-					!(ii & 1) &&
-					rec->data[l-i] != ii)
+					"\0\0\0\0\0\0\0\0",8) == 0) && !(ii & 1))
 					s->s3->flags|=TLS1_FLAGS_TLS_PADDING_BUG;
 				if (s->s3->flags & TLS1_FLAGS_TLS_PADDING_BUG)
 					i--;

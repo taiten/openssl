@@ -1,3 +1,52 @@
+openssl (0.9.8c-3) unstable; urgency=low
+
+  * Fix patch for CVE-2006-2940, it left ctx unintiliased.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon,  2 Oct 2006 18:05:00 +0200
+
+openssl (0.9.8c-2) unstable; urgency=high
+
+  * Fix security vulnerabilities (CVE-2006-2937, CVE-2006-2940,
+    CVE-2006-3738, CVE-2006-4343).  Urgency set to high.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 27 Sep 2006 21:24:55 +0000
+
+openssl (0.9.8c-1) unstable; urgency=low
+
+  * New upstream release
+    - block padding bug with compression now fixed upstream, using
+      their patch.
+    - Includes the RSA Signature Forgery (CVE-2006-4339) patch.
+    - New functions AES_bi_ige_encrypt and AES_ige_encrypt:
+      bumping shlibs to require 0.9.8c-1.
+  * Change the postinst script to check that ntp is installed instead
+    of ntp-refclock and ntp-simple.  The binary is now in the ntp
+    package.
+  * Move the modified rand/md_rand.c file to the right place,
+    really fixing #363516.
+  * Add partimage-server conserver-server and tor to the list of service
+    to check for restart.  Add workaround for openssh-server so it finds
+    the init script.  (Closes: #386365, #386400, #386513)
+  * Add manpage for c_rehash.
+    Thanks to James Westby <jw+debian@jameswestby.net> (Closes: #215618)
+  * Add Lithuanian debconf translation.
+    Thanks to Gintautas Miliauskas <gintas@akl.lt>  (Closes: #374364)
+  * Add m32r support.
+    Thanks to Kazuhiro Inaoka <inaoka.kazuhiro@renesas.com>
+    (Closes: #378689)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 17 Sep 2006 14:47:59 +0000
+
+openssl (0.9.8b-3) unstable; urgency=high
+
+  * Fix RSA Signature Forgery (CVE-2006-4339) using patch provided
+    by upstream.
+  * Restart services using a smaller version that 0.9.8b-3, so
+    they get the fixed version.
+  * Change the postinst to check for postfix instead of postfix-tls.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue,  5 Sep 2006 18:26:10 +0000
+
 openssl (0.9.8b-2) unstable; urgency=low
 
   * Don't call gcc with -mcpu on i386, we already use -march, so no need for
