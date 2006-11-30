@@ -12,7 +12,7 @@ B<c_rehash>
 
 =head1 DESCRIPTION
 
-c_rehash scans directories and takes a hash value of each .pem file in the directory. It then creates symbolic links for each of the files named by the hash value. This is useful as many programs require directories to be set up like this in order to find the certificates they require. 
+c_rehash scans directories and takes a hash value of each .pem and .crt file in the directory. It then creates symbolic links for each of the files named by the hash value. This is useful as many programs require directories to be set up like this in order to find the certificates they require. 
 
 If any directories are named on the command line then these directories are processed in turn. If not then and the environment variable SSL_CERT_DIR is defined then that is consulted. This variable should be a colon (:) separated list of directories, all of which will be processed. If neither of these conditions are true then /usr/lib/ssl/certs is processed. 
 
