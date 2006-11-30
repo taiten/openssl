@@ -1,0 +1,64 @@
+# German translation of openssl's debconf templates
+# Copyright (C) 2006 Johannes Starosta
+# This file is distributed under the same license as the openssl package.
+# Johannes Starosta <feedback-an-johannes@arcor.de>, 2006.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: openssl 0.9.8b\n"
+"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
+"POT-Creation-Date: 2006-03-14 20:06+0100\n"
+"PO-Revision-Date: 2006-08-16 19:37+0200\n"
+"Last-Translator: Johannes Starosta <feedback-an-johannes@arcor.de>\n"
+"Language-Team: German <debian-l10n-german@lists.debian.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-15\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid "Which services should be restarted to make them use the new libraries?"
+msgstr ""
+"Welche Dienste sollen erneut gestartet werden, damit sie die neuen "
+"Bibliotheken verwenden?"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid ""
+"Security holes were fixed with this release. Services may not use these "
+"fixes until they are restarted. Note: restarting sshd should not affect any "
+"existing connections."
+msgstr ""
+"In dieser Version wurden Sicherheitsprobleme behoben. Dienste können "
+"diese Aktualisierungen nicht nutzen, bis man sie neu startet. Hinweis: sshd "
+"neu zu starten dürfte keine bestehenden Verbindungen beeinträchtigen."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid ""
+"Following is a list of detected services that need to be restarted. Please "
+"correct the list, if you think it is incorrect. The services names must be "
+"identical to the script names in /etc/init.d and must be separated by "
+"spaces. If you clear the list, no services will be restarted."
+msgstr ""
+"Es folgt nun eine Liste der erkannten Dienste, die neu gestartet werden "
+"sollten. Bitte berichtigen Sie die Liste, wenn Sie glauben, dass sie "
+"Fehler enthält. Die Namen der Dienste müssen den Namen der Skripte in "
+"/etc/init.d entsprechen und werden durch Leerzeichen getrennt. Falls Sie "
+"diese Liste löschen, wird kein Dienst neugestartet."
+       
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:3
+msgid ""
+"If other services begin to fail mysteriously after this upgrade, it may be "
+"necessary to restart them too.  We strongly recommend you to reboot your "
+"machine to avoid the SSL related trouble."
+msgstr ""
+"Falls andere Dienste nach diesem Upgrade ein merkwürdiges Fehlverhalten "
+"zeigen, könnte es nötig werden, sie ebenfalls neu zu starten. Es wird "
+"dringend empfohlen, den Rechner neu zu starten, um Probleme mit SSL zu "
+"vermeiden."

@@ -1,3 +1,18 @@
+openssl (0.9.8c-4) unstable; urgency=low
+
+  * Add German debconf translation.  Thanks to
+    Johannes Starosta <feedback-an-johannes@arcor.de> (Closes: #388108)
+  * Make c_rehash look for both .pem and .crt files.  Also make it support
+    files in DER format.  Patch by "Yauheni Kaliuta" <y.kaliuta@gmail.com>
+    (Closes: #387089)
+  * Use & instead of && to check a flag in the X509 policy checking.
+    Patch from upstream cvs.  (Closes: #397151)
+  * Also restart slapd for security updates (Closes: #400221)
+  * Add Romanian debconf translation.  Thanks to
+    stan ioan-eugen <stan.ieugen@gmail.com> (Closes: #393507)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 30 Nov 2006 20:57:46 +0000
+
 openssl (0.9.8c-3) unstable; urgency=low
 
   * Fix patch for CVE-2006-2940, it left ctx unintiliased.
