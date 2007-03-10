@@ -167,7 +167,7 @@ struct rsa_st
 # define OPENSSL_RSA_SMALL_MODULUS_BITS	3072
 #endif
 #ifndef OPENSSL_RSA_MAX_PUBEXP_BITS
-# define OPENSSL_RSA_MAX_PUBEXP_BITS	64 /* exponent limit enforced for "small" modulus only */
+# define OPENSSL_RSA_MAX_PUBEXP_BITS	64 /* exponent limit enforced for "large" modulus only */
 #endif
 
 #define RSA_3	0x3L
@@ -424,7 +424,6 @@ void ERR_load_RSA_strings(void);
 #define RSA_R_N_DOES_NOT_EQUAL_P_Q			 127
 #define RSA_R_OAEP_DECODING_ERROR			 121
 #define RSA_R_PADDING_CHECK_FAILED			 114
-#define RSA_R_PKCS1_PADDING_TOO_SHORT			 105
 #define RSA_R_P_NOT_PRIME				 128
 #define RSA_R_Q_NOT_PRIME				 129
 #define RSA_R_RSA_OPERATIONS_NOT_SUPPORTED		 130

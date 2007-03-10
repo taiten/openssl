@@ -8,20 +8,21 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl 0.9b-3\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2006-09-09 13:21-0600\n"
+"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
+"POT-Creation-Date: 2007-02-23 20:01+0000\n"
 "PO-Revision-Date: 2006-10-04 13:49+0300\n"
 "Last-Translator: Stan Ioan-Eugen <stan.ieugen@gmail.com>\n"
 "Language-Team: Romanian <debian-l10n-romanian@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit"
+"Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid "Which services should be restarted to make them use the new libraries?"
-msgstr "Ce servicii ar trebui repornite pentru a asigura folosirea noilor biblioteci?"
+msgstr ""
+"Ce servicii ar trebui repornite pentru a asigura folosirea noilor biblioteci?"
 
 #. Type: string
 #. Description
@@ -30,7 +31,10 @@ msgid ""
 "Security holes were fixed with this release. Services may not use these "
 "fixes until they are restarted. Note: restarting sshd should not affect any "
 "existing connections."
-msgstr "Cu această nouă versiune s-au rezolvat probleme de securitate. Serviciile nu vor putea folosi aceste îmbunătăţiri decât după ce vor fi repornite. Notă: repornirea sshd nu ar trebui să afecteze conexiunile deja existente."
+msgstr ""
+"Cu această nouă versiune s-au rezolvat probleme de securitate. Serviciile nu "
+"vor putea folosi aceste îmbunătăţiri decât după ce vor fi repornite. Notă: "
+"repornirea sshd nu ar trebui să afecteze conexiunile deja existente."
 
 #. Type: string
 #. Description
@@ -40,7 +44,12 @@ msgid ""
 "correct the list, if you think it is incorrect. The services names must be "
 "identical to the script names in /etc/init.d and must be separated by "
 "spaces. If you clear the list, no services will be restarted."
-msgstr "Mai jos este o listă cu serviciile detectate care ar trebui repornite. Vă rugăm corectaţi  lista dacă nu credeţi că este corectă. Numele serviciilor trebuie să fie identice cu numele scripturilor din /etc/init.d şi trebuie să fie separate prin spaţii. Dacă lista este goală, nici un serviciu nu va fi repornit."
+msgstr ""
+"Mai jos este o listă cu serviciile detectate care ar trebui repornite. Vă "
+"rugăm corectaţi  lista dacă nu credeţi că este corectă. Numele serviciilor "
+"trebuie să fie identice cu numele scripturilor din /etc/init.d şi trebuie să "
+"fie separate prin spaţii. Dacă lista este goală, nici un serviciu nu va fi "
+"repornit."
 
 #. Type: string
 #. Description
@@ -50,5 +59,6 @@ msgid ""
 "necessary to restart them too.  We strongly recommend you to reboot your "
 "machine to avoid the SSL related trouble."
 msgstr ""
-"Dacă alte servicii prezintă probleme misterioase după această actualizare, ar putea fi necesară repornirea lor. Recomandăm să reporniţi calculatorul pentru a evita probleme legate de SSL."
-
+"Dacă alte servicii prezintă probleme misterioase după această actualizare, "
+"ar putea fi necesară repornirea lor. Recomandăm să reporniţi calculatorul "
+"pentru a evita probleme legate de SSL."

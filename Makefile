@@ -4,7 +4,7 @@
 ## Makefile for OpenSSL
 ##
 
-VERSION=0.9.8c
+VERSION=0.9.8e
 MAJOR=0
 MINOR=9.8
 SHLIB_VERSION_NUMBER=0.9.8
@@ -13,7 +13,7 @@ SHLIB_MAJOR=0
 SHLIB_MINOR=9.8
 SHLIB_EXT=.so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
 PLATFORM=debian-amd64
-OPTIONS=--prefix=/usr --openssldir=/usr/lib/ssl enable-zlib no-camellia no-gmp no-idea no-krb5 no-mdc2 no-rc5 no-shared no-zlib-dynamic
+OPTIONS=--prefix=/usr --openssldir=/usr/lib/ssl enable-zlib no-camellia no-gmp no-idea no-krb5 no-mdc2 no-rc5 no-rfc3779 no-shared no-zlib-dynamic
 CONFIGURE_ARGS=--prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib debian-amd64
 SHLIB_TARGET=linux-shared
 
@@ -61,7 +61,7 @@ OPENSSLDIR=/usr/lib/ssl
 
 CC= gcc
 CFLAG= -DZLIB -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -m64 -DL_ENDIAN -DTERMIO -O3 -Wa,--noexecstack -g -Wall -DMD32_REG_T=int -DMD5_ASM
-DEPFLAG= -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_GMP -DOPENSSL_NO_IDEA -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 
+DEPFLAG= -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_GMP -DOPENSSL_NO_IDEA -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 -DOPENSSL_NO_RFC3779 
 PEX_LIBS= 
 EX_LIBS= -ldl -lz
 EXE_EXT= 

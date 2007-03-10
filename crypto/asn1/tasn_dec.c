@@ -93,7 +93,7 @@ static int asn1_d2i_ex_primitive(ASN1_VALUE **pval,
 				int tag, int aclass, char opt, ASN1_TLC *ctx);
 
 /* Table to convert tags to bit values, used for MSTRING type */
-static unsigned long tag2bit[32] = {
+static const unsigned long tag2bit[32] = {
 0,	0,	0,	B_ASN1_BIT_STRING,	/* tags  0 -  3 */
 B_ASN1_OCTET_STRING,	0,	0,		B_ASN1_UNKNOWN,/* tags  4- 7 */
 B_ASN1_UNKNOWN,	B_ASN1_UNKNOWN,	B_ASN1_UNKNOWN,	B_ASN1_UNKNOWN,/* tags  8-11 */
@@ -832,9 +832,7 @@ static int asn1_d2i_ex_primitive(ASN1_VALUE **pval,
 		}
 	else if (ret == -1)
 		return -1;
-
-	ret = 0;
-
+        ret = 0;
 	/* SEQUENCE, SET and "OTHER" are left in encoded form */
 	if ((utype == V_ASN1_SEQUENCE)
 		|| (utype == V_ASN1_SET) || (utype == V_ASN1_OTHER))

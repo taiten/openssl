@@ -1,3 +1,49 @@
+openssl (0.9.8e-4) unstable; urgency=low
+
+  * openssl should depend on libssl0.9.8 0.9.8e-1 since it 
+    uses some of the defines that changed to functions.
+    Other things build against libssl or libcrypto shouldn't 
+    have this problem since they use the old headers.
+    (Closes: #414283)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 10 Mar 2007 17:11:46 +0000
+
+openssl (0.9.8e-3) unstable; urgency=low
+
+  * Add nagios-nrpe-server to the list of services to be checked
+    (Closes: #391188)
+  * EVP_CIPHER_CTX_key_length() should return the set key length in the
+    EVP_CIPHER_CTX structure which may not be the same as the underlying
+    cipher key length for variable length ciphers.
+    From upstream CVS.  (Closes: #412979)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun,  4 Mar 2007 23:22:51 +0000
+
+openssl (0.9.8e-2) unstable; urgency=low
+
+  * Undo include changes that change defines into real functions,
+    but keep the new functions in the library.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 25 Feb 2007 19:19:19 +0000
+
+openssl (0.9.8e-1) unstable; urgency=low
+
+  * New upstream release
+    - Inludes security fixes for CVE-2006-2937, CVE-2006-2940,
+      CVE-2006-3738, CVE-2006-4343 (Closes: #408902)
+    - s_client now properly works with SMTP.  Also added support
+      for IMAP.  (closes: #221689)
+    - Load padlock modules (Closes: #345656, #368476)
+  * Add clamav-freshclam and clamav-daemon to the list of service that
+    need to be restarted.  (Closes: #391191)
+  * Add armel support.  Thanks to Guillem Jover <guillem.jover@nokia.com>
+    for the patch.  (Closes: #407196)
+  * Add Portuguese translations.  Thanks to Carlos Lisboa.  (Closes: 408157)
+  * Add Norwegian translations.  Thanks to Bjørn Steensrud
+    <bjornst@powertech.no> (Closes: #412326)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 25 Feb 2007 18:06:28 +0000
+
 openssl (0.9.8c-4) unstable; urgency=low
 
   * Add German debconf translation.  Thanks to
