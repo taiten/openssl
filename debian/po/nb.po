@@ -1,0 +1,63 @@
+# translation of openssl_0.9.8c-4_templates.po to Norwegian Bokmål
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Bjørn Steensrud <bjornst@powertech.no>, 2007.
+msgid ""
+msgstr ""
+"Project-Id-Version: openssl_0.9.8c-4_templates\n"
+"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
+"POT-Creation-Date: 2007-02-23 20:01+0000\n"
+"PO-Revision-Date: 2007-02-25 12:31+0100\n"
+"Last-Translator: Bjørn Steensrud <bjornst@powertech.no>\n"
+"Language-Team: Norwegian Bokmål <i18n-nb@lister.ping.uio.no>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.2\n"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:1001
+msgid "Which services should be restarted to make them use the new libraries?"
+msgstr ""
+"Hvilke tjenester skal startes på nytt slik at de bruker de nye bibliotekene?"
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:1001
+msgid ""
+"Security holes were fixed with this release. Services may not use these "
+"fixes until they are restarted. Note: restarting sshd should not affect any "
+"existing connections."
+msgstr ""
+"Denne utgaven retter sikkerhetsproblemer. Tjenester kan ikke bruke disse "
+"rettelsene før de er startet på nytt. Merk: om sshd startes på nytt blir "
+"antakelig ingen eksisterende tilkoblinger påvirket."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:1001
+msgid ""
+"Following is a list of detected services that need to be restarted. Please "
+"correct the list, if you think it is incorrect. The services names must be "
+"identical to the script names in /etc/init.d and must be separated by "
+"spaces. If you clear the list, no services will be restarted."
+msgstr ""
+"Her følger en liste over funne tjenester som trenger omstart. Rett på lista "
+"om den er feil. Tjenestenavnene må være lik skript-navnene i /etc/init.d, og "
+"være atskilt med mellomrom. Hvis du tømmer lista blir ingen tjenester "
+"omstartet."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:1001
+msgid ""
+"If other services begin to fail mysteriously after this upgrade, it may be "
+"necessary to restart them too.  We strongly recommend you to reboot your "
+"machine to avoid the SSL related trouble."
+msgstr ""
+"Hvis andre tjenester begynner å svikte på mystisk måte etter denne "
+"oppgraderingen, så kan det være nødvendig å starte dem på nytt også. Vi "
+"anbefaler sterkt at maskinen stoppes og startes for å unngå vansker i "
+"forbindelse med SSL."

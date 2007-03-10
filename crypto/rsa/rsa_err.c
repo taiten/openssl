@@ -100,7 +100,7 @@ static ERR_STRING_DATA RSA_str_functs[]=
 {ERR_FUNC(RSA_F_RSA_PADDING_CHECK_SSLV23),	"RSA_padding_check_SSLv23"},
 {ERR_FUNC(RSA_F_RSA_PADDING_CHECK_X931),	"RSA_padding_check_X931"},
 {ERR_FUNC(RSA_F_RSA_PRINT),	"RSA_print"},
-{ERR_FUNC(RSA_F_RSA_PRINT_FP),	"RSA_PRINT_FP"},
+{ERR_FUNC(RSA_F_RSA_PRINT_FP),	"RSA_print_fp"},
 {ERR_FUNC(RSA_F_RSA_SETUP_BLINDING),	"RSA_setup_blinding"},
 {ERR_FUNC(RSA_F_RSA_SIGN),	"RSA_sign"},
 {ERR_FUNC(RSA_F_RSA_SIGN_ASN1_OCTET_STRING),	"RSA_sign_ASN1_OCTET_STRING"},
@@ -143,7 +143,6 @@ static ERR_STRING_DATA RSA_str_reasons[]=
 {ERR_REASON(RSA_R_N_DOES_NOT_EQUAL_P_Q)  ,"n does not equal p q"},
 {ERR_REASON(RSA_R_OAEP_DECODING_ERROR)   ,"oaep decoding error"},
 {ERR_REASON(RSA_R_PADDING_CHECK_FAILED)  ,"padding check failed"},
-{ERR_REASON(RSA_R_PKCS1_PADDING_TOO_SHORT),"pkcs1 padding too short"},
 {ERR_REASON(RSA_R_P_NOT_PRIME)           ,"p not prime"},
 {ERR_REASON(RSA_R_Q_NOT_PRIME)           ,"q not prime"},
 {ERR_REASON(RSA_R_RSA_OPERATIONS_NOT_SUPPORTED),"rsa operations not supported"},
@@ -161,15 +160,12 @@ static ERR_STRING_DATA RSA_str_reasons[]=
 
 void ERR_load_RSA_strings(void)
 	{
-	static int init=1;
-
-	if (init)
-		{
-		init=0;
 #ifndef OPENSSL_NO_ERR
+
+	if (ERR_func_error_string(RSA_str_functs[0].error) == NULL)
+		{
 		ERR_load_strings(0,RSA_str_functs);
 		ERR_load_strings(0,RSA_str_reasons);
-#endif
-
 		}
+#endif
 	}

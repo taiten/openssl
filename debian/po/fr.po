@@ -13,7 +13,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openssl_0.9.7c-5\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2006-04-06 20:34+0200\n"
+"POT-Creation-Date: 2007-02-23 20:01+0000\n"
 "PO-Revision-Date: 2003-10-22 21:37+0200\n"
 "Last-Translator: Michel Grentzinger <mic.grentz@online.fr>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -23,13 +23,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid "Which services should be restarted to make them use the new libraries?"
 msgstr "Services à redémarrer afin d'utiliser les nouvelles bibliothèques"
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid ""
 "Security holes were fixed with this release. Services may not use these "
 "fixes until they are restarted. Note: restarting sshd should not affect any "
@@ -42,7 +42,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid ""
 "Following is a list of detected services that need to be restarted. Please "
 "correct the list, if you think it is incorrect. The services names must be "
@@ -57,7 +57,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid ""
 "If other services begin to fail mysteriously after this upgrade, it may be "
 "necessary to restart them too.  We strongly recommend you to reboot your "

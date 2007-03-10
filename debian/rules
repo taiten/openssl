@@ -136,6 +136,10 @@ binary-arch:	build
 #	(cd debian/tmp/usr/doc/openssl/doc; for f in *.doc*; do mv "$$f" "$$(echo $$f | sed -e 's/doc/txt/')";done)
 #	(cd doc; for f in *; do install "$$f" ../debian/tmp/usr/share/doc/openssl/doc/"$$(echo $$f | sed -e 's/doc/txt/')";done)
 #	debstd -u CHANGES* LICENSE README NEWS
+
+# Reverse the changes to the headers.
+	patch -p0 -R < debian/header.diff
+
 	dh_installdocs CHANGES.SSLeay README NEWS debian/README.optimization
 	dh_installexamples
 	dh_installchangelogs CHANGES

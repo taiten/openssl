@@ -315,6 +315,7 @@ my %table=(
 "debian-alpha-ev5","gcc:-DTERMIO -O3 -mcpu=ev5 -g -Wall::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK DES_RISC1 DES_UNROLL:${no_asm}:dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 "debian-arm","gcc:-DL_ENDIAN -DTERMIO -O2 -g -Wall::-D_REENTRANT::-ldl:BN_LLONG DES_RISC1::::::::::::dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 "debian-armeb","gcc:-DB_ENDIAN -DTERMIO -O2 -g -Wall::-D_REENTRANT::-ldl:BN_LLONG DES_RISC1::::::::::::dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
+"debian-armel","gcc:-DL_ENDIAN -DTERMIO -O2 -g -Wall::-D_REENTRANT::-ldl:BN_LLONG DES_RISC1::::::::::::dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 #"debian-amd64","gcc:-DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall::-D_REENTRANT::-ldl:BN_LLONG ${x86_gcc_des} ${x86_gcc_opts}::::::::::::dlfcn:linux-shared:-fPIC::.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 "debian-amd64", "gcc:-m64 -DL_ENDIAN -DTERMIO -O3 -Wa,--noexecstack -g -Wall -DMD32_REG_T=int::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK RC4_CHAR BF_PTR2 DES_INT DES_UNROLL:${x86_64_asm}:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
 "debian-kfreebsd-amd64","gcc:-m64 -DL_ENDIAN -DTERMIOS -O3 -Wall -DMD32_REG_T=int::-D_REENTRANT::-ldl:SIXTY_FOUR_BIT_LONG RC4_CHUNK BF_PTR2 DES_INT DES_UNROLL:${x86_64_asm}:dlfcn:linux-shared:-fPIC:-m64:.so.\$(SHLIB_MAJOR).\$(SHLIB_MINOR)",
@@ -609,6 +610,7 @@ my $threads=0;
 my $no_shared=0; # but "no-shared" is default
 my $zlib=1;      # but "no-zlib" is default
 my $no_krb5=0;   # but "no-krb5" is implied unless "--with-krb5-..." is used
+my $no_rfc3779=1; # but "no-rfc3779" is default
 my $no_asm=0;
 my $no_dso=0;
 my $no_gmp=0;
@@ -645,6 +647,7 @@ my %disabled = ( # "what"         => "comment"
 		 "gmp"		  => "default",
                  "mdc2"           => "default",
                  "rc5"            => "default",
+		 "rfc3779"	  => "default",
                  "shared"         => "default",
                  "zlib"           => "default",
                  "zlib-dynamic"   => "default"
@@ -655,7 +658,7 @@ my %disabled = ( # "what"         => "comment"
 # For symmetry, "disable-..." is a synonym for "no-...".
 
 # This is what $depflags will look like with the above default:
-my $default_depflags = "-DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_GMP -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 ";
+my $default_depflags = "-DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_GMP -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 -DOPENSSL_NO_RFC3779 ";
 
 
 my $no_sse2=0;

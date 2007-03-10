@@ -1,25 +1,12 @@
-# opensll debconf translation templates.
+# openssl debconf translation templates.
 # Copyright (C) 2003 Christoph Martin <christoph.martin@uni-mainz.de>
 # This file is distributed under the same license as the openssl package.
-#
-#    Translators, if you are not familiar with the PO format, gettext
-#    documentation is worth reading, especially sections dedicated to
-#    this format, e.g. by running:
-#         info -n '(gettext)PO Files'
-#         info -n '(gettext)Header Entry'
-#
-#    Some information specific to po-debconf are available at
-#            /usr/share/doc/po-debconf/README-trans
-#         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-#
-#    Developers do not need to manually edit POT or PO files.
-#
-#, fuzzy
+# Christoph Martin <christoph.martin@uni-mainz.de>, 2003
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2006-04-06 20:34+0200\n"
+"POT-Creation-Date: 2007-02-23 20:01+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,13 +16,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid "Which services should be restarted to make them use the new libraries?"
 msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid ""
 "Security holes were fixed with this release. Services may not use these "
 "fixes until they are restarted. Note: restarting sshd should not affect any "
@@ -44,7 +31,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid ""
 "Following is a list of detected services that need to be restarted. Please "
 "correct the list, if you think it is incorrect. The services names must be "
@@ -54,7 +41,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../libssl0.9.8.templates:3
+#: ../libssl0.9.8.templates:1001
 msgid ""
 "If other services begin to fail mysteriously after this upgrade, it may be "
 "necessary to restart them too.  We strongly recommend you to reboot your "
