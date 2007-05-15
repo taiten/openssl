@@ -1,11 +1,12 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl 0.9.8e-4\n"
+"Project-Id-Version: openssl\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
 "POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2007-05-04 23:37+0900\n"
-"Last-Translator: Hideki Yamane (Debian-JP) <henrich@debian.or.jp>\n"
-"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"PO-Revision-Date: 2007-04-18 01:10+0800\n"
+"Last-Translator: Tetralet <tetralet@gmail.com>\n"
+"Language-Team: Debian-user in Chinese [Big5] <debian-chinese-big5@lists."
+"debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -14,7 +15,7 @@ msgstr ""
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid "Services to restart to make them use the new libraries:"
-msgstr "新しいライブラリを使うために再起動するサービス:"
+msgstr "必須重新啟動才能使用新函式庫的服務程式："
 
 #. Type: string
 #. Description
@@ -24,9 +25,9 @@ msgid ""
 "these fixes until they are restarted. Please note that restarting the SSH "
 "server (sshd) should not affect any existing connections."
 msgstr ""
-"OpenSSL は、今回のリリースでセキュリティホールが修正されました。各サービスは"
-"再起動を行わないと、この修正されたライブラリを利用しません。注意: SSH サーバ "
-"(sshd) を再起動しても、現状の接続には何ら影響しません。"
+"這個 OpenSSL 的釋出版修正了一些安全上的問題。這些服務程式必須重新啟動否則無法"
+"套用這些修正。請注意到，重新啟動 SSH 服務程式 (sshd) 並不會影響到任何現有的連"
+"線。"
 
 #. Type: string
 #. Description
@@ -37,9 +38,9 @@ msgid ""
 "initialization script names in /etc/init.d and separated by spaces. No "
 "services will be restarted if the list is empty."
 msgstr ""
-"再起動が必要だと判断されたサービスのリストを確認してください。必要であれば修正"
-"してください。サービス名は /etc/init.d にあるスクリプトの名前を指し、空白"
-"で区切る必要があります。リストが空の場合は、どのサービスも再起動されません。"
+"請檢視被偵測到需重新啟動的服務程式之列表，有必要時請加以修正。這些服務程式名"
+"稱必須和 /etc/init.d 裡的初始化 Script 名稱一致，並以空白分隔。如果列表裡空無"
+"一物，就表示沒有服務程式會被重新啟動。"
 
 #. Type: string
 #. Description
@@ -49,7 +50,5 @@ msgid ""
 "restarted. It is recommended to reboot this host to avoid any SSL-related "
 "trouble."
 msgstr ""
-"他のサービスがここでのアップグレードの後に何故かエラーを起こし始めた場合、そ"
-"れらも再起動する必要があります。SSL 関連のトラブルを避けるためには、マシンを"
-"再起動するのをお勧めします。"
-
+"在此更新之後，必須將任何預料之外無法成功運行的服務程式重新啟動。建議重新啟動"
+"這台主機以避免發生任何 SSL 相關的問題。"

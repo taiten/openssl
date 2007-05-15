@@ -15,54 +15,54 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openssl\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2004-09-26 17:40+0200\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-04-11 18:40+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
-"Language-Team: Czech <provoz@debian.cz>\n"
+"Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-2\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
-msgstr "Které slu¾by se mají restartovat, aby zaèaly vyu¾ívat nové knihovny?"
+msgid "Services to restart to make them use the new libraries:"
+msgstr "SluÅ¾by, kterÃ© se majÃ­ restartovat, aby zaÄaly vyuÅ¾Ã­vat novÃ© knihovny:"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"V této verzi balíku byly opraveny bezbeènostní chyby. Tyto opravy se v "
-"programech projeví a¾ po jejich restartu. Poznámka: restart sshd by nemìl "
-"ovlivnit stávající spojení."
+"Toto vydÃ¡nÃ­ OpenSSL opravuje nÄ›kterÃ© bezpeÄnostnÃ­ problÃ©my. Tyto opravy se v "
+"programech projevÃ­ aÅ¾ po jejich restartu. Poznamenejme, Å¾e restart SSH "
+"serveru (sshd) by nemÄ›l ovlivnit stÃ¡vajÃ­cÃ­ spojenÃ­."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
-"Následuje seznam rozpoznanıch slu¾eb, které je tøeba restartovat. Pokud se "
-"vám zdá, ¾e je tento seznam chybnı, mù¾ete jej opravit. Názvy slu¾eb musí "
-"bıt shodné s názvy skriptù v adresáøi /etc/init.d a musí bıt oddìleny "
-"mezerami. Pokud seznam vyma¾ete, nebude restartována ¾ádná slu¾ba."
+"Zkontrolujte prosÃ­m seznam rozpoznanÃ½ch sluÅ¾eb, kterÃ© je tÅ™eba restartovat. "
+"JestliÅ¾e se vÃ¡m zdÃ¡, Å¾e je seznam chybnÃ½, mÅ¯Å¾ete jej upravit. NÃ¡zvy sluÅ¾eb "
+"musÃ­ bÃ½t shodnÃ© s nÃ¡zvy skriptÅ¯ v adresÃ¡Å™i /etc/init.d a musÃ­ bÃ½t oddÄ›leny "
+"mezerami. Pokud seznam vymaÅ¾ete, nebude restartovÃ¡na Å¾Ã¡dnÃ¡ sluÅ¾ba."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
-"Jestli¾e po této aktualizaci zaènou selhávat nìkteré slu¾by, mo¾ná bude "
-"nutné je takté¾ restartovat. Abyste se vyhnuli problémùm spojenıch se SSL, "
-"doporuèujeme restartovat celı poèítaè."
+"JestliÅ¾e po tÃ©to aktualizaci zaÄnou neoÄekÃ¡vanÄ› selhÃ¡vat nÄ›kterÃ© sluÅ¾by, "
+"mÄ›li byste je taktÃ©Å¾ restartovat. Abyste se vyhnuli problÃ©mÅ¯m spojenÃ½m se "
+"SSL, doporuÄujeme restartovat celÃ½ poÄÃ­taÄ."

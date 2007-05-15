@@ -6,22 +6,24 @@
 # - Initial translation
 #       Lucas Wall <kthulhu@kadath.com.ar>, 2004
 #
+# - Last revision
+#		Manuel Porras Peralta Â«VenturiÂ», 2007
 #
 #  Traductores, si no conoce el formato PO, merece la pena leer la 
-#  documentación de gettext, especialmente las secciones dedicadas a este
+#  documentaciÃ³n de gettext, especialmente las secciones dedicadas a este
 #  formato, por ejemplo ejecutando:
 #         info -n '(gettext)PO Files'
 #         info -n '(gettext)Header Entry'
 #
-# Equipo de traducción al español, por favor lean antes de traducir
+# Equipo de traducciÃ³n al espaÃ±ol, por favor lean antes de traducir
 # los siguientes documentos:
 # 
-# - El proyecto de traducción de Debian al español
+# - El proyecto de traducciÃ³n de Debian al espaÃ±ol
 #   http://www.debian.org/intl/spanish/coordinacion
-#   especialmente las notas de traducción en
+#   especialmente las notas de traducciÃ³n en
 #   http://www.debian.org/intl/spanish/notas
 #
-# - La guía de traducción de po's de debconf:
+# - La guÃ­a de traducciÃ³n de po's de debconf:
 #   /usr/share/doc/po-debconf/README-trans
 #   o http://www.debian.org/intl/l10n/po-debconf/README-trans
 #
@@ -29,57 +31,57 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openssl 0.9.7d-3\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2004-06-12 15:23-0300\n"
-"Last-Translator: Lucas Wall <kthulhu@kadath.com.ar>\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-05-01 17:20+0200\n"
+"Last-Translator: Manuel Porras Peralta Â«VenturiÂ» <venturi.debian@gmail.com>\n"
 "Language-Team: Debian Spanish <debian-l10n-spanish@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-15\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
+msgid "Services to restart to make them use the new libraries:"
 msgstr ""
-"¿Qué servicios desea reiniciar para que utilicen las nuevas bibliotecas?"
+"Servicios que tienen que reiniciarse para que usen las nuevas bibliotecas:"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"En esta versión se han solucionado problemas de seguridad. Los servicios "
-"afectados no gozarán de los arreglos hasta que no se hayan reiniciado. Nota: "
-"reiniciar el servicio «sshd» no afectará ninguna de las conexiones "
-"existentes."
+"Esta versiÃ³n de OpenSSL arregla algunos problemas de seguridad. Los "
+"servicios no usarÃ¡n los arreglos hasta que se reinicien. Tenga en cuenta "
+"que reiniciar el servicio SSH (sshd) no deberÃ­a afectar a ninguna de las "
+"conexiones existentes."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
-"Una lista de los servicios que deben ser reiniciados se presenta a "
-"continuación. Si cree que no es correcta haga los ajustes necesarios. Los "
-"nombres de los servicios deben ser iguales a los nombres de los ficheros en "
-"«/etc/init.d» y debe estar separados por espacios. Ningún servicio será "
-"reiniciado si deja la lista en blanco."
+"Por favor, compruebe la lista de los servicios detectados que necesitan "
+"reiniciarse y corrÃ­jala si fuera necesario. Los nombres de los servicios "
+"deben ser idÃ©nticos a los nombres de los programas de inicio en "
+"Â«/etc/init.dÂ» y deben estar separados por espacios. No se reiniciarÃ¡ "
+"ningÃºn servicio si deja la lista en blanco."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
-"Si, tras esta actualización, otros servicios comienzan a fallar en forma "
-"misteriosa puede ser necesario reiniciarlos también. Para evitar problemas "
-"relacionados con «SSL» se le recomienda reiniciar su sistema."
+"Tras esta actualizaciÃ³n, deberÃ­a reiniciar cualquier servicio que falle "
+"inesperadamente mÃ¡s tarde. Se recomienda reiniciar el sistema para evitar "
+"cualquier problema relacionado con SSL."

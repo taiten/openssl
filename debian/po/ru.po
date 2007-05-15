@@ -1,63 +1,67 @@
+# translation of openssl_ru.po to Russian
 # translation of openssl_0.9.8a-8_ru.po to Russian
 # This file is distributed under the same license as the PACKAGE package.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER.
 # Yuriy Talakan' <yt@amur.elektra.ru>, 2006.
-# 
+# Yuriy Talakan' <yt@drsk.ru>, 2007.
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl_0.9.8a-8_ru\n"
+"Project-Id-Version: openssl_ru\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2006-05-14 23:00+1000\n"
-"Last-Translator: Yuriy Talakan' <yt@amur.elektra.ru>\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-04-11 16:53+1000\n"
+"Last-Translator: Yuriy Talakan' <yt@drsk.ru>\n"
 "Language-Team: Russian <debian-l10n-russian@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 1.9.1\n"
+"Plural-Forms:  nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%"
+"10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
+msgid "Services to restart to make them use the new libraries:"
 msgstr ""
-"Какие сервисы должны быть перезапущены, чтобы заставить их использовать "
-"новые библиотеки?"
-
-#. Type: string
-#. Description
-#: ../libssl0.9.8.templates:1001
-msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
-msgstr ""
-"В этом выпуске были закрыты дыры в безопасности. Сервисы не могут "
-"использовать эти исправления, пока не будут перезапущены. Замечание: "
-"перезапуск sshd не повлияет на существующие соединения."
+"Перезапустить эти сервисы, чтобы они начали использовать новые библиотеки:"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"Ниже указан список обнаруженных сервисов, которые надо перезапустить. "
-"Исправьтесписок, если считаете, что он неправильный. Имена сервисов должны "
-"соответствоватьименам скриптов в /etc/init.d и должны быть разделены "
-"пробелами. Если вы очистите список, сервисы не будут перезапущены."
+"Этот выпуск OpenSSL исправляет некоторые проблемы безопасности. Сервисы не "
+"могут использовать эти исправления, пока не будут перезапущены. Обратите "
+"внимание, что перезапуск сервера SSH (sshd) не повлияет на существующие "
+"соединения."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
-"Если другой сервис начнет мистическим образом сбоить после этого обновления, "
-"его возможно тоже надо перезапустить.  Мы настройчиво рекомендуем вам "
-"перегрузить машину во избежание проблем, связанных с SSL."
+"Проверьте список обнаруженных сервисов, которые надо перезапустить и "
+"поправьте его, если необходимо. Имена сервисов должны соответствовать именам "
+"скриптов инициализации в /etc/init.d и должны быть разделены пробелами. Если "
+"список пустой, сервисы не будут перезапущены."
+
+#. Type: string
+#. Description
+#: ../libssl0.9.8.templates:1001
+msgid ""
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
+msgstr ""
+"Надо перезапустить любой сервис, который после этого обновления неожиданно "
+"начнет вызывать ошибки. Рекомендуется перегрузить машину во избежание "
+"проблем, связанных с SSL."

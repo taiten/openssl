@@ -11,59 +11,57 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl_0.9.7c-5\n"
+"Project-Id-Version: openssl_0.9.8e-4\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2003-10-22 21:37+0200\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-04-22 11:25+0200\n"
 "Last-Translator: Michel Grentzinger <mic.grentz@online.fr>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-15\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
-msgstr "Services à redémarrer afin d'utiliser les nouvelles bibliothèques"
+msgid "Services to restart to make them use the new libraries:"
+msgstr "Services Ã  redÃ©marrer afin d'utiliser les nouvelles bibliothÃ¨quesÂ :"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"Des failles de sécurité on été corrigées dans cette version. Les services ne "
-"devraient pas utiliser ces correctifs tant qu'ils n'auront pas été "
-"redémarrés. Note : le redémarrage de sshd n'affectera aucune connexion "
-"existante."
+"Cette version d'OpenSSL corrige certaines failles de sÃ©curitÃ©. Les services "
+"n'utiliseront pas ces correctifs tant qu'ils n'auront pas Ã©tÃ© redÃ©marrÃ©s. "
+"Veuillez noter que le redÃ©marrage du serveur SSH (sshd) n'affectera aucune "
+"connexion existante."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
-"La liste suivante recense tous les services devant être redémarrés. Veuillez "
-"corriger la liste si vous pensez qu'elle contient des erreurs. Les noms des "
-"services doivent être identiques aux noms des scripts présents dans /etc/"
-"init.d et doivent être séparés par des espaces. Si vous effacez la liste, "
-"aucun service ne sera redémarré."
+"Veuillez vÃ©rifier et corriger si nÃ©cessaire la liste des services devant "
+"Ãªtre redÃ©marrÃ©s. Les noms des services doivent Ãªtre identiques aux noms des "
+"scripts prÃ©sents dans /etc/init.d et doivent Ãªtre sÃ©parÃ©s par des espaces. "
+"Si la liste est vide, aucun service ne sera redÃ©marrÃ©."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
-"Si d'autres services ne fonctionnent plus correctement après cette mise à "
-"jour, il est sans doute nécessaire de les redémarrer de la même façon. Il "
-"est fortement recommandé de redémarrer votre machine pour éviter les "
-"problèmes liés à SSL."
+"Si d'autres services ne fonctionnent plus correctement aprÃ¨s cette mise Ã  "
+"jour, ils devront Ãªtre redÃ©marrÃ©s. Il est fortement recommandÃ© de redÃ©marrer "
+"le systÃ¨me pour Ã©viter les problÃ¨mes liÃ©s Ã  SSL."
