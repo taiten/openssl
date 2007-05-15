@@ -1,3 +1,38 @@
+openssl (0.9.8e-5) unstable; urgency=low
+
+  [ Christian Perrier ]
+  * Debconf templates proofread and slightly rewritten by
+    the debian-l10n-english team as part of the Smith Review Project.
+    Closes: #418584
+  * Debconf templates translations:
+    - Arabic. Closes: #418669
+    - Russian. Closes: #418670
+    - Galician. Closes: #418671
+    - Swedish. Closes: #418679
+    - Korean. Closes: #418755
+    - Czech. Closes: #418768
+    - Basque. Closes: #418784
+    - German. Closes: #418785
+    - Traditional Chinese. Closes: #419915
+    - Brazilian Portuguese. Closes: #419959
+    - French. Closes: #420429
+    - Italian. Closes: #420461
+    - Japanese. Closes: #420482
+    - Catalan. Closes: #420833
+    - Dutch. Closes: #420925
+    - Malayalam. Closes: #420986
+    - Portuguese. Closes: #421032
+    - Romanian. Closes: #421708
+
+  [ Kurt Roeckx ]
+  * Remove the Provides for the udeb. Patch from Frans Pop. (Closes: #419608)
+  * Updated Spanish debconf template.  (Closes: #421336)
+  * Do the header changes, changing those defines into real functions,
+    and bump the shlibs to match.
+  * Update Japanese debconf translation.  (Closes: #422270)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 15 May 2007 17:21:08 +0000
+
 openssl (0.9.8e-4) unstable; urgency=low
 
   * openssl should depend on libssl0.9.8 0.9.8e-1 since it 

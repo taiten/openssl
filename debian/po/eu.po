@@ -1,26 +1,29 @@
-# SOME DESCRIPTIVE TITLE.
+# translation of openssl-eu.po to librezale
+# Openssl debconf template basque translation
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
+# Piarres Beobide <pi@beobide.net>, 2007.
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: openssl-eu\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
 "POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2007-04-11 22:56+0200\n"
+"Last-Translator: Piarres Beobide <pi@beobide.net>\n"
+"Language-Team: librezale <librezale@librezale.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: KBabel 1.11.4\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid "Services to restart to make them use the new libraries:"
 msgstr ""
+"Liburutegi berriak erabili ditzaten berrabiarazi behar diren zerbitzuak:"
 
 #. Type: string
 #. Description
@@ -30,6 +33,9 @@ msgid ""
 "these fixes until they are restarted. Please note that restarting the SSH "
 "server (sshd) should not affect any existing connections."
 msgstr ""
+"OpenSSL bertsio honek zenbait segurtasun arazo konpontzen ditu. Zerbitzuak "
+"ez dituzte konponketa hauek erabiliko berrabiarazi arte. Kontutan izan SSH "
+"zerbitzua berrabiarazteak ez dituela sorturik dauden konexioei eragingo."
 
 #. Type: string
 #. Description
@@ -40,6 +46,10 @@ msgid ""
 "initialization script names in /etc/init.d and separated by spaces. No "
 "services will be restarted if the list is empty."
 msgstr ""
+"Mesedez egiaztatu antzemandako berrabiarazi beharra dute zerbitzuen zerrenda "
+"eta zuzendu behar izanez gero. Zerbitzu izenak /etc/init.d-eko abiarazte "
+"Script-en berdinak izan behar dira. Zerrenda hutsik utziaz ez da zerbitzurik "
+"berrabiaraziko."
 
 #. Type: string
 #. Description
@@ -49,3 +59,6 @@ msgid ""
 "restarted. It is recommended to reboot this host to avoid any SSL-related "
 "trouble."
 msgstr ""
+"Bertsio berritze honen ondoren esperogabe huts egiten duen edozein zerbitzu "
+"berrabiarazi egin beharko zenuke. Ostalari osoa berrabiaraztea gomendatzen "
+"da SSL inguruko arazoak saihesteko."

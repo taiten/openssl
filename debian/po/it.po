@@ -1,60 +1,62 @@
 # openssl po-debconf translation to Italian (it)
 # Copyright (C) 2006 Software in the Public Interest
 # This file is distributed under the same license as the openssl package.
-# Luca Monducci <luca.mo@tiscali.it>, 2006.
+# Luca Monducci <luca.mo@tiscali.it>, 2006, 2007.
+# Giuseppe Sacco <eppesuig@debian.org>, 2007
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl 0.9.8a italian debconf templates\n"
+"Project-Id-Version: openssl 0.9.8e italian debconf templates\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2006-01-26 20:57+0100\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-04-22 11:47+0200\n"
 "Last-Translator: Luca Monducci <luca.mo@tiscali.it>\n"
-"Language-Team: Italian <tp@lists.linux.it>\n"
+"Language-Team: Italian <debian-l10n-italian@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
-msgstr "Servizi da riavviare per fare in modo che utilizzino le nuove librerie"
+msgid "Services to restart to make them use the new libraries:"
+msgstr "Servizi da riavviare per l'uso delle nuove librerie:"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"In questa release sono stati corretti dei problemi di sicureza. I servizi "
-"che non utilizzano queste correzioni se non sono riavviati. Nota: il riavvio "
-"di sshd non influenza nessuna delle connessioni esistenti."
+"Questo rilascio di OpenSSL corregge alcuni problemi legati alla sicurezza, "
+"ma i servizi non utilizzeranno queste correzioni finché non verranno "
+"riavviati. Notare che il riavvio del server SSH (sshd) non ha effetti sulle "
+"connessioni attive."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
-"Segue un elenco dei servizi che devono essere riavviati, se nell'elenco si "
-"riscontrano degli errori si devono correggere. I nomi dei servizi devono "
-"essere identiti ai nomi degli script in /etc/init.d e devono essere separati "
-"con degli spazi. Se l'elenco � vuoto non verr� riaviato nessun servizio."
+"Controllare ed eventualmente correggere l'elenco dei servizi che devono "
+"essere riavviati. Il nome dei servizi, separati da spazi, devono essere gli "
+"stessi degli script di inizializzazione che si trovano in /etc/init.d. Se "
+"l'elenco è vuoto non verrà riavviato nessun servizio."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
-"Se dopo questo aggiornamento si risconstrano dei problemi con altri servizi "
-"potrebbe essere necessario riavviarli. Si raccomanda di riavviare la "
-"macchina per evitare qualsiasi problema legato a SSL."
+"Qualsiasi servizio che si bloccasse in maniera imprevista dopo questo "
+"aggiornamento dovrà essere riavviato. Si consiglia di riavviare la macchina "
+"per evitare qualsiasi problema legato a SSL."

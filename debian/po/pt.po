@@ -7,54 +7,55 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openssl\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2007-01-23 20:06+0000\n"
-"Last-Translator: Carlos Lisboa <carloslisboa@gmail.com>nLanguage-Team: "
-"Portuguese <traduz@debianpt.org>nMIME-Version: 1.0nContent-Type: text/plain; "
-"charset=UTF-8\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-04-25 23:55+0100\n"
+"Last-Translator: Carlos Lisboa <carloslisboa@gmail.com>\n"
+"Language-Team: Portuguese <traduz@debianpt.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
-msgstr "Que serviços devem ser reiniciados para que usem as novas bibliotecas?"
+msgid "Services to restart to make them use the new libraries:"
+msgstr "Serviços a reiniciar para que usem as novas bibliotecas:"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"Foram resolvidos problemas de segurança nesta versão. Mas os serviços podem "
-"não usar as correcções até que sejam reiniciados. Nota: reiniciar o sshd não "
-"deve afectar quaisquer ligações existentes."
+"Este lançamento do OpenSSL resolve alguns problemas de segurança. Os "
+"serviços podem não usar as correcções até que sejam reiniciados. Note que "
+"reiniciar o servidor SSH (sshd) não deve afectar quaisquer ligações "
+"existentes."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
-"A seguir tem uma lista dos serviços detectados que necessitam de ser "
-"reiniciados. Se acha que está incorrecta, por favor corrija a lista. Os "
-"nomes dos serviços devem ser idênticos aos nomes dos 'scripts' em /etc/init."
-"d e devem ser separados por espaços. Se limpar esta lista, nenhum dos "
-"serviços será reiniciado."
+"Por favor verifique a lista de serviços detectados que necessitam de ser "
+"reiniciados e corrija-a, se necessário. Os nomes dos serviços devem ser "
+"idênticos aos nomes dos scripts de inicialização em /etc/init.d e separados "
+"por espaços. Nennhum serviço será reiniciado se a lista estiver vazia."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
-"Se outro serviço começar a falhar misteriosamente após esta actualização, "
-"pode ser necessário reiniciá-lo também. Recomendamos que reinicie a sua "
-"máquina para evitar problemas relacionados com o SSL."
+"Qualquer serviço que mais tarde falha de forma inesperada após esta "
+"actualização deverá ser reiniciado. É recomendado que reinicie este "
+"computador para evitar qualquer problema relacionado como SSL."

@@ -3,69 +3,69 @@
 #    this format, e.g. by running:
 #         info -n '(gettext)PO Files'
 #         info -n '(gettext)Header Entry'
-# 
+#
 #    Some information specific to po-debconf are available at
 #            /usr/share/doc/po-debconf/README-trans
 #         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-# 
+#
 #    Developers do not need to manually edit POT or PO files.
-# 
+#
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl 0.9.7d-5\n"
+"Project-Id-Version: openssl \n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
-"PO-Revision-Date: 2004-08-01 18:31+0100\n"
-"Last-Translator: Luk Claes <luk.claes@ugent.be>\n"
-"Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"PO-Revision-Date: 2007-04-12 17:23+0100\n"
+"Last-Translator: Bart Cornelis <cobaco@skolelinux.no>\n"
+"Language-Team: debian-l10n-dutch <debian-l10n-dutch@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: Dutch\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
+msgid "Services to restart to make them use the new libraries:"
 msgstr ""
-"Welke diensten moeten herstart worden om ze de nieuwe bibliotheken te laten "
-"gebruiken?"
+"Welke diensten moeten herstart worden (zodat ze de nieuwe bibliotheken "
+"gebruiken)?"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
-"Er zijn veiligheidslekken gedicht in deze release. Diensten gebruiken deze "
-"versie misschien niet totdat ze herstart zijn. Merk op: sshd herstarten zou "
-"geen effect mogen hebben op bestaande verbindingen."
+"Deze uitgave van OpenSSL dicht een aantal veiligheidslekken. Andere "
+"achtergronddiensten maken pas gebruik van de nieuwe versie eens ze herstart "
+"zijn. Herstarten van de SSH-server (sshd) heeft normaal geen gevolgen voor "
+"bestande verbindingen."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
 "Hierna volgt een lijst van gedetecteerde diensten die herstart moeten "
 "worden. Verbeter de lijst, als u denkt dat ze incorrect is. De namen moeten "
 "overeenkomen met de script-namen in /etc/init.d en moeten gescheiden worden "
-"door spaties. Als u de lijst ledigt, dan zullen er geen diensten worden "
-"herstart."
+"door spaties. Als de lijst leeg is worden er geen diensten herstart."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
 "Als er andere diensten mysterieus beginnen te falen na deze opwaardering, "
-"kan het nodig zijn om ze ook te herstarten. Er wordt u ten zeerste "
-"aanbevolen uw machine te herstarten om SSL-gerelateerde problemen te "
-"vermijden."
+"dient u deze te herstarten. Er wordt u ten zeerste aanbevolen uw machine te "
+"herstarten om SSL-gerelateerde problemen te vermijden."

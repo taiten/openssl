@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: openssl 0.9.7g-1\n"
 "Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-02-23 20:01+0000\n"
+"POT-Creation-Date: 2007-04-11 08:25+0200\n"
 "PO-Revision-Date: 2005-07-03 12:49+0930\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
@@ -19,16 +19,18 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-msgid "Which services should be restarted to make them use the new libraries?"
+#, fuzzy
+msgid "Services to restart to make them use the new libraries:"
 msgstr "Để dùng những thư viên mới, cần phải khởi chạy lại dịch vụ nào?"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
+#, fuzzy
 msgid ""
-"Security holes were fixed with this release. Services may not use these "
-"fixes until they are restarted. Note: restarting sshd should not affect any "
-"existing connections."
+"This release of OpenSSL fixes some security issues. Services will not use "
+"these fixes until they are restarted. Please note that restarting the SSH "
+"server (sshd) should not affect any existing connections."
 msgstr ""
 "Phiên bản phát hành này đã sửa một số lỗ hổng bảo mật rồi. Dịch vụ sẽ dùng "
 "mã đã sửa chỉ sau khi khởi chạy lại thôi. Ghi chú: khởi chạy lại sshd nên "
@@ -37,11 +39,12 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
+#, fuzzy
 msgid ""
-"Following is a list of detected services that need to be restarted. Please "
-"correct the list, if you think it is incorrect. The services names must be "
-"identical to the script names in /etc/init.d and must be separated by "
-"spaces. If you clear the list, no services will be restarted."
+"Please check the list of detected services that need to be restarted and "
+"correct it, if needed. The services names must be identical to the "
+"initialization script names in /etc/init.d and separated by spaces. No "
+"services will be restarted if the list is empty."
 msgstr ""
 "Theo đây có một danh sách dịch vụ đã phát hiện mà cần phải khởi chạy lại. "
 "Bạn hãy sửa danh sách nếu chưa đúng. Tên dịch vụ phải là cùng một tên với "
@@ -51,10 +54,11 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
+#, fuzzy
 msgid ""
-"If other services begin to fail mysteriously after this upgrade, it may be "
-"necessary to restart them too.  We strongly recommend you to reboot your "
-"machine to avoid the SSL related trouble."
+"Any service that later fails unexpectedly after this upgrade should be "
+"restarted. It is recommended to reboot this host to avoid any SSL-related "
+"trouble."
 msgstr ""
 "Nếu dịch vụ khác mới bị lỗi một cách lạ sau việc nâng cấp này, có lẽ bạn "
 "cũng cần phải khởi chạy lại chúng. Khuyến khích nặng bạn khởi động máy này "
