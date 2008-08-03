@@ -91,6 +91,7 @@ case $i in
 			   -out ${CATOP}/$CAREQ
 	    $CA -out ${CATOP}/$CACERT $CADAYS -batch \
 			   -keyfile ${CATOP}/private/$CAKEY -selfsign \
+			   -extensions v3_ca \
 			   -infiles ${CATOP}/$CAREQ 
 	    RET=$?
 	fi

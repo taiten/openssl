@@ -1,13 +1,13 @@
 # Galician translation of openssl's debconf templates.
 # This file is distributed under the same license as the openssl package.
-# Jacobo Tarrio <jtarrio@debian.org>, 2006, 2007.
+# Jacobo Tarrio <jtarrio@debian.org>, 2006, 2007, 2008.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2007-04-11 09:08+0200\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
+"PO-Revision-Date: 2008-05-13 00:08+0100\n"
 "Last-Translator: Jacobo Tarrio <jtarrio@debian.org>\n"
 "Language-Team: Galician <proxecto@trasno.net>\n"
 "MIME-Version: 1.0\n"
@@ -58,3 +58,31 @@ msgstr ""
 "Tamén se debería reiniciar calquera servizo que falle de xeito inesperado "
 "trala actualización. Recoméndase reiniciar esta máquina para evitar "
 "experimentar problemas relacionados con SSL."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr "Problemas ao reiniciar algúns servizos para a actualización de OpenSSL"
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+"Non se puido reiniciar os seguintes servizos para a actualización da "
+"biblioteca OpenSSL:"
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr ""
+"Ha ter que reinicialos manualmente executando \"/etc/init.d/<servizo> start"
+"\"."

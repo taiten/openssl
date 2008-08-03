@@ -4,7 +4,9 @@ Section: utils
 Priority: optional
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
 Uploaders: Christoph Martin <christoph.martin@uni-mainz.de>, Kurt Roeckx <kurt@roeckx.be>
-Standards-Version: 3.7.0
+Standards-Version: 3.8.0
+Vcs-Browser: http://svn.debian.org/wsvn/pkg-openssl/openssl
+Vcs-Svn: svn://svn.debian.org/pkg-openssl/openssl/
 
 Package: openssl
 Priority: optional
@@ -52,7 +54,7 @@ Package: libssl-dev
 Section: libdevel
 Priority: optional
 Architecture: any
-Depends: libssl0.9.8 (= ${Source-Version}), zlib1g-dev
+Depends: libssl0.9.8 (= ${binary:Version}), zlib1g-dev
 Conflicts: ssleay (<< 0.9.2b), libssl08-dev, libssl09-dev, libssl095a-dev, libssl096-dev
 Description: SSL development libraries, header files and documentation
  libssl and libcrypto development libraries, header files and manpages.
@@ -63,6 +65,6 @@ Package: libssl0.9.8-dbg
 Section: libdevel
 Priority: extra
 Architecture: any
-Depends: libssl0.9.8 (= ${Source-Version})
+Depends: libssl0.9.8 (= ${binary:Version})
 Description: Symbol tables for libssl and libcrypto
  This package is part of the OpenSSL implementation of SSL.

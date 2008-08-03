@@ -57,7 +57,9 @@ filerc() {
 if [ "$1" = "configure" ]
 then
     if [ ! -z "$2" ]; then
-	if dpkg --compare-versions "$2" lt 0.9.8c-2; then
+	if dpkg --compare-versions "$2" lt 0.9.8g-9; then
+	    db_version 2.0
+
 	    echo -n "Checking for services that may need to be restarted..."
 
 	    check="sendmail openssh-server"
@@ -66,12 +68,14 @@ then
 	    check="$check courier-imap-ssl courier-mta-ssl courier-pop-ssl"
 	    check="$check postfix cyrus21-imapd cyrus21-pop3d"
 	    check="$check postgresql-7.4 postgresql-8.0 postgresql-8.1"
+	    check="$check postgresql-8.2"
 	    check="$check racoon dovecot-common bind9"
 	    check="$check ntp openntpd clamcour nagios-nrpe-server"
 	    check="$check clamav-freshclam clamav-daemon"
 	    check="$check fetchmail ftpd-ssl slapd"
 	    check="$check proftpd proftpd-ldap proftpd-mysql proftpd-pgsql"
 	    check="$check partimage-server conserver-server tor"
+	    check="$check stunnel4"
 	    # Only get the ones that are installed, and configured
 	    check=$(dpkg -s $check 2> /dev/null | egrep '^Package:|^Status:' | awk '{if ($1 ~ /^Package:/) { package=$2 } else if ($0 ~ /^Status: .* installed$/) { print package }}')
 	    # apache2 ships its init script in apache2-common, but the
@@ -111,15 +115,11 @@ then
 		fi
 	    done
 	    if [ -n "$services" ]; then
-		db_version 2.0
-
 		db_reset libssl0.9.8/restart-services
 		db_set libssl0.9.8/restart-services "$services"
 		db_input critical libssl0.9.8/restart-services || true
 		db_go || true
 		db_get libssl0.9.8/restart-services
-		# Arghhh, close all the stupid debconf pipes
-		db_stop
 		
 		if [ "x$RET" != "x" ]
 		then
@@ -142,25 +142,15 @@ then
 			    idl=$(ls /etc/rc${rl}.d/S??${service} 2> /dev/null | head -n 1)
 			fi
 
-			echo -n "  $service: stopping..."
-			$idl stop > /dev/null 2>&1 || true
-			sleep 1
-			echo -n "starting..."
-			if $idl start > /dev/null 2>&1; then
-			    echo "done."
-			else
-			    echo "FAILED! ($?)"
+			if ! $idl restart; then
 			    failed="$service $failed"
 			fi
 		    done
 		    echo
 		    if [ -n "$failed" ]; then
-			# Ruh roh, George
-			echo "The following services failed to start: $failed"
-			echo
-			echo "You will need to start these manually by running \`/etc/init.d/<service> start'"
-			echo "If the service still fails to start, you may need to file a bug on"
-			echo "$(package_name) or the service involved."
+			db_subst libssl0.9.8/restart-failed services "$failed"
+			db_input critical libssl0.9.8/restart-failed || true
+			db_go || true
 		    else
 			echo "Services restarted successfully."
 		    fi
@@ -169,6 +159,9 @@ then
 	    else
 		echo "Nothing to restart."
 	    fi
+	    # Shut down the frontend, to make sure none of the
+	    # restarted services keep a connection open to it
+	    db_stop
 	fi # end upgrading and $2 lt 0.9.8c-2
     fi # Upgrading
 fi

@@ -271,10 +271,7 @@ static void ssleay_rand_add(const void *buf, int num, double add)
 		else
 			MD_Update(&m,&(state[st_idx]),j);
 			
-/*		
- * Don't add uninitialised data.
 		MD_Update(&m,buf,j);
-*/
 		MD_Update(&m,(unsigned char *)&(md_c[0]),sizeof(md_c));
 		MD_Final(&m,local_md);
 		md_c[1]++;
