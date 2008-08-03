@@ -1,65 +1,84 @@
 # Vietnamese translation for openssl.
-# Copyright © 2005 Free Software Foundation, Inc.
-# Clytie Siddall <clytie@riverland.net.au>, 2005.
+# Copyright © 2007 Free Software Foundation, Inc.
+# Clytie Siddall <clytie@riverland.net.au>, 2005-2007.
 # 
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl 0.9.7g-1\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2005-07-03 12:49+0930\n"
+"Project-Id-Version: openssl_0.9.8e-5\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
+"PO-Revision-Date: 2007-06-01 16:14+0930\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
-"Language-Team: Vietnamese <gnomevi-list@lists.sourceforge.net>\n"
+"Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0\n"
-"X-Generator: LocFactoryEditor 1.2.2\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: LocFactoryEditor 1.6.3b1\n"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-#, fuzzy
 msgid "Services to restart to make them use the new libraries:"
-msgstr "Để dùng những thư viên mới, cần phải khởi chạy lại dịch vụ nào?"
+msgstr "Dịch vụ cần khởi chạy lại để sử dụng thư viện mới:"
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-#, fuzzy
 msgid ""
 "This release of OpenSSL fixes some security issues. Services will not use "
 "these fixes until they are restarted. Please note that restarting the SSH "
 "server (sshd) should not affect any existing connections."
 msgstr ""
-"Phiên bản phát hành này đã sửa một số lỗ hổng bảo mật rồi. Dịch vụ sẽ dùng "
-"mã đã sửa chỉ sau khi khởi chạy lại thôi. Ghi chú: khởi chạy lại sshd nên "
-"không làm ảnh hưởng đến sự kết nối hiện thời nào."
+"Phiên bản OpenSSL này sửa chữa một số vấn đề bảo mật. Dịch vụ sẽ chỉ sử dụng "
+"những sự sửa này sau khi khởi chạy lại. Ghi chú rằng việc khởi chạy lại "
+"trình phục vụ SSH (sshd) không nên có tác động kết nối tồn tại nào."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-#, fuzzy
 msgid ""
 "Please check the list of detected services that need to be restarted and "
 "correct it, if needed. The services names must be identical to the "
 "initialization script names in /etc/init.d and separated by spaces. No "
 "services will be restarted if the list is empty."
 msgstr ""
-"Theo đây có một danh sách dịch vụ đã phát hiện mà cần phải khởi chạy lại. "
-"Bạn hãy sửa danh sách nếu chưa đúng. Tên dịch vụ phải là cùng một tên với "
-"tên tập lệnh trong «/etc/init.d», những tên định giới bằng dấu cách. Nếu bạn "
-"xóa hết danh sách thì sẽ không khởi chạy lại dịch vụ nào."
+"Hãy kiểm tra danh sách các dịch vụ đã phát hiện cần khởi chạy lại, và sửa "
+"chữa nếu cần thiết.  Tên mỗi dịch vụ phải trùng với tên văn lệnh khởi động "
+"trong « /etc/init.d », các tên dịch vụ định giới bằng dấu cách. Bỏ rỗng thì "
+"không khời chạy dịch vụ nào."
 
 #. Type: string
 #. Description
 #: ../libssl0.9.8.templates:1001
-#, fuzzy
 msgid ""
 "Any service that later fails unexpectedly after this upgrade should be "
 "restarted. It is recommended to reboot this host to avoid any SSL-related "
 "trouble."
 msgstr ""
-"Nếu dịch vụ khác mới bị lỗi một cách lạ sau việc nâng cấp này, có lẽ bạn "
-"cũng cần phải khởi chạy lại chúng. Khuyến khích nặng bạn khởi động máy này "
-"để tránh lỗi liên quan đến SSL."
+"Dịch vụ nào bị lỗi bất thường sau khi nâng cấp nên được khởi chạy lại. "
+"Khuyên bạn khởi động máy này để tránh vấn đề liên quan đến SSL."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr ""
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr ""

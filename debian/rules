@@ -9,7 +9,6 @@
 #
 # Modified to be a prototype for debmake by Christoph Lameter <clameter@debian.org>
 SHELL=/bin/bash
-export DH_COMPAT=3
 
 package=openssl
 
@@ -19,7 +18,7 @@ export VERSION=$(shell dpkg-parsechangelog | grep '^Version:' | sed -e 's/^.*://
 # The binary architeture
 DEB_HOST_ARCH = $(shell dpkg-architecture -qDEB_HOST_ARCH)
 
-CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib
+CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib  enable-tlsext
 OPT_alpha = ev4 ev5
 OPT_i386  = i486 i586 i686/cmov
 OPT_sparc = v8 v9
@@ -66,7 +65,7 @@ clean:
 	-rm -f build
 	-perl util/perlpath.pl /usr/bin
 	-./Configure $(CONFARGS) debian-$(DEB_HOST_ARCH)
-	-make -f Makefile  clean clean-shared
+	[ ! -f Makefile ] || make -f Makefile  clean clean-shared
 	#-make -f Makefile  dclean
 	-perl util/perlpath.pl /usr/local/bin/perl
 #	perl util/ssldir.pl /usr/local/ssl
@@ -80,7 +79,7 @@ clean:
 	-rm -rf core $(OPTS)
 	-rm doc/*.pod
 	-rm -f libcrypto.* libssl.*
-	-cd test && rm -f .rnd tmp.bntest tmp.bctest *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff bntest ectest  ecdsatest ecdhtest ideatest md2test  md4test md5test hmactest rc2test rc4test rc5test destest shatest sha1test sha256t sha512t mdc2test rmdtest randtest dhtest enginetest bftest casttest ssltest exptest dsatest rsa_test evp_test *.ss *.srl log dummytest newkey.pem
+	-cd test && rm -f .rnd tmp.bntest tmp.bctest *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff bntest ectest  ecdsatest ecdhtest ideatest md2test  md4test md5test hmactest rc2test rc4test rc5test destest shatest sha1test sha256t sha512t mdc2test rmdtest randtest dhtest enginetest bftest casttest ssltest exptest dsatest rsa_test evp_test *.ss *.srl log dummytest newkey.pem igetest
 	dh_clean
 
 binary-indep:	build
@@ -156,7 +155,7 @@ binary-arch:	build
 	dh_strip --dbg-package=libssl0.9.8
 	dh_perl -d
 #	dh_suidregister
-	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8e-1)" --add-udeb="libcrypto0.9.8-udeb"
+	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8f-5)" --add-udeb="libcrypto0.9.8-udeb"
 	dh_shlibdeps -L libssl0.9.8 -l debian/libssl0.9.8/usr/lib
 	dh_gencontrol
 	dh_installdeb

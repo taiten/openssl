@@ -8,10 +8,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl_0.9.8e-4\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2007-04-24 23:14+0200\n"
+"Project-Id-Version: openssl_0.9.8g-3\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
+"PO-Revision-Date: 2007-11-24 16:43+0100\n"
 "Last-Translator: Jordà Polo <jorda@ettin.org>\n"
 "Language-Team: Català <debian-l10n-catalan@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -62,3 +62,36 @@ msgstr ""
 "Si després de l'actualització fallen altres serveis de forma inesperada, és "
 "possible que també calgui tornar a iniciar-los. Si els problemes relacionats "
 "amb SSL persisteixen, podeu reiniciar l'ordinador."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr ""
+"S'ha trobat un error mentre es reiniciaven alguns serveis per "
+"l'actualització de l'OpenSSL"
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+"No s'han pogut reiniciar els següents serveis per l'actualització de la "
+"biblioteca OpenSSL:"
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr ""
+"Aquests els haureu d'iniciar manualment executant «/etc/init.d/<servei> "
+"start»."
+
+#~ msgid "${services}"
+#~ msgstr "${services}"

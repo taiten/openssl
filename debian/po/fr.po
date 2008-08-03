@@ -12,9 +12,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl_0.9.8e-4\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2007-04-22 11:25+0200\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
+"PO-Revision-Date: 2007-11-11 18:47+0100\n"
 "Last-Translator: Michel Grentzinger <mic.grentz@online.fr>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -65,3 +65,35 @@ msgstr ""
 "Si d'autres services ne fonctionnent plus correctement après cette mise à "
 "jour, ils devront être redémarrés. Il est fortement recommandé de redémarrer "
 "le système pour éviter les problèmes liés à SSL."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr ""
+"Impossible de redémarrer certains services lors de la mise à jour d'OpenSSL"
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+"Les services suivants ne peuvent pas être redémarrés lors de la mise à jour "
+"de la bibliothèque OpenSSL :"
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr ""
+"Vous devrez les redémarrer vous-même avec la commande « /etc/init.d/"
+"<service> start »."
+
+#~ msgid "${services}"
+#~ msgstr "${services}"

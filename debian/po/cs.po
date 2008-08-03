@@ -14,9 +14,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2007-04-11 18:40+0200\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
+"PO-Revision-Date: 2008-05-12 19:14+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -66,3 +66,28 @@ msgstr ""
 "Jestliže po této aktualizaci začnou neočekávaně selhávat některé služby, "
 "měli byste je taktéž restartovat. Abyste se vyhnuli problémům spojeným se "
 "SSL, doporučujeme restartovat celý počítač."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr "Chyba při restartu některých služeb po aktualizaci OpenSSL"
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+"Následující služby se nepodařilo po aktualizaci knihovny OpenSSL restartovat:"
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr "Budete je muset spustit ručně příkazem „/etc/init.d/<služba> start“."

@@ -7,8 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: openssl 20070415\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
 "PO-Revision-Date: 2007-04-14 07:15+0530\n"
 "Last-Translator: Praveen|പ്രവീണ്‍ A|എ <pravi.a@gmail.com>\n"
 "Language-Team: Swathanthra|സ്വതന്ത്ര Malayalam|മലയാളം Computing|കമ്പ്യൂട്ടിങ്ങ്  <smc-"
@@ -60,3 +60,27 @@ msgstr ""
 "ഈ പുതുക്കലിന് ശേഷം പിന്നീട് അപ്രതീക്ഷിതമായി മുടങ്ങുന്ന ഏതൊരു സേവനങ്ങളേയും "
 "പുനരാരംഭിയ്ക്കേണ്ടതുണ്ട്. SSL ലുമായി ബന്ധപ്പെട്ട പ്രശ്നം ഒഴിവാക്കാന്‍ ഈ ഹോസ്റ്റിനെ "
 "പുനരാരംഭിയ്ക്കാന്‍ ശുപാര്‍ശ ചെയ്തിരിയ്ക്കുന്നു."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr ""
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr ""

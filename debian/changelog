@@ -1,3 +1,196 @@
+openssl (0.9.8g-13) unstable; urgency=low
+
+  * Fix a problem with tlsext preventing firefox 3 from connection.
+    Patch from upstream CVS and part of 0.9.8h.
+    (Closes: #492758)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 03 Aug 2008 19:47:10 +0200
+
+openssl (0.9.8g-12) unstable; urgency=low
+
+  * add the changelog of the 10.1 NMU to make bugtracking happy
+
+ -- Christoph Martin <Christoph.Martin@Uni-Mainz.DE>  Tue, 22 Jul 2008 14:58:26 +0200
+
+openssl (0.9.8g-11) unstable; urgency=low
+
+  [ Christoph Martin ]
+  * updated cs, gl, sv, ru, ro debconf translation (closes: #480926, #480967,
+    #482465, #484324, #488595)
+  * add Vcs-Svn header (closes: #481654)
+  * fix debian-kfreebsd-i386 build flags (closes: #482275)
+  * add stunnel4 to restart list (closes: #482111)
+  * include fixes from 10.1 NMU by Security team
+    - Fix double free in TLS server name extension which leads to a remote
+      denial of service (CVE-2008-0891; Closes: #483379).
+    - Fix denial of service if the 'Server Key exchange message'
+      is omitted from a TLS handshake which could lead to a client
+      crash (CVE-2008-1672; Closes: #483379).
+      This only works if openssl is compiled with enable-tlsext which is
+      done in Debian.
+  * fix some lintian warnings
+  * update to newest standards version
+
+ -- Christoph Martin <Christoph.Martin@Uni-Mainz.DE>  Thu, 17 Jul 2008 09:53:01 +0200
+
+openssl (0.9.8g-10.1) unstable; urgency=high
+ 
+  * Non-maintainer upload by the Security team.
+  * Fix denial of service if the 'Server Key exchange message'
+    is omitted from a TLS handshake which could lead to a client
+    crash (CVE-2008-1672; Closes: #483379).
+    This only works if openssl is compiled with enable-tlsext which is
+    done in Debian.
+  * Fix double free in TLS server name extension which leads to a remote
+    denial of service (CVE-2008-0891; Closes: #483379).
+ 
+ -- Nico Golde <nion@debian.org>  Tue, 27 May 2008 11:13:44 +0200
+
+openssl (0.9.8g-10) unstable; urgency=low
+
+  * undefine HZ so that the code falls back to sysconf(_SC_CLK_TCK)
+    to fix a build failure on alpha.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 08 May 2008 17:56:13 +0000
+
+openssl (0.9.8g-9) unstable; urgency=high
+
+  [ Christoph Martin ]
+  * Include updated debconf translations (closes: #473477, #461597,
+    #461880, #462011, #465517, #475439)
+
+  [ Kurt Roeckx ]
+  * ssleay_rand_add() really needs to call MD_Update() for buf.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 07 May 2008 20:32:12 +0200
+
+openssl (0.9.8g-8) unstable; urgency=high
+
+  * Don't add extentions to ssl v3 connections.  It breaks with some
+    other software.  (Closes: #471681)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 23 Mar 2008 17:50:04 +0000
+
+openssl (0.9.8g-7) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 13 Feb 2008 22:22:29 +0000
+
+openssl (0.9.8g-6) experimental; urgency=low
+
+  * Bump shlibs.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 09 Feb 2008 15:42:22 +0100
+
+openssl (0.9.8g-5) experimental; urgency=low
+
+  * Enable tlsext.  This changes the ABI, but should hopefully
+    not cause any problems. (Closes: #462596)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 09 Feb 2008 13:32:49 +0100
+
+openssl (0.9.8g-4) unstable; urgency=low
+
+  * Fix aes ige test speed not to overwrite it's buffer and
+    cause segfauls.  Thanks to Tim Hudson (Closes: #459619)
+  * Mark some strings in the templates as non translatable.
+    Patch from Christian Perrier <bubulle@debian.org> (Closes: #450418)
+  * Update Dutch debconf translation (Closes: #451290)
+  * Update French debconf translation (Closes: #451375)
+  * Update Catalan debconf translation (Closes: #452694)
+  * Update Basque debconf translation (Closes: #457285)
+  * Update Finnish debconf translation (Closes: #458261)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 16 Jan 2008 21:49:43 +0100
+
+openssl (0.9.8g-3) unstable; urgency=low
+
+  * aes-586.pl: push %ebx on the stack before we put some things on the
+    stack and call a function, giving AES_decrypt() wrong values to work
+    with.  (Closes: #449200)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 04 Nov 2007 21:49:00 +0100
+
+openssl (0.9.8g-2) unstable; urgency=low
+
+  * Avoid text relocations on i386 caused by the assembler versions:
+    - x86unix.pl: Create a function_begin_B_static to create a
+      static/local assembler function.
+    - aes-586.pl: Use the function_begin_B_static for _x86_AES_decrypt
+      so that it doesn't get exported and doesn't have any (text) relocations.
+    - aes-586.pl: Set up ebx to point to the GOT and call AES_set_encrypt_key
+      via the PLT to avoid a relocation.
+    - x86unix.pl: Call the init function via the PLT, avoiding a relocation
+      in case of a PIC object.
+    - cbc.pl: Call functions via the PLT.
+    - desboth.pl: Call DES_encrypt2 via the PLT.
+  * CA.sh should use the v3_ca extention when called with -newca
+    (Closes: #428051)
+  * Use -Wa,--noexecstack for all arches in Debian.  (Closes: #430583)
+  * Convert the failure message when services fail restart to a debconf
+    message.
+  * To restart a service, just restart, instead of stop and start.
+    Hopefully fixes #444946
+  * Also remove igetest from the test dir in the clean target.
+    (Closes: #424362)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 03 Nov 2007 13:25:45 +0100
+
+openssl (0.9.8g-1) unstable; urgency=low
+
+  * New upstream release
+    - Fixes version number not to say it's a development version.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 20 Oct 2007 12:47:10 +0200
+
+openssl (0.9.8f-1) unstable; urgency=low
+
+  * New upstream release
+    - Fixes DTLS issues, also fixes CVE-2007-4995 (Closes: #335703, #439737)
+    - Proper inclusion of opensslconf.h in pq_compat.h (Closes: #408686)
+    - New function SSL_set_SSL_CTX: bump shlibs.
+  * Remove build dependency on gcc > 4.2
+  * Remove the openssl preinst, it looks like a workaround
+    for a change in 0.9.2b where config files got moved.  (Closes: #445095)
+  * Update debconf translations:
+    - Vietnamese (Closes: #426988)
+    - Danish (Closes: #426774)
+    - Slovak (Closes: #440723)
+    - Finnish (Closes: #444258)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 13 Oct 2007 00:47:22 +0200
+
+openssl (0.9.8e-9) unstable; urgency=high
+
+  * CVE-2007-5135: Fix off by one error in SSL_get_shared_ciphers().
+    (Closes: #444435)
+  * Add postgresql-8.2 to the list of services to check.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Fri, 28 Sep 2007 19:47:33 +0200
+
+openssl (0.9.8e-8) unstable; urgency=low
+
+  * Fix another case of the "if this code is reached, the program will abort"
+    (Closes: #429740)
+  * Temporary force to build with gcc >= 4.2
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 02 Sep 2007 18:12:11 +0200
+
+openssl (0.9.8e-7) unstable; urgency=low
+
+  * Fix problems with gcc-4.2 (Closes: #429740)
+  * Stop using -Bsymbolic to create the shared library.
+  * Make x86_64cpuid.pl use PIC.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 02 Sep 2007 16:15:18 +0200
+
+openssl (0.9.8e-6) unstable; urgency=high
+
+  * Add fix for CVE-2007-3108 (Closes: #438142)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 15 Aug 2007 19:49:54 +0200
+
 openssl (0.9.8e-5) unstable; urgency=low
 
   [ Christian Perrier ]

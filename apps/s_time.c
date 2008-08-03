@@ -117,6 +117,7 @@
 
 /* The following if from times(3) man page.  It may need to be changed
 */
+#undef HZ
 #ifndef HZ
 # ifdef _SC_CLK_TCK
 #  define HZ ((double)sysconf(_SC_CLK_TCK))

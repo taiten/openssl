@@ -134,5 +134,9 @@ OPENSSL_ia32_cpuid:
 .size	OPENSSL_ia32_cpuid,.-OPENSSL_ia32_cpuid
 
 .section	.init
+#ifdef OPENSSL_PIC
+	call	OPENSSL_cpuid_setup\@PLT
+#else
 	call	OPENSSL_cpuid_setup
+#endif
 ___

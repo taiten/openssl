@@ -1,15 +1,15 @@
 # openssl po-debconf translation to Italian (it)
 # Copyright (C) 2006 Software in the Public Interest
 # This file is distributed under the same license as the openssl package.
-# Luca Monducci <luca.mo@tiscali.it>, 2006, 2007.
+# Luca Monducci <luca.mo@tiscali.it>, 2006-2008.
 # Giuseppe Sacco <eppesuig@debian.org>, 2007
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: openssl 0.9.8e italian debconf templates\n"
-"Report-Msgid-Bugs-To: pkg-openssl-devel@lists.alioth.debian.org\n"
-"POT-Creation-Date: 2007-04-11 08:25+0200\n"
-"PO-Revision-Date: 2007-04-22 11:47+0200\n"
+"Project-Id-Version: openssl 0.9.8g italian debconf templates\n"
+"Report-Msgid-Bugs-To: openssl@packages.debian.org\n"
+"POT-Creation-Date: 2008-01-16 21:40+0100\n"
+"PO-Revision-Date: 2008-01-19 21:17+0100\n"
 "Last-Translator: Luca Monducci <luca.mo@tiscali.it>\n"
 "Language-Team: Italian <debian-l10n-italian@lists.debian.org>\n"
 "MIME-Version: 1.0\n"
@@ -60,3 +60,31 @@ msgstr ""
 "Qualsiasi servizio che si bloccasse in maniera imprevista dopo questo "
 "aggiornamento dovrà essere riavviato. Si consiglia di riavviare la macchina "
 "per evitare qualsiasi problema legato a SSL."
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid "Failure restarting some services for OpenSSL upgrade"
+msgstr ""
+"Errore nel riavvio di alcuni servizi per l'aggiornamento di OpenSSL"
+
+#. Type: error
+#. Description
+#. This paragraph is followed by a (non translatable) paragraph containing
+#. a list of services that could not be restarted
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"The following services could not be restarted for the OpenSSL library "
+"upgrade:"
+msgstr ""
+"Non è stato possibile riavviare i seguenti servizi per l'aggiornamento "
+"di OpenSSL:"
+
+#. Type: error
+#. Description
+#: ../libssl0.9.8.templates:2001
+msgid ""
+"You will need to start these manually by running '/etc/init.d/<service> "
+"start'."
+msgstr ""
+"È necessario avviarli manualmente con \"/etc/init.d/<servizio> start\"."
