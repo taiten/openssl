@@ -57,7 +57,7 @@ filerc() {
 if [ "$1" = "configure" ]
 then
     if [ ! -z "$2" ]; then
-	if dpkg --compare-versions "$2" lt 0.9.8g-9; then
+	if dpkg --compare-versions "$2" lt 0.9.8g-9 && dpkg --compare-versions "$2" gt 0.9.8c-4etch3; then
 	    db_version 2.0
 
 	    echo -n "Checking for services that may need to be restarted..."
