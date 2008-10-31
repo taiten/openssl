@@ -1,3 +1,12 @@
+openssl (0.9.8g-14) unstable; urgency=low
+
+  * Don't give the warning about security updates when upgrading
+    from etch since it doesn't have any known security problems.
+  * Automaticly use engines that succesfully initialised.  Patch
+    from the 0.9.8h upstream version.  (Closes: #502177)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Fri, 31 Oct 2008 22:45:14 +0100
+
 openssl (0.9.8g-13) unstable; urgency=low
 
   * Fix a problem with tlsext preventing firefox 3 from connection.
