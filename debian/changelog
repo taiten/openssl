@@ -1,3 +1,13 @@
+openssl (0.9.8g-15) unstable; urgency=low
+
+  * Internal calls to didn't properly check for errors which
+    resulted in malformed DSA and ECDSA signatures being treated as
+    a good signature rather than as an error.  (CVE-2008-5077)
+  * ipv6_from_asc() could write 1 byte longer than the buffer in case
+    the ipv6 address didn't have "::" part.  (Closes: #506111)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 05 Jan 2009 21:14:31 +0100
+
 openssl (0.9.8g-14) unstable; urgency=low
 
   * Don't give the warning about security updates when upgrading
