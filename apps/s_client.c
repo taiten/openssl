@@ -134,6 +134,7 @@ typedef unsigned int u_int;
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rand.h>
+#include <openssl/ocsp.h>
 #include "s_apps.h"
 #include "timeouts.h"
 
@@ -173,12 +174,16 @@ static int c_Pause=0;
 static int c_debug=0;
 #ifndef OPENSSL_NO_TLSEXT
 static int c_tlsextdebug=0;
+static int c_status_req=0;
 #endif
 static int c_msg=0;
 static int c_showcerts=0;
 
 static void sc_usage(void);
 static void print_stuff(BIO *berr,SSL *con,int full);
+#ifndef OPENSSL_NO_TLSEXT
+static int ocsp_resp_cb(SSL *s, void *arg);
+#endif
 static BIO *bio_c_out=NULL;
 static int c_quiet=0;
 static int c_ign_eof=0;
@@ -216,6 +221,7 @@ static void sc_usage(void)
 	BIO_printf(bio_err," -crlf         - convert LF from terminal into CRLF\n");
 	BIO_printf(bio_err," -quiet        - no s_client output\n");
 	BIO_printf(bio_err," -ign_eof      - ignore input eof (default when -quiet)\n");
+	BIO_printf(bio_err," -no_ign_eof   - don't ignore input eof\n");
 	BIO_printf(bio_err," -ssl2         - just use SSLv2\n");
 	BIO_printf(bio_err," -ssl3         - just use SSLv3\n");
 	BIO_printf(bio_err," -tls1         - just use TLSv1\n");
@@ -229,7 +235,8 @@ static void sc_usage(void)
 	BIO_printf(bio_err," -starttls prot - use the STARTTLS command before starting TLS\n");
 	BIO_printf(bio_err,"                 for those protocols that support it, where\n");
 	BIO_printf(bio_err,"                 'prot' defines which one to assume.  Currently,\n");
-	BIO_printf(bio_err,"                 only \"smtp\", \"pop3\", \"imap\", and \"ftp\" are supported.\n");
+	BIO_printf(bio_err,"                 only \"smtp\", \"pop3\", \"imap\", \"ftp\" and \"xmpp\"\n");
+	BIO_printf(bio_err,"                 are supported.\n");
 #ifndef OPENSSL_NO_ENGINE
 	BIO_printf(bio_err," -engine id    - Initialise and use the specified engine\n");
 #endif
@@ -239,6 +246,7 @@ static void sc_usage(void)
 #ifndef OPENSSL_NO_TLSEXT
 	BIO_printf(bio_err," -servername host  - Set TLS extension servername in ClientHello\n");
 	BIO_printf(bio_err," -tlsextdebug      - hex dump of all TLS extensions received\n");
+	BIO_printf(bio_err," -status           - request certificate status from server\n");
 	BIO_printf(bio_err," -no_ticket        - disable use of RFC4507bis session tickets\n");
 #endif
 	}
@@ -270,7 +278,8 @@ enum
 	PROTO_SMTP,
 	PROTO_POP3,
 	PROTO_IMAP,
-	PROTO_FTP
+	PROTO_FTP,
+	PROTO_XMPP
 };
 
 int MAIN(int, char **);
@@ -311,8 +320,10 @@ int MAIN(int argc, char **argv)
 	int mbuf_len=0;
 #ifndef OPENSSL_NO_ENGINE
 	char *engine_id=NULL;
-	ENGINE *e=NULL;
+	char *ssl_client_engine_id=NULL;
+	ENGINE *ssl_client_engine=NULL;
 #endif
+	ENGINE *e=NULL;
 #if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_MSDOS) || defined(OPENSSL_SYS_NETWARE)
 	struct timeval tv;
 #endif
@@ -328,6 +339,9 @@ int MAIN(int argc, char **argv)
 	int peerlen = sizeof(peer);
 	int enable_timeouts = 0 ;
 	long mtu = 0;
+#ifndef OPENSSL_NO_JPAKE
+	char *jpake_secret = NULL;
+#endif
 
 #if !defined(OPENSSL_NO_SSL2) && !defined(OPENSSL_NO_SSL3)
 	meth=SSLv23_client_method();
@@ -428,6 +442,8 @@ int MAIN(int argc, char **argv)
 			}
 		else if	(strcmp(*argv,"-ign_eof") == 0)
 			c_ign_eof=1;
+		else if	(strcmp(*argv,"-no_ign_eof") == 0)
+			c_ign_eof=0;
 		else if	(strcmp(*argv,"-pause") == 0)
 			c_Pause=1;
 		else if	(strcmp(*argv,"-debug") == 0)
@@ -435,6 +451,8 @@ int MAIN(int argc, char **argv)
 #ifndef OPENSSL_NO_TLSEXT
 		else if	(strcmp(*argv,"-tlsextdebug") == 0)
 			c_tlsextdebug=1;
+		else if	(strcmp(*argv,"-status") == 0)
+			c_status_req=1;
 #endif
 #ifdef WATT32
 		else if (strcmp(*argv,"-wdebug") == 0)
@@ -538,6 +556,8 @@ int MAIN(int argc, char **argv)
 				starttls_proto = PROTO_IMAP;
 			else if (strcmp(*argv,"ftp") == 0)
 				starttls_proto = PROTO_FTP;
+			else if (strcmp(*argv, "xmpp") == 0)
+				starttls_proto = PROTO_XMPP;
 			else
 				goto bad;
 			}
@@ -546,6 +566,11 @@ int MAIN(int argc, char **argv)
 			{
 			if (--argc < 1) goto bad;
 			engine_id = *(++argv);
+			}
+		else if	(strcmp(*argv,"-ssl_client_engine") == 0)
+			{
+			if (--argc < 1) goto bad;
+			ssl_client_engine_id = *(++argv);
 			}
 #endif
 		else if (strcmp(*argv,"-rand") == 0)
@@ -559,6 +584,13 @@ int MAIN(int argc, char **argv)
 			if (--argc < 1) goto bad;
 			servername= *(++argv);
 			/* meth=TLSv1_client_method(); */
+			}
+#endif
+#ifndef OPENSSL_NO_JPAKE
+		else if (strcmp(*argv,"-jpake") == 0)
+			{
+			if (--argc < 1) goto bad;
+			jpake_secret = *++argv;
 			}
 #endif
 		else
@@ -582,6 +614,16 @@ bad:
 
 #ifndef OPENSSL_NO_ENGINE
         e = setup_engine(bio_err, engine_id, 1);
+	if (ssl_client_engine_id)
+		{
+		ssl_client_engine = ENGINE_by_id(ssl_client_engine_id);
+		if (!ssl_client_engine)
+			{
+			BIO_printf(bio_err,
+					"Error getting client auth engine\n");
+			goto end;
+			}
+		}
 #endif
 	if (!app_passwd(bio_err, passarg, NULL, &pass, NULL))
 		{
@@ -648,6 +690,20 @@ bad:
 		ERR_print_errors(bio_err);
 		goto end;
 		}
+
+#ifndef OPENSSL_NO_ENGINE
+	if (ssl_client_engine)
+		{
+		if (!SSL_CTX_set_client_cert_engine(ctx, ssl_client_engine))
+			{
+			BIO_puts(bio_err, "Error setting client auth engine\n");
+			ERR_print_errors(bio_err);
+			ENGINE_free(ssl_client_engine);
+			goto end;
+			}
+		ENGINE_free(ssl_client_engine);
+		}
+#endif
 
 	if (bugs)
 		SSL_CTX_set_options(ctx,SSL_OP_ALL|off);
@@ -799,8 +855,6 @@ re_start:
 	else
 		sbio=BIO_new_socket(s,BIO_NOCLOSE);
 
-
-
 	if (nbio_test)
 		{
 		BIO *test;
@@ -826,6 +880,27 @@ re_start:
 		SSL_set_tlsext_debug_callback(con, tlsext_cb);
 		SSL_set_tlsext_debug_arg(con, bio_c_out);
 		}
+	if (c_status_req)
+		{
+		SSL_set_tlsext_status_type(con, TLSEXT_STATUSTYPE_ocsp);
+		SSL_CTX_set_tlsext_status_cb(ctx, ocsp_resp_cb);
+		SSL_CTX_set_tlsext_status_arg(ctx, bio_c_out);
+#if 0
+{
+STACK_OF(OCSP_RESPID) *ids = sk_OCSP_RESPID_new_null();
+OCSP_RESPID *id = OCSP_RESPID_new();
+id->value.byKey = ASN1_OCTET_STRING_new();
+id->type = V_OCSP_RESPID_KEY;
+ASN1_STRING_set(id->value.byKey, "Hello World", -1);
+sk_OCSP_RESPID_push(ids, id);
+SSL_set_tlsext_status_ids(con, ids);
+}
+#endif
+		}
+#endif
+#ifndef OPENSSL_NO_JPAKE
+	if (jpake_secret)
+		jpake_client_auth(bio_c_out, sbio, jpake_secret);
 #endif
 
 	SSL_set_bio(con,sbio,sbio);
@@ -932,6 +1007,28 @@ re_start:
 		BIO_free(fbio);
 		BIO_printf(sbio,"AUTH TLS\r\n");
 		BIO_read(sbio,sbuf,BUFSIZZ);
+		}
+	if (starttls_proto == PROTO_XMPP)
+		{
+		int seen = 0;
+		BIO_printf(sbio,"<stream:stream "
+		    "xmlns:stream='http://etherx.jabber.org/streams' "
+		    "xmlns='jabber:client' to='%s' version='1.0'>", host);
+		seen = BIO_read(sbio,mbuf,BUFSIZZ);
+		mbuf[seen] = 0;
+		while (!strstr(mbuf, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'"))
+			{
+			if (strstr(mbuf, "/stream:features>"))
+				goto shut;
+			seen = BIO_read(sbio,mbuf,BUFSIZZ);
+			mbuf[seen] = 0;
+			}
+		BIO_printf(sbio, "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>");
+		seen = BIO_read(sbio,sbuf,BUFSIZZ);
+		sbuf[seen] = 0;
+		if (!strstr(sbuf, "<proceed"))
+			goto shut;
+		mbuf[0] = 0;
 		}
 
 	for (;;)
@@ -1430,3 +1527,31 @@ static void print_stuff(BIO *bio, SSL *s, int full)
 	(void)BIO_flush(bio);
 	}
 
+#ifndef OPENSSL_NO_TLSEXT
+
+static int ocsp_resp_cb(SSL *s, void *arg)
+	{
+	const unsigned char *p;
+	int len;
+	OCSP_RESPONSE *rsp;
+	len = SSL_get_tlsext_status_ocsp_resp(s, &p);
+	BIO_puts(arg, "OCSP response: ");
+	if (!p)
+		{
+		BIO_puts(arg, "no response sent\n");
+		return 1;
+		}
+	rsp = d2i_OCSP_RESPONSE(NULL, &p, len);
+	if (!rsp)
+		{
+		BIO_puts(arg, "response parse error\n");
+		BIO_dump_indent(arg, (char *)p, len, 4);
+		return 0;
+		}
+	BIO_puts(arg, "\n======================================\n");
+	OCSP_RESPONSE_print(arg, rsp, 0);
+	BIO_puts(arg, "======================================\n");
+	OCSP_RESPONSE_free(rsp);
+	return 1;
+	}
+#endif  /* ndef OPENSSL_NO_TLSEXT */

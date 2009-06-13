@@ -62,7 +62,7 @@ Description: SSL development libraries, header files and documentation
  It is part of the OpenSSL implementation of SSL.
 
 Package: libssl0.9.8-dbg
-Section: libdevel
+Section: debug
 Priority: extra
 Architecture: any
 Depends: libssl0.9.8 (= ${binary:Version})

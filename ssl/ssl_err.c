@@ -1,6 +1,6 @@
 /* ssl/ssl_err.c */
 /* ====================================================================
- * Copyright (c) 1999-2007 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1999-2008 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -138,9 +138,11 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_FUNC(SSL_F_SSL3_CONNECT),	"SSL3_CONNECT"},
 {ERR_FUNC(SSL_F_SSL3_CTRL),	"SSL3_CTRL"},
 {ERR_FUNC(SSL_F_SSL3_CTX_CTRL),	"SSL3_CTX_CTRL"},
+{ERR_FUNC(SSL_F_SSL3_DO_CHANGE_CIPHER_SPEC),	"SSL3_DO_CHANGE_CIPHER_SPEC"},
 {ERR_FUNC(SSL_F_SSL3_ENC),	"SSL3_ENC"},
 {ERR_FUNC(SSL_F_SSL3_GENERATE_KEY_BLOCK),	"SSL3_GENERATE_KEY_BLOCK"},
 {ERR_FUNC(SSL_F_SSL3_GET_CERTIFICATE_REQUEST),	"SSL3_GET_CERTIFICATE_REQUEST"},
+{ERR_FUNC(SSL_F_SSL3_GET_CERT_STATUS),	"SSL3_GET_CERT_STATUS"},
 {ERR_FUNC(SSL_F_SSL3_GET_CERT_VERIFY),	"SSL3_GET_CERT_VERIFY"},
 {ERR_FUNC(SSL_F_SSL3_GET_CLIENT_CERTIFICATE),	"SSL3_GET_CLIENT_CERTIFICATE"},
 {ERR_FUNC(SSL_F_SSL3_GET_CLIENT_HELLO),	"SSL3_GET_CLIENT_HELLO"},
@@ -190,6 +192,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
 {ERR_FUNC(SSL_F_SSL_CTX_CHECK_PRIVATE_KEY),	"SSL_CTX_check_private_key"},
 {ERR_FUNC(SSL_F_SSL_CTX_NEW),	"SSL_CTX_new"},
 {ERR_FUNC(SSL_F_SSL_CTX_SET_CIPHER_LIST),	"SSL_CTX_set_cipher_list"},
+{ERR_FUNC(SSL_F_SSL_CTX_SET_CLIENT_CERT_ENGINE),	"SSL_CTX_set_client_cert_engine"},
 {ERR_FUNC(SSL_F_SSL_CTX_SET_PURPOSE),	"SSL_CTX_set_purpose"},
 {ERR_FUNC(SSL_F_SSL_CTX_SET_SESSION_ID_CONTEXT),	"SSL_CTX_set_session_id_context"},
 {ERR_FUNC(SSL_F_SSL_CTX_SET_SSL_VERSION),	"SSL_CTX_set_ssl_version"},
@@ -328,6 +331,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {ERR_REASON(SSL_R_INVALID_CHALLENGE_LENGTH),"invalid challenge length"},
 {ERR_REASON(SSL_R_INVALID_COMMAND)       ,"invalid command"},
 {ERR_REASON(SSL_R_INVALID_PURPOSE)       ,"invalid purpose"},
+{ERR_REASON(SSL_R_INVALID_STATUS_RESPONSE),"invalid status response"},
 {ERR_REASON(SSL_R_INVALID_TICKET_KEYS_LENGTH),"invalid ticket keys length"},
 {ERR_REASON(SSL_R_INVALID_TRUST)         ,"invalid trust"},
 {ERR_REASON(SSL_R_KEY_ARG_TOO_LONG)      ,"key arg too long"},
@@ -372,6 +376,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {ERR_REASON(SSL_R_NO_CIPHERS_SPECIFIED)  ,"no ciphers specified"},
 {ERR_REASON(SSL_R_NO_CIPHER_LIST)        ,"no cipher list"},
 {ERR_REASON(SSL_R_NO_CIPHER_MATCH)       ,"no cipher match"},
+{ERR_REASON(SSL_R_NO_CLIENT_CERT_METHOD) ,"no client cert method"},
 {ERR_REASON(SSL_R_NO_CLIENT_CERT_RECEIVED),"no client cert received"},
 {ERR_REASON(SSL_R_NO_COMPRESSION_SPECIFIED),"no compression specified"},
 {ERR_REASON(SSL_R_NO_METHOD_SPECIFIED)   ,"no method specified"},
@@ -484,6 +489,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
 {ERR_REASON(SSL_R_UNSUPPORTED_ELLIPTIC_CURVE),"unsupported elliptic curve"},
 {ERR_REASON(SSL_R_UNSUPPORTED_PROTOCOL)  ,"unsupported protocol"},
 {ERR_REASON(SSL_R_UNSUPPORTED_SSL_VERSION),"unsupported ssl version"},
+{ERR_REASON(SSL_R_UNSUPPORTED_STATUS_TYPE),"unsupported status type"},
 {ERR_REASON(SSL_R_WRITE_BIO_NOT_SET)     ,"write bio not set"},
 {ERR_REASON(SSL_R_WRONG_CIPHER_RETURNED) ,"wrong cipher returned"},
 {ERR_REASON(SSL_R_WRONG_MESSAGE_TYPE)    ,"wrong message type"},
