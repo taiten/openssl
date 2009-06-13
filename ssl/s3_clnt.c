@@ -130,10 +130,17 @@
 #include <openssl/objects.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
+#ifdef OPENSSL_FIPS
+#include <openssl/fips.h>
+#endif
+
 #ifndef OPENSSL_NO_DH
 #include <openssl/dh.h>
 #endif
 #include <openssl/bn.h>
+#ifndef OPENSSL_NO_ENGINE
+#include <openssl/engine.h>
+#endif
 
 static SSL_METHOD *ssl3_get_client_method(int ver);
 static int ca_dn_cmp(const X509_NAME * const *a,const X509_NAME * const *b);
@@ -166,7 +173,7 @@ int ssl3_connect(SSL *s)
 	long num1;
 	void (*cb)(const SSL *ssl,int type,int val)=NULL;
 	int ret= -1;
-	int new_state,state,skip=0;;
+	int new_state,state,skip=0;
 
 	RAND_add(&Time,sizeof(Time),0);
 	ERR_clear_error();
@@ -273,7 +280,10 @@ int ssl3_connect(SSL *s)
 			if (ret == 2)
 				{
 				s->hit = 1;
-				s->state=SSL3_ST_CR_FINISHED_A;
+				if (s->tlsext_ticket_expected)
+					s->state=SSL3_ST_CR_SESSION_TICKET_A;
+				else
+					s->state=SSL3_ST_CR_FINISHED_A;
 				s->init_num=0;
 				break;
 				}
@@ -283,10 +293,24 @@ int ssl3_connect(SSL *s)
 				{
 				ret=ssl3_get_server_certificate(s);
 				if (ret <= 0) goto end;
+#ifndef OPENSSL_NO_TLSEXT
+				if (s->tlsext_status_expected)
+					s->state=SSL3_ST_CR_CERT_STATUS_A;
+				else
+					s->state=SSL3_ST_CR_KEY_EXCH_A;
+				}
+			else
+				{
+				skip = 1;
+				s->state=SSL3_ST_CR_KEY_EXCH_A;
+				}
+#else
 				}
 			else
 				skip=1;
+
 			s->state=SSL3_ST_CR_KEY_EXCH_A;
+#endif
 			s->init_num=0;
 			break;
 
@@ -448,6 +472,14 @@ int ssl3_connect(SSL *s)
 			ret=ssl3_get_new_session_ticket(s);
 			if (ret <= 0) goto end;
 			s->state=SSL3_ST_CR_FINISHED_A;
+			s->init_num=0;
+		break;
+
+		case SSL3_ST_CR_CERT_STATUS_A:
+		case SSL3_ST_CR_CERT_STATUS_B:
+			ret=ssl3_get_cert_status(s);
+			if (ret <= 0) goto end;
+			s->state=SSL3_ST_CR_KEY_EXCH_A;
 			s->init_num=0;
 		break;
 #endif
@@ -974,7 +1006,7 @@ int ssl3_get_server_certificate(SSL *s)
 	                 == (SSL_aKRB5|SSL_kKRB5))? 0: 1;
 
 #ifdef KSSL_DEBUG
-	printf("pkey,x = %p, %p\n", pkey,x);
+	printf("pkey,x = %p, %p\n", (void *)pkey,(void *)x);
 	printf("ssl_cert_type(x,pkey) = %d\n", ssl_cert_type(x,pkey));
 	printf("cipher, alg, nc = %s, %lx, %d\n", s->s3->tmp.new_cipher->name,
 	        s->s3->tmp.new_cipher->algorithms, need_cert);
@@ -1390,6 +1422,8 @@ int ssl3_get_key_exchange(SSL *s)
 			q=md_buf;
 			for (num=2; num > 0; num--)
 				{
+				EVP_MD_CTX_set_flags(&md_ctx,
+					EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
 				EVP_DigestInit_ex(&md_ctx,(num == 2)
 					?s->ctx->md5:s->ctx->sha1, NULL);
 				EVP_DigestUpdate(&md_ctx,&(s->s3->client_random[0]),SSL3_RANDOM_SIZE);
@@ -1688,7 +1722,7 @@ int ssl3_get_new_session_ticket(SSL *s)
 	if (ticklen + 6 != n)
 		{
 		al = SSL3_AL_FATAL,SSL_AD_DECODE_ERROR;
-		SSLerr(SSL_F_SSL3_NEW_SESSION_TICKET,SSL_R_LENGTH_MISMATCH);
+		SSLerr(SSL_F_SSL3_GET_NEW_SESSION_TICKET,SSL_R_LENGTH_MISMATCH);
 		goto f_err;
 		}
 	if (s->session->tlsext_tick)
@@ -1699,7 +1733,7 @@ int ssl3_get_new_session_ticket(SSL *s)
 	s->session->tlsext_tick = OPENSSL_malloc(ticklen);
 	if (!s->session->tlsext_tick)
 		{
-		SSLerr(SSL_F_SSL3_NEW_SESSION_TICKET,ERR_R_MALLOC_FAILURE);
+		SSLerr(SSL_F_SSL3_GET_NEW_SESSION_TICKET,ERR_R_MALLOC_FAILURE);
 		goto err;
 		}
 	memcpy(s->session->tlsext_tick, p, ticklen);
@@ -1710,6 +1744,75 @@ int ssl3_get_new_session_ticket(SSL *s)
 f_err:
 	ssl3_send_alert(s,SSL3_AL_FATAL,al);
 err:
+	return(-1);
+	}
+
+int ssl3_get_cert_status(SSL *s)
+	{
+	int ok, al;
+	unsigned long resplen;
+	long n;
+	const unsigned char *p;
+
+	n=s->method->ssl_get_message(s,
+		SSL3_ST_CR_CERT_STATUS_A,
+		SSL3_ST_CR_CERT_STATUS_B,
+		SSL3_MT_CERTIFICATE_STATUS,
+		16384,
+		&ok);
+
+	if (!ok) return((int)n);
+	if (n < 4)
+		{
+		/* need at least status type + length */
+		al = SSL_AD_DECODE_ERROR;
+		SSLerr(SSL_F_SSL3_GET_CERT_STATUS,SSL_R_LENGTH_MISMATCH);
+		goto f_err;
+		}
+	p = (unsigned char *)s->init_msg;
+	if (*p++ != TLSEXT_STATUSTYPE_ocsp)
+		{
+		al = SSL_AD_DECODE_ERROR;
+		SSLerr(SSL_F_SSL3_GET_CERT_STATUS,SSL_R_UNSUPPORTED_STATUS_TYPE);
+		goto f_err;
+		}
+	n2l3(p, resplen);
+	if (resplen + 4 != (unsigned long)n)
+		{
+		al = SSL_AD_DECODE_ERROR;
+		SSLerr(SSL_F_SSL3_GET_CERT_STATUS,SSL_R_LENGTH_MISMATCH);
+		goto f_err;
+		}
+	if (s->tlsext_ocsp_resp)
+		OPENSSL_free(s->tlsext_ocsp_resp);
+	s->tlsext_ocsp_resp = BUF_memdup(p, resplen);
+	if (!s->tlsext_ocsp_resp)
+		{
+		al = SSL_AD_INTERNAL_ERROR;
+		SSLerr(SSL_F_SSL3_GET_CERT_STATUS,ERR_R_MALLOC_FAILURE);
+		goto f_err;
+		}
+	s->tlsext_ocsp_resplen = resplen;
+	if (s->ctx->tlsext_status_cb)
+		{
+		int ret;
+		ret = s->ctx->tlsext_status_cb(s, s->ctx->tlsext_status_arg);
+		if (ret == 0)
+			{
+			al = SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE;
+			SSLerr(SSL_F_SSL3_GET_CERT_STATUS,SSL_R_INVALID_STATUS_RESPONSE);
+			goto f_err;
+			}
+		if (ret < 0)
+			{
+			al = SSL_AD_INTERNAL_ERROR;
+			SSLerr(SSL_F_SSL3_GET_CERT_STATUS,ERR_R_MALLOC_FAILURE);
+			goto f_err;
+			}
+		}
+	return 1;
+f_err:
+	ssl3_send_alert(s,SSL3_AL_FATAL,al);
 	return(-1);
 	}
 #endif
@@ -1967,12 +2070,12 @@ int ssl3_send_client_key_exchange(SSL *s)
 			{
 			DH *dh_srvr,*dh_clnt;
 
-			if (s->session->sess_cert == NULL)
-			{
+			if (s->session->sess_cert == NULL) 
+				{
 				ssl3_send_alert(s,SSL3_AL_FATAL,SSL_AD_UNEXPECTED_MESSAGE);
 				SSLerr(SSL_F_SSL3_SEND_CLIENT_KEY_EXCHANGE,SSL_R_UNEXPECTED_MESSAGE);
 				goto err;
-			}
+			        }
 
 			if (s->session->sess_cert->peer_dh_tmp != NULL)
 				dh_srvr=s->session->sess_cert->peer_dh_tmp;
@@ -2354,8 +2457,7 @@ int ssl3_send_client_certificate(SSL *s)
 		 * ssl->rwstate=SSL_X509_LOOKUP; return(-1);
 		 * We then get retied later */
 		i=0;
-		if (s->ctx->client_cert_cb != NULL)
-			i=s->ctx->client_cert_cb(s,&(x509),&(pkey));
+		i = ssl_do_client_cert_cb(s, &x509, &pkey);
 		if (i < 0)
 			{
 			s->rwstate=SSL_X509_LOOKUP;
@@ -2599,7 +2701,11 @@ static int ssl3_check_finished(SSL *s)
 	{
 	int ok;
 	long n;
-	if (!s->session->tlsext_tick)
+	/* If we have no ticket or session ID is non-zero length (a match of
+	 * a non-zero session length would never reach here) it cannot be a
+	 * resumed session.
+	 */
+	if (!s->session->tlsext_tick || s->session->session_id_length)
 		return 1;
 	/* this function is called when we really expect a Certificate
 	 * message, so permit appropriate message length */
@@ -2618,3 +2724,21 @@ static int ssl3_check_finished(SSL *s)
 	return 1;
 	}
 #endif
+
+int ssl_do_client_cert_cb(SSL *s, X509 **px509, EVP_PKEY **ppkey)
+	{
+	int i = 0;
+#ifndef OPENSSL_NO_ENGINE
+	if (s->ctx->client_cert_engine)
+		{
+		i = ENGINE_load_ssl_client_cert(s->ctx->client_cert_engine, s,
+						SSL_get_client_CA_list(s),
+						px509, ppkey, NULL, NULL, NULL);
+		if (i != 0)
+			return i;
+		}
+#endif
+	if (s->ctx->client_cert_cb)
+		i = s->ctx->client_cert_cb(s,px509,ppkey);
+	return i;
+	}

@@ -1,3 +1,39 @@
+openssl (0.9.8k-3) unstable; urgency=low
+
+  * Make rc4-x86_64 PIC.  Based on patch from Petr Salinger (Closes: #532336)
+  * Add workaround for kfreebsd that can't see the different between
+    two pipes.  Patch from Petr Salinger.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 13 Jun 2009 18:15:46 +0200
+
+openssl (0.9.8k-2) unstable; urgency=low
+
+  * Move libssl0.9.8-dbg to the debug section.
+  * Use the rc4 assembler on kfreebsd-amd64 (Closes: #532336)
+  * Split the line to generate md5-x86_64.s in the Makefile.  This will
+    hopefully fix the build issue on kfreebsd that now outputs the file
+    to stdout instead of the file.
+  * Fix denial of service via an out-of-sequence DTLS handshake message
+    (CVE-2009-1387) (Closes: #532037)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 08 Jun 2009 19:05:56 +0200
+
+openssl (0.9.8k-1) unstable; urgency=low
+
+  * New upstream release
+    - 0.9.8i fixed denial of service via a DTLS ChangeCipherSpec packet
+      that occurs before ClientHello (CVE-2009-1386)
+  * Make aes-x86_64.pl use PIC.
+  * Fix security issues (Closes: #530400)
+    - "DTLS record buffer limitation bug." (CVE-2009-1377)
+    - "DTLS fragment handling" (CVE-2009-1378)
+    - "DTLS use after free" (CVE-2009-1379)
+  * Fixed Configure for hurd: use -mtune=i486 instead of -m486
+    Patch by Marc Dequènes (Duck) <duck@hurdfr.org> (Closes: #530459)
+  * Add support for avr32 (Closes: #528648)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 16 May 2009 17:33:55 +0200
+
 openssl (0.9.8g-16) unstable; urgency=high
 
   * Properly validate the length of an encoded BMPString and UniversalString

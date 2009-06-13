@@ -1083,7 +1083,7 @@ static int request_certificate(SSL *s)
 		EVP_PKEY_free(pkey);
 		EVP_MD_CTX_cleanup(&ctx);
 
-		if (i > 0) 
+		if (i > 0)
 			{
 			if (s->session->peer != NULL)
 				X509_free(s->session->peer);

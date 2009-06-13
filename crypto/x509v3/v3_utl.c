@@ -1,5 +1,5 @@
 /* v3_utl.c */
-/* Written by Dr Stephen N Henson (shenson@bigfoot.com) for the OpenSSL
+/* Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
  * project.
  */
 /* ====================================================================
@@ -84,7 +84,7 @@ int X509V3_add_value(const char *name, const char *value,
 	CONF_VALUE *vtmp = NULL;
 	char *tname = NULL, *tvalue = NULL;
 	if(name && !(tname = BUF_strdup(name))) goto err;
-	if(value && !(tvalue = BUF_strdup(value))) goto err;;
+	if(value && !(tvalue = BUF_strdup(value))) goto err;
 	if(!(vtmp = (CONF_VALUE *)OPENSSL_malloc(sizeof(CONF_VALUE)))) goto err;
 	if(!*extlist && !(*extlist = sk_CONF_VALUE_new_null())) goto err;
 	vtmp->section = NULL;
@@ -470,6 +470,30 @@ STACK *X509_get1_email(X509 *x)
 	gens = X509_get_ext_d2i(x, NID_subject_alt_name, NULL, NULL);
 	ret = get_email(X509_get_subject_name(x), gens);
 	sk_GENERAL_NAME_pop_free(gens, GENERAL_NAME_free);
+	return ret;
+}
+
+STACK *X509_get1_ocsp(X509 *x)
+{
+	AUTHORITY_INFO_ACCESS *info;
+	STACK *ret = NULL;
+	int i;
+	info = X509_get_ext_d2i(x, NID_info_access, NULL, NULL);
+	if (!info)
+		return NULL;
+	for (i = 0; i < sk_ACCESS_DESCRIPTION_num(info); i++)
+		{
+		ACCESS_DESCRIPTION *ad = sk_ACCESS_DESCRIPTION_value(info, i);
+		if (OBJ_obj2nid(ad->method) == NID_ad_OCSP)
+			{
+			if (ad->location->type == GEN_URI)
+				{
+				if (!append_ia5(&ret, ad->location->d.uniformResourceIdentifier))
+					break;
+				}
+			}
+		}
+	AUTHORITY_INFO_ACCESS_free(info);
 	return ret;
 }
 
