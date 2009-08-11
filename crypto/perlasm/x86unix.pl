@@ -400,29 +400,6 @@ EOF
 	$stack=4;
 	}
 
-sub main'function_begin_B_static
-	{
-	local($func,$extra)=@_;
-
-	&main'external_label($func);
-	$func=$under.$func;
-
-	local($tmp)=<<"EOF";
-.text
-EOF
-	push(@out,$tmp);
-	if ($main'cpp)
-		{ push(@out,"TYPE($func,\@function)\n"); }
-	elsif ($main'coff)
-		{ $tmp=push(@out,".def\t$func;\t.scl\t2;\t.type\t32;\t.endef\n"); }
-	elsif ($main'aout and !$main'pic)
-		{ }
-	else	{ push(@out,".type	$func,\@function\n"); }
-	push(@out,".align\t$align\n");
-	push(@out,"$func:\n");
-	$stack=4;
-	}
-
 sub main'function_end
 	{
 	local($func)=@_;
@@ -717,17 +694,7 @@ sub main'initseg
 		{
 		$tmp=<<___;
 .section	.init
-#ifdef OPENSSL_PIC
-	pushl	%ebx
-	call    .pic_point0
-.pic_point0:
-	popl    %ebx
-	addl    \$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
-	call	$under$f\@PLT
-	popl	%ebx
-#else
 	call	$under$f
-#endif
 	jmp	.Linitalign
 .align	$align
 .Linitalign:

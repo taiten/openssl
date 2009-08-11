@@ -335,9 +335,9 @@ PKCS7 *SMIME_read_PKCS7(BIO *bio, BIO **bcont)
 
 		if(strcmp(hdr->value, "application/x-pkcs7-signature") &&
 			strcmp(hdr->value, "application/pkcs7-signature")) {
+			sk_MIME_HEADER_pop_free(headers, mime_hdr_free);
 			PKCS7err(PKCS7_F_SMIME_READ_PKCS7,PKCS7_R_SIG_INVALID_MIME_TYPE);
 			ERR_add_error_data(2, "type: ", hdr->value);
-			sk_MIME_HEADER_pop_free(headers, mime_hdr_free);
 			sk_BIO_pop_free(parts, BIO_vfree);
 			return NULL;
 		}

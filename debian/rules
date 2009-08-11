@@ -26,7 +26,17 @@ ARCHOPTS  = OPT_$(DEB_HOST_ARCH)
 OPTS      = $($(ARCHOPTS))
 WANTED_LIBC_VERSION = 2.3.1-10
 
-build:
+patch: patch-stamp
+patch-stamp:
+	QUILT_PATCHES=debian/patches quilt push -a || test $$? = 2
+	touch patch-stamp
+
+unpatch:
+	QUILT_PATCHES=debian/patches quilt pop -a || test $$? = 2
+	rm -rf patch-stamp debian/patched
+
+build: build-stamp
+build-stamp: patch-stamp
 	dh_testdir
 	perl util/perlpath.pl /usr/bin
 #	perl util/ssldir.pl /usr/lib/ssl
@@ -59,7 +69,8 @@ build:
 #	make -f Makefile all
 	touch build
 
-clean:
+clean: clean-patched unpatch
+clean-patched: patch-stamp
 	dh_testdir
 	dh_testroot
 	-rm -f build
@@ -170,4 +181,4 @@ binary:		binary-indep binary-arch
 source diff:
 	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
 
-.PHONY: binary binary-arch binary-indep clean
+.PHONY: binary binary-arch binary-indep clean patch

@@ -57,7 +57,7 @@ buildinf.h: ../Makefile
 	echo "  #define DATE \"`LC_ALL=C LC_TIME=C date`\""; \
 	echo '#endif' ) >buildinf.h
 
-x86cpuid-elf.S:	x86cpuid.pl perlasm/x86asm.pl
+x86cpuid-elf.s:	x86cpuid.pl perlasm/x86asm.pl
 	$(PERL) x86cpuid.pl elf $(CFLAGS) $(PROCESSOR) > $@
 x86cpuid-cof.s: x86cpuid.pl perlasm/x86asm.pl
 	$(PERL) x86cpuid.pl coff $(CFLAGS) $(PROCESSOR) > $@
@@ -70,7 +70,7 @@ uplink.o:	../ms/uplink.c
 uplink-cof.s:	../ms/uplink.pl
 	$(PERL) ../ms/uplink.pl coff > $@
 
-x86_64cpuid.S: x86_64cpuid.pl
+x86_64cpuid.s: x86_64cpuid.pl
 	$(PERL) x86_64cpuid.pl $@
 ia64cpuid.s: ia64cpuid.S
 	$(CC) $(CFLAGS) -E ia64cpuid.S > $@
