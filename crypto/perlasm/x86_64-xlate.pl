@@ -62,7 +62,7 @@ my $output = shift;
   my ($outdev,$outino,@junk)=stat($output);
 
     open STDOUT,">$output" || die "can't open $output: $!"
-#	if ($stddev!=$outdev || $stdino!=$outino);
+	if ($stddev!=$outdev || $stdino!=$outino);
 }
 
 my $masmref=8 + 50727*2**-32;	# 8.00.50727 shipped with VS2005
@@ -433,7 +433,7 @@ while($line=<>) {
 
     chomp($line);
 
-#    $line =~ s|[#!].*$||;	# get rid of asm-style comments...
+    $line =~ s|[#!].*$||;	# get rid of asm-style comments...
     $line =~ s|/\*.*\*/||;	# ... and C-style comments...
     $line =~ s|^\s+||;		# ... and skip white spaces in beginning
 

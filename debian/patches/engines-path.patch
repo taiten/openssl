@@ -1,0 +1,47 @@
+Index: openssl-0.9.8k/Configure
+===================================================================
+--- openssl-0.9.8k.orig/Configure	2009-07-19 11:32:41.000000000 +0200
++++ openssl-0.9.8k/Configure	2009-07-19 11:37:18.000000000 +0200
+@@ -1687,7 +1687,7 @@
+ 	if	(/^#define\s+OPENSSLDIR/)
+ 		{ print OUT "#define OPENSSLDIR \"$openssldir\"\n"; }
+ 	elsif	(/^#define\s+ENGINESDIR/)
+-		{ print OUT "#define ENGINESDIR \"$prefix/lib/engines\"\n"; }
++		{ print OUT "#define ENGINESDIR \"$prefix/lib/ssl/engines\"\n"; }
+ 	elsif	(/^#((define)|(undef))\s+OPENSSL_EXPORT_VAR_AS_FUNCTION/)
+ 		{ printf OUT "#undef OPENSSL_EXPORT_VAR_AS_FUNCTION\n"
+ 			if $export_var_as_fn;
+Index: openssl-0.9.8k/Makefile.org
+===================================================================
+--- openssl-0.9.8k.orig/Makefile.org	2009-03-03 23:40:29.000000000 +0100
++++ openssl-0.9.8k/Makefile.org	2009-07-19 11:37:33.000000000 +0200
+@@ -616,7 +616,7 @@
+ install_sw:
+ 	@$(PERL) $(TOP)/util/mkdir-p.pl $(INSTALL_PREFIX)$(INSTALLTOP)/bin \
+ 		$(INSTALL_PREFIX)$(INSTALLTOP)/lib \
+-		$(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines \
++		$(INSTALL_PREFIX)$(INSTALLTOP)/lib/ssl/engines \
+ 		$(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig \
+ 		$(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl \
+ 		$(INSTALL_PREFIX)$(OPENSSLDIR)/misc \
+Index: openssl-0.9.8k/engines/Makefile
+===================================================================
+--- openssl-0.9.8k.orig/engines/Makefile	2008-09-17 19:11:07.000000000 +0200
++++ openssl-0.9.8k/engines/Makefile	2009-07-19 11:32:41.000000000 +0200
+@@ -100,13 +100,13 @@
+ 				*DSO_DL*)	sfx="sl";;	\
+ 				*)		sfx="bad";;	\
+ 				esac; \
+-				cp lib$$l.$$sfx $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx.new; \
++				cp lib$$l.$$sfx $(INSTALL_PREFIX)$(INSTALLTOP)/lib/ssl/engines/lib$$l.$$sfx.new; \
+ 			  else \
+ 			  	sfx="so"; \
+ 				cp cyg$$l.dll $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx.new; \
+ 			  fi; \
+-			  chmod 555 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx.new; \
+-			  mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/engines/lib$$l.$$sfx ); \
++			  chmod 555 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/ssl/engines/lib$$l.$$sfx.new; \
++			  mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/ssl/engines/lib$$l.$$sfx.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/ssl/engines/lib$$l.$$sfx ); \
+ 		done; \
+ 	fi
+ 

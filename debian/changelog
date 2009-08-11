@@ -1,3 +1,11 @@
+openssl (0.9.8k-4) unstable; urgency=low
+
+  * Split all the patches into a separate files
+  * Stop undefinging HZ, the issue on alpha should be fixed.
+  * Remove MD2 from digest algorithm table.  (CVE-2009-2409) (Closes: #539899)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 11 Aug 2009 21:19:18 +0200
+
 openssl (0.9.8k-3) unstable; urgency=low
 
   * Make rc4-x86_64 PIC.  Based on patch from Petr Salinger (Closes: #532336)
