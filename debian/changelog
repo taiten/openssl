@@ -1,3 +1,10 @@
+openssl (0.9.8k-5) unstable; urgency=low
+
+  * Don't check self signed certificate signatures in X509_verify_cert()
+    (Closes: #541735)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Fri, 11 Sep 2009 15:42:32 +0200
+
 openssl (0.9.8k-4) unstable; urgency=low
 
   * Split all the patches into a separate files
