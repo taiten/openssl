@@ -1,3 +1,9 @@
+openssl (0.9.8k-6) unstable; urgency=low
+
+  * Disable SSL/TLS renegotiation (CVE-2009-3555) (Closes: #555829)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 12 Nov 2009 18:10:31 +0000
+
 openssl (0.9.8k-5) unstable; urgency=low
 
   * Don't check self signed certificate signatures in X509_verify_cert()
