@@ -1,3 +1,23 @@
+openssl (0.9.8k-7) unstable; urgency=low
+
+  * Bump the shlibs to require 0.9.8k-1.  The following symbols
+    to added between g and k: AES_wrap_key, AES_unwrap_key,
+    ASN1_TYPE_set1, ASN1_STRING_set0, asn1_output_data_fn,
+    SMIME_read_ASN1, BN_X931_generate_Xpq, BN_X931_derive_prime_ex,
+    BN_X931_generate_prime_ex, COMP_zlib_cleanup, CRYPTO_malloc_debug_init,
+    int_CRYPTO_set_do_dynlock_callback, CRYPTO_set_mem_info_functions,
+    CRYPTO_strdup, CRYPTO_dbg_push_info, CRYPTO_dbg_pop_info,
+    CRYPTO_dbg_remove_all_info, OPENSSL_isservice, OPENSSL_init,
+    ENGINE_set_load_ssl_client_cert_function,
+    ENGINE_get_ssl_client_cert_function, ENGINE_load_ssl_client_cert,
+    EVP_CIPHER_CTX_set_flags, EVP_CIPHER_CTX_clear_flags,
+    EVP_CIPHER_CTX_test_flags, HMAC_CTX_set_flags, OCSP_sendreq_new
+    OCSP_sendreq_nbio, OCSP_REQ_CTX_free, RSA_X931_derive_ex,
+    RSA_X931_generate_key_ex, X509_ALGOR_set0, X509_ALGOR_get0,
+    X509at_get0_data_by_OBJ, X509_get1_ocsp
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 28 Nov 2009 14:34:26 +0100
+
 openssl (0.9.8k-6) unstable; urgency=low
 
   * Disable SSL/TLS renegotiation (CVE-2009-3555) (Closes: #555829)
