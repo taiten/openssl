@@ -1,3 +1,10 @@
+openssl (0.9.8k-8) unstable; urgency=high
+
+  * Clean up zlib state so that it will be reinitialized on next use and
+    not cause a memory leak.  (CVE-2009-4355)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 13 Jan 2010 21:26:49 +0100
+
 openssl (0.9.8k-7) unstable; urgency=low
 
   * Bump the shlibs to require 0.9.8k-1.  The following symbols
