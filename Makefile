@@ -4,18 +4,18 @@
 ## Makefile for OpenSSL
 ##
 
-VERSION=0.9.8k
+VERSION=0.9.8m
 MAJOR=0
 MINOR=9.8
 SHLIB_VERSION_NUMBER=0.9.8
 SHLIB_VERSION_HISTORY=
 SHLIB_MAJOR=0
 SHLIB_MINOR=9.8
-SHLIB_EXT=.so.$(SHLIB_MAJOR).$(SHLIB_MINOR)
-PLATFORM=debian-amd64
-OPTIONS=--prefix=/usr --openssldir=/usr/lib/ssl enable-zlib enable-tlsext no-camellia no-capieng no-cms no-gmp no-idea no-jpake no-krb5 no-mdc2 no-montasm no-rc5 no-rfc3779 no-seed no-shared no-zlib-dynamic
-CONFIGURE_ARGS=--prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 zlib enable-tlsext debian-amd64
-SHLIB_TARGET=linux-shared
+SHLIB_EXT=
+PLATFORM=dist
+OPTIONS= no-camellia no-capieng no-cms no-gmp no-jpake no-krb5 no-mdc2 no-montasm no-rc5 no-rfc3779 no-seed no-shared no-zlib no-zlib-dynamic
+CONFIGURE_ARGS=dist
+SHLIB_TARGET=
 
 # HERE indicates where this Makefile lives.  This can be used to indicate
 # where sub-Makefiles are expected to be.  Currently has very limited usage,
@@ -26,10 +26,10 @@ HERE=.
 # for, say, /usr/ and yet have everything installed to /tmp/somedir/usr/.
 # Normally it is left empty.
 INSTALL_PREFIX=
-INSTALLTOP=/usr
+INSTALLTOP=/usr/local/ssl
 
 # Do not edit this manually. Use Configure --openssldir=DIR do change this!
-OPENSSLDIR=/usr/lib/ssl
+OPENSSLDIR=/usr/local/ssl
 
 # NO_IDEA - Define to build without the IDEA algorithm
 # NO_RC4  - Define to build without the RC4 algorithm
@@ -59,20 +59,21 @@ OPENSSLDIR=/usr/lib/ssl
 # equal 4.
 # PKCS1_CHECK - pkcs1 tests.
 
-CC= gcc
-CFLAG= -DZLIB -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -m64 -DL_ENDIAN -DTERMIO -O3 -Wa,--noexecstack -g -Wall -DMD32_REG_T=int -DOPENSSL_BN_ASM_MONT -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DMD5_ASM -DAES_ASM
-DEPFLAG= -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_CMS -DOPENSSL_NO_GMP -DOPENSSL_NO_IDEA -DOPENSSL_NO_JPAKE -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 -DOPENSSL_NO_RFC3779 -DOPENSSL_NO_SEED
+CC= cc
+CFLAG= -O
+DEPFLAG= -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_CMS -DOPENSSL_NO_GMP -DOPENSSL_NO_JPAKE -DOPENSSL_NO_MDC2 -DOPENSSL_NO_RC5 -DOPENSSL_NO_RFC3779 -DOPENSSL_NO_SEED
 PEX_LIBS= 
-EX_LIBS= -ldl -lz
+EX_LIBS= 
 EXE_EXT= 
 ARFLAGS= 
-AR=ar $(ARFLAGS) r
+AR= ar $(ARFLAGS) r
 ARD=ar $(ARFLAGS) d
 RANLIB= /usr/bin/ranlib
 PERL= /usr/bin/perl
 TAR= tar
 TARFLAGS= --no-recursion
-MAKEDEPPROG= gcc
+MAKEDEPPROG=makedepend
+LIBDIR=lib
 
 # We let the C compiler driver to take care of .s files. This is done in
 # order to be excused from maintaining a separate set of architecture
@@ -87,16 +88,16 @@ ASFLAG=$(CFLAG)
 PROCESSOR= 
 
 # CPUID module collects small commonly used assembler snippets
-CPUID_OBJ= x86_64cpuid.o
-BN_ASM= x86_64-gcc.o x86_64-mont.o
+CPUID_OBJ= 
+BN_ASM= bn_asm.o
 DES_ENC= des_enc.o fcrypt_b.o
-AES_ASM_OBJ= aes-x86_64.o
+AES_ASM_OBJ= aes_core.o aes_cbc.o
 BF_ENC= bf_enc.o
 CAST_ENC= c_enc.o
 RC4_ENC= rc4_enc.o rc4_skey.o
 RC5_ENC= rc5_enc.o
-MD5_ASM_OBJ= md5-x86_64.o
-SHA1_ASM_OBJ= sha1-x86_64.o sha256-x86_64.o sha512-x86_64.o
+MD5_ASM_OBJ= 
+SHA1_ASM_OBJ= 
 RMD160_ASM_OBJ= 
 
 # KRB5 stuff
@@ -133,14 +134,14 @@ FIPSCANLIB=
 
 BASEADDR=0xFB00000
 
-DIRS=   crypto ssl engines apps tools
+DIRS=   crypto ssl engines apps test tools
 SHLIBDIRS= crypto ssl
 
 # dirs in crypto to build
 SDIRS=  \
 	objects \
 	md2 md4 md5 sha hmac ripemd \
-	des aes rc2 rc4 bf cast \
+	des aes rc2 rc4 idea bf cast \
 	bn ec rsa dsa ecdsa dh ecdh dso engine \
 	buffer bio stack lhash rand err \
 	evp asn1 pem x509 x509v3 conf txt_db pkcs7 pkcs12 comp ocsp ui krb5 \
@@ -154,11 +155,10 @@ TESTS = alltests
 
 MAKEFILE= Makefile
 
-MANDIR=/usr/share/man
+MANDIR=$(OPENSSLDIR)/man
 MAN1=1
 MAN3=3
-MANSUFFIX=ssl
-MANSECTION=SSL
+MANSUFFIX=
 SHELL=/bin/sh
 
 TOP=    .
@@ -170,8 +170,8 @@ SHARED_CRYPTO=libcrypto$(SHLIB_EXT)
 SHARED_SSL=libssl$(SHLIB_EXT)
 SHARED_FIPS=
 SHARED_LIBS=
-SHARED_LIBS_LINK_EXTS=.so
-SHARED_LDFLAGS=-m64 -Wl,--version-script=openssl.ld
+SHARED_LIBS_LINK_EXTS=
+SHARED_LDFLAGS=
 
 GENERAL=        Makefile
 BASENAME=       openssl
@@ -203,9 +203,10 @@ BUILDENV=	PLATFORM='${PLATFORM}' PROCESSOR='${PROCESSOR}' \
 		CC='${CC}' CFLAG='${CFLAG}' 			\
 		AS='${CC}' ASFLAG='${CFLAG} -c'			\
 		AR='${AR}' PERL='${PERL}' RANLIB='${RANLIB}'	\
-		SDIRS='${SDIRS}' LIBRPATH='${INSTALLTOP}/lib'	\
+		SDIRS='${SDIRS}' LIBRPATH='${INSTALLTOP}/$(LIBDIR)'	\
 		INSTALL_PREFIX='${INSTALL_PREFIX}'		\
 		INSTALLTOP='${INSTALLTOP}' OPENSSLDIR='${OPENSSLDIR}'	\
+		LIBDIR='${LIBDIR}' \
 		MAKEDEPEND='$$$${TOP}/util/domd $$$${TOP} -MD ${MAKEDEPPROG}' \
 		DEPFLAG='-DOPENSSL_NO_DEPRECATED ${DEPFLAG}'	\
 		MAKEDEPPROG='${MAKEDEPPROG}'			\
@@ -336,15 +337,15 @@ build_crypto:
 		dir=crypto; target=all; $(BUILD_ONE_CMD)
 build_fips:
 	@dir=fips; target=all; [ -z "$(FIPSCANLIB)" ] || $(BUILD_ONE_CMD)
-build_ssl:
+build_ssl: build_crypto
 	@dir=ssl; target=all; $(BUILD_ONE_CMD)
-build_engines:
+build_engines: build_crypto
 	@dir=engines; target=all; $(BUILD_ONE_CMD)
-build_apps:
+build_apps: build_libs
 	@dir=apps; target=all; $(BUILD_ONE_CMD)
-build_tests:
+build_tests: build_libs
 	@dir=test; target=all; $(BUILD_ONE_CMD)
-build_tools:
+build_tools: build_libs
 	@dir=tools; target=all; $(BUILD_ONE_CMD)
 
 all_testapps: build_libs build_testapps
@@ -360,7 +361,7 @@ libcrypto$(SHLIB_EXT): libcrypto.a $(SHARED_FIPS)
 			$(AR) libcrypto.a fips/fipscanister.o ; \
 		else \
 			if [ "$(FIPSCANLIB)" = "libcrypto" ]; then \
-				FIPSLD_CC=$(CC); CC=fips/fipsld; \
+				FIPSLD_CC="$(CC)"; CC=fips/fipsld; \
 				export CC FIPSLD_CC; \
 			fi; \
 			$(MAKE) -e SHLIBDIRS='crypto' build-shared; \
@@ -383,7 +384,7 @@ libssl$(SHLIB_EXT): libcrypto$(SHLIB_EXT) libssl.a
 fips/fipscanister.o:	build_fips
 libfips$(SHLIB_EXT):		fips/fipscanister.o
 	@if [ "$(SHLIB_TARGET)" != "" ]; then \
-		FIPSLD_CC=$(CC); CC=fips/fipsld; export CC FIPSLD_CC; \
+		FIPSLD_CC="$(CC)"; CC=fips/fipsld; export CC FIPSLD_CC; \
 		$(MAKE) -f Makefile.shared -e $(BUILDENV) \
 			CC=$${CC} LIBNAME=fips THIS=$@ \
 			LIBEXTRAS=fips/fipscanister.o \
@@ -439,43 +440,40 @@ do_$(SHLIB_TARGET):
 libcrypto.pc: Makefile
 	@ ( echo 'prefix=$(INSTALLTOP)'; \
 	    echo 'exec_prefix=$${prefix}'; \
-	    echo 'libdir=$${exec_prefix}/lib'; \
+	    echo 'libdir=$${exec_prefix}/$(LIBDIR)'; \
 	    echo 'includedir=$${prefix}/include'; \
 	    echo ''; \
 	    echo 'Name: OpenSSL-libcrypto'; \
 	    echo 'Description: OpenSSL cryptography library'; \
 	    echo 'Version: '$(VERSION); \
 	    echo 'Requires: '; \
-	    echo 'Libs: -L$${libdir} -lcrypto'; \
-	    echo 'Libs.private: $(EX_LIBS)'; \
+	    echo 'Libs: -L$${libdir} -lcrypto $(EX_LIBS)'; \
 	    echo 'Cflags: -I$${includedir} $(KRB5_INCLUDES)' ) > libcrypto.pc
 
 libssl.pc: Makefile
 	@ ( echo 'prefix=$(INSTALLTOP)'; \
 	    echo 'exec_prefix=$${prefix}'; \
-	    echo 'libdir=$${exec_prefix}/lib'; \
+	    echo 'libdir=$${exec_prefix}/$(LIBDIR)'; \
 	    echo 'includedir=$${prefix}/include'; \
 	    echo ''; \
 	    echo 'Name: OpenSSL'; \
 	    echo 'Description: Secure Sockets Layer and cryptography libraries'; \
 	    echo 'Version: '$(VERSION); \
 	    echo 'Requires: '; \
-	    echo 'Libs: -L$${libdir} -lssl'; \
-	    echo 'Libs.private: -lcrypto $(EX_LIBS)'; \
+	    echo 'Libs: -L$${libdir} -lssl -lcrypto $(EX_LIBS)'; \
 	    echo 'Cflags: -I$${includedir} $(KRB5_INCLUDES)' ) > libssl.pc
 
 openssl.pc: Makefile
 	@ ( echo 'prefix=$(INSTALLTOP)'; \
 	    echo 'exec_prefix=$${prefix}'; \
-	    echo 'libdir=$${exec_prefix}/lib'; \
+	    echo 'libdir=$${exec_prefix}/$(LIBDIR)'; \
 	    echo 'includedir=$${prefix}/include'; \
 	    echo ''; \
 	    echo 'Name: OpenSSL'; \
 	    echo 'Description: Secure Sockets Layer and cryptography libraries and tools'; \
 	    echo 'Version: '$(VERSION); \
 	    echo 'Requires: '; \
-	    echo 'Libs: -L$${libdir} -lssl -lcrypto'; \
-	    echo 'Libs.private: $(EX_LIBS)'; \
+	    echo 'Libs: -L$${libdir} -lssl -lcrypto $(EX_LIBS)'; \
 	    echo 'Cflags: -I$${includedir} $(KRB5_INCLUDES)' ) > openssl.pc
 
 Makefile: Makefile.org Configure config
@@ -523,12 +521,14 @@ dclean:
 	@set -e; target=dclean; $(RECURSIVE_BUILD_CMD)
 
 rehash: rehash.time
-rehash.time: certs
-	@(OPENSSL="`pwd`/util/opensslwrap.sh"; \
-	  OPENSSL_DEBUG_MEMORY=on; \
-	  export OPENSSL OPENSSL_DEBUG_MEMORY; \
-	  $(PERL) tools/c_rehash certs)
-	touch rehash.time
+rehash.time: certs apps
+	@if [ -z "$(CROSS_COMPILE)" ]; then \
+		(OPENSSL="`pwd`/util/opensslwrap.sh"; \
+		OPENSSL_DEBUG_MEMORY=on; \
+		export OPENSSL OPENSSL_DEBUG_MEMORY; \
+		$(PERL) tools/c_rehash certs) && \
+		touch rehash.time; \
+	fi
 
 test:   tests
 
@@ -621,9 +621,9 @@ install: all install_docs install_sw
 
 install_sw:
 	@$(PERL) $(TOP)/util/mkdir-p.pl $(INSTALL_PREFIX)$(INSTALLTOP)/bin \
-		$(INSTALL_PREFIX)$(INSTALLTOP)/lib \
-		$(INSTALL_PREFIX)$(INSTALLTOP)/lib/ssl/engines \
-		$(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig \
+		$(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR) \
+		$(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/engines \
+		$(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig \
 		$(INSTALL_PREFIX)$(INSTALLTOP)/include/openssl \
 		$(INSTALL_PREFIX)$(OPENSSLDIR)/misc \
 		$(INSTALL_PREFIX)$(OPENSSLDIR)/certs \
@@ -638,10 +638,10 @@ install_sw:
 	do \
 		if [ -f "$$i" ]; then \
 		(       echo installing $$i; \
-			cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-			$(RANLIB) $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-			chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-			mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i ); \
+			cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+			$(RANLIB) $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+			chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+			mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i ); \
 		fi; \
 	done;
 	@set -e; if [ -n "$(SHARED_LIBS)" ]; then \
@@ -651,22 +651,22 @@ install_sw:
 			if [ -f "$$i" -o -f "$$i.a" ]; then \
 			(       echo installing $$i; \
 				if [ "$(PLATFORM)" != "Cygwin" ]; then \
-					cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-					chmod 555 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-					mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i; \
+					cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+					chmod 555 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+					mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i; \
 				else \
 					c=`echo $$i | sed 's/^lib\(.*\)\.dll\.a/cyg\1-$(SHLIB_VERSION_NUMBER).dll/'`; \
 					cp $$c $(INSTALL_PREFIX)$(INSTALLTOP)/bin/$$c.new; \
 					chmod 755 $(INSTALL_PREFIX)$(INSTALLTOP)/bin/$$c.new; \
 					mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/bin/$$c.new $(INSTALL_PREFIX)$(INSTALLTOP)/bin/$$c; \
-					cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-					chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new; \
-					mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/lib/$$i; \
+					cp $$i $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+					chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new; \
+					mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i.new $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/$$i; \
 				fi ); \
 			fi; \
 		done; \
 		(	here="`pwd`"; \
-			cd $(INSTALL_PREFIX)$(INSTALLTOP)/lib; \
+			cd $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR); \
 			$(MAKE) -f $$here/Makefile HERE="$$here" link-shared ); \
 		if [ "$(INSTALLTOP)" != "/usr" ]; then \
 			echo 'OpenSSL shared libraries have been installed in:'; \
@@ -675,12 +675,12 @@ install_sw:
 			sed -e '1,/^$$/d' doc/openssl-shared.txt; \
 		fi; \
 	fi
-	cp libcrypto.pc $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig
-	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig/libcrypto.pc
-	cp libssl.pc $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig
-	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig/libssl.pc
-	cp openssl.pc $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig
-	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/lib/pkgconfig/openssl.pc
+	cp libcrypto.pc $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig
+	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig/libcrypto.pc
+	cp libssl.pc $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig
+	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig/libssl.pc
+	cp openssl.pc $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig
+	chmod 644 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/pkgconfig/openssl.pc
 
 install_docs:
 	@$(PERL) $(TOP)/util/mkdir-p.pl \
@@ -688,7 +688,7 @@ install_docs:
 		$(INSTALL_PREFIX)$(MANDIR)/man3 \
 		$(INSTALL_PREFIX)$(MANDIR)/man5 \
 		$(INSTALL_PREFIX)$(MANDIR)/man7
-	@pod2man="`cd util; ./pod2mantest $(PERL)`"; \
+	@pod2man="`cd ./util; ./pod2mantest $(PERL)`"; \
 	here="`pwd`"; \
 	filecase=; \
 	if [ "$(PLATFORM)" = "DJGPP" -o "$(PLATFORM)" = "Cygwin" -o "$(PLATFORM)" = "mingw" ]; then \
@@ -700,7 +700,7 @@ install_docs:
 		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
 		(cd `$(PERL) util/dirname.pl $$i`; \
 		sh -c "$$pod2man \
-			--section=$${sec}$(MANSECTION) --center=OpenSSL \
+			--section=$$sec --center=OpenSSL \
 			--release=$(VERSION) `basename $$i`") \
 			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
 		$(PERL) util/extract-names.pl < $$i | \
@@ -717,7 +717,7 @@ install_docs:
 		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
 		(cd `$(PERL) util/dirname.pl $$i`; \
 		sh -c "$$pod2man \
-			--section=$${sec}$(MANSECTION) --center=OpenSSL \
+			--section=$$sec --center=OpenSSL \
 			--release=$(VERSION) `basename $$i`") \
 			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
 		$(PERL) util/extract-names.pl < $$i | \

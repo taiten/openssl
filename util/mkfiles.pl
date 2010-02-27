@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # This is a hacked version of files.pl for systems that can't do a 'make files'.
 # Do a perl util/mkminfo.pl >MINFO to build MINFO

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # unix.pl - the standard unix makefile stuff.
 #

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 while(<STDIN>) {
 	if (/=for\s+comment\s+openssl_manual_section:(\S+)/)

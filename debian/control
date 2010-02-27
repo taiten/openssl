@@ -1,5 +1,5 @@
 Source: openssl
-Build-Depends: debhelper (>= 5.0.22), binutils (>= 2.14.90.0.7), zlib1g-dev, m4, bc, quilt
+Build-Depends: debhelper (>= 5.0.22), binutils (>= 2.14.90.0.7), zlib1g-dev, m4, bc
 Section: utils
 Priority: optional
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
@@ -11,7 +11,7 @@ Vcs-Svn: svn://svn.debian.org/pkg-openssl/openssl/
 Package: openssl
 Priority: optional
 Architecture: any
-Depends: ${shlibs:Depends}, ${perl:Depends}
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}
 Conflicts: ssleay (<< 0.9.2b)
 Suggests: ca-certificates
 Description: Secure Socket Layer (SSL) binary and related cryptographic tools
@@ -54,7 +54,7 @@ Package: libssl-dev
 Section: libdevel
 Priority: optional
 Architecture: any
-Depends: libssl0.9.8 (= ${binary:Version}), zlib1g-dev
+Depends: libssl0.9.8 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
 Conflicts: ssleay (<< 0.9.2b), libssl08-dev, libssl09-dev, libssl095a-dev, libssl096-dev
 Description: SSL development libraries, header files and documentation
  libssl and libcrypto development libraries, header files and manpages.
@@ -65,6 +65,6 @@ Package: libssl0.9.8-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libssl0.9.8 (= ${binary:Version})
+Depends: libssl0.9.8 (= ${binary:Version}), ${misc:Depends}
 Description: Symbol tables for libssl and libcrypto
  This package is part of the OpenSSL implementation of SSL.

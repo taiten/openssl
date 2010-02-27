@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Perl script to split libeay32.def into two distinct DEF files for use in
 # fipdso mode. It works out symbols in each case by running "link" command and
 # parsing the output to find the list of missing symbols then splitting

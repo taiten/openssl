@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 $output=shift;
 $masm=1 if ($output =~ /\.asm/);
@@ -95,7 +95,11 @@ OPENSSL_wipe_cpu:
 .size	OPENSSL_wipe_cpu,.-OPENSSL_wipe_cpu
 
 .section	.init
+#ifdef OPENSSL_PIC
+	call	OPENSSL_cpuid_setup\@PLT
+#else
 	call	OPENSSL_cpuid_setup
+#endif
 
 ___
 

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Quick & dirty utility to generate a script for executing the
 # FIPS 140-2 CMVP algorithm tests based on the pathnames of
 # input algorithm test files actually present (the unqualified

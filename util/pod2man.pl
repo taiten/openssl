@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
     eval 'exec /usr/bin/perl -S $0 ${1+"$@"}'
 	if $running_under_some_shell;
 
@@ -425,7 +425,7 @@ if ($name ne 'something') {
 	    }
 	    next if /^=cut\b/;	# DB_File and Net::Ping have =cut before NAME
 	    next if /^=pod\b/;  # It is OK to have =pod before NAME
-	    next if /^=for\s+comment\b/;  # It is OK to have =for comment before NAME
+	    next if /^=(for|begin|end)\s+comment\b/;  # It is OK to have =for =begin or =end comment before NAME
 	    die "$0: Invalid man page - 1st pod line is not NAME in $ARGV[0]\n" unless $lax;
 	}
 	die "$0: Invalid man page - no documentation in $ARGV[0]\n" unless $lax;

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Clean the dependency list in a makefile of standard includes...
 # Written by Ben Laurie <ben@algroup.co.uk> 19 Jan 1999
 

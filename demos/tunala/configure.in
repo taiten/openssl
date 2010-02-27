@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 AC_INIT(tunala.c)
 AM_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(tunala, 0.0.1-dev)
