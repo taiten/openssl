@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 &doit(100,"Pentium   100 32",0.0195,0.1000,0.6406,4.6100);	# pentium-100
 &doit(200,"PPro      200 32",0.0070,0.0340,0.2087,1.4700);	# pentium-100

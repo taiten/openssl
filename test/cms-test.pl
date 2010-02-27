@@ -1,4 +1,4 @@
-# test/cms-test.pl
+#!/usr/bin/perl
 # Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL
 # project.
 #

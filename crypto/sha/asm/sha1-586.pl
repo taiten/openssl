@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # ====================================================================
 # [Re]written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
