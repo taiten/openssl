@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/env perl
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
@@ -1181,12 +1181,12 @@ AES_cbc_encrypt:
 .Lcbc_cleanup:
 	cmpl	\$0,$mark	# was the key schedule copied?
 	lea	$aes_key,%rdi
-	mov	$_rsp,%rsp
 	je	.Lcbc_exit
 		mov	\$240/8,%ecx
 		xor	%rax,%rax
 		.long	0x90AB48F3	# rep stosq
 .Lcbc_exit:
+	mov	$_rsp,%rsp
 	popfq
 	pop	%r15
 	pop	%r14

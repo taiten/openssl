@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/env perl
 
 push(@INC,"perlasm");
 require "x86asm.pl";

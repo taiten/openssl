@@ -26,19 +26,9 @@ ARCHOPTS  = OPT_$(DEB_HOST_ARCH)
 OPTS      = $($(ARCHOPTS))
 WANTED_LIBC_VERSION = 2.3.1-10
 
-patch: patch-stamp
-patch-stamp:
-	QUILT_PATCHES=debian/patches quilt push -a || test $$? = 2
-	touch patch-stamp
-
-unpatch:
-	QUILT_PATCHES=debian/patches quilt pop -a || test $$? = 2
-	rm -rf patch-stamp debian/patched
-
 build: build-stamp
-build-stamp: patch-stamp
+build-stamp:
 	dh_testdir
-	perl util/perlpath.pl /usr/bin
 #	perl util/ssldir.pl /usr/lib/ssl
 #	chmod +x debian/libtool
 	./Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
@@ -69,16 +59,13 @@ build-stamp: patch-stamp
 #	make -f Makefile all
 	touch build
 
-clean: clean-patched unpatch
-clean-patched: patch-stamp
+clean:
 	dh_testdir
 	dh_testroot
 	-rm -f build
-	-perl util/perlpath.pl /usr/bin
 	-./Configure $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	[ ! -f Makefile ] || make -f Makefile  clean clean-shared
 	#-make -f Makefile  dclean
-	-perl util/perlpath.pl /usr/local/bin/perl
 #	perl util/ssldir.pl /usr/local/ssl
 	-rm -f test/.rnd test/testkey.pem test/testreq.pem test/certCA.srl
 	-rm -f util/mk1mf.bak Makefile.bak `find . -name Makefile.save` 
@@ -91,6 +78,7 @@ clean-patched: patch-stamp
 	-rm doc/*.pod
 	-rm -f libcrypto.* libssl.*
 	-cd test && rm -f .rnd tmp.bntest tmp.bctest *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff bntest ectest  ecdsatest ecdhtest ideatest md2test  md4test md5test hmactest rc2test rc4test rc5test destest shatest sha1test sha256t sha512t mdc2test rmdtest randtest dhtest enginetest bftest casttest ssltest exptest dsatest rsa_test evp_test *.ss *.srl log dummytest newkey.pem igetest
+	-rm Makefile apps/CA.pl tools/c_rehash crypto/opensslconf.h crypto/x86_64cpuid.S
 	dh_clean
 
 binary-indep:	build
@@ -166,7 +154,7 @@ binary-arch:	build
 	dh_strip --dbg-package=libssl0.9.8
 	dh_perl -d
 #	dh_suidregister
-	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8k-1)" --add-udeb="libcrypto0.9.8-udeb"
+	dh_makeshlibs -V "libssl0.9.8 (>= 0.9.8m-1)" --add-udeb="libcrypto0.9.8-udeb"
 	dh_shlibdeps -L libssl0.9.8 -l debian/libssl0.9.8/usr/lib
 	dh_gencontrol
 	dh_installdeb
@@ -181,4 +169,4 @@ binary:		binary-indep binary-arch
 source diff:
 	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
 
-.PHONY: binary binary-arch binary-indep clean patch
+.PHONY: binary binary-arch binary-indep clean

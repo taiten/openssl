@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/bin/perl
 
 # Simple perl script to wrap round "ar" program and exclude any
 # object files in the environment variable EXCL_OBJ

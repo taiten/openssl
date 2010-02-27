@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+# perl script to run OpenSSL tests
 
 
 my $base_path      = "\\openssl";

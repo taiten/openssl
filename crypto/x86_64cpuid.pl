@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/env perl
 
 $output=shift;
 $masm=1 if ($output =~ /\.asm/);
