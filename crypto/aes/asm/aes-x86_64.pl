@@ -974,7 +974,11 @@ $code.=<<___;
 .align	16
 AES_set_decrypt_key:
 	push	%rdx
+#ifdef OPENSSL_PIC
+	call	AES_set_encrypt_key\@PLT
+#else
 	call	AES_set_encrypt_key
+#endif
 	cmp	\$0,%eax
 	je	.Lproceed
 	lea	24(%rsp),%rsp
