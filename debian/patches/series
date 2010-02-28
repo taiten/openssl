@@ -18,3 +18,4 @@ shared-lib-ext.patch
 stddef.patch
 version-script.patch
 perl-path.diff
+cfb.diff

@@ -1,3 +1,10 @@
+openssl (0.9.8m-2) unstable; urgency=low
+
+  * Revert CFB block length change preventing reading older files.
+    (Closes: #571810, #571940)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 28 Feb 2010 22:08:49 +0100
+
 openssl (0.9.8m-1) unstable; urgency=low
 
   * New upstream version
