@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # Normal is the
 # md5_block_x86(MD5_CTX *c, ULONG *X);

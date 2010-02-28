@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # Normal is the
 # ripemd160_block_asm_data_order(RIPEMD160_CTX *c, ULONG *X,int blocks);

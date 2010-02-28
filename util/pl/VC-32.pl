@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # VC-32.pl - unified script for Microsoft Visual C++, covering Win32,
 # Win64 and WinCE [follow $FLAVOR variable to trace the differences].
 #

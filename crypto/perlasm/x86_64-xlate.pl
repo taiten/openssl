@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # Ascetic x86_64 AT&T to MASM assembler translator by <appro>.
 #

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Borland C++ builder 3 and 4 -- Janez Jere <jj@void.si>
 #
 
