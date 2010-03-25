@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # At some point it became apparent that the original SSLeay RC4
 # assembler implementation performs suboptimaly on latest IA-32

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # OS2-EMX.pl - for EMX GCC on OS/2
 #
