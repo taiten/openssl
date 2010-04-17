@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # This is crypto/bn/asm/x86-mont.pl (with asciz from crypto/perlasm/x86asm.pl)
 # from OpenSSL 0.9.9-dev 

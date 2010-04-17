@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # define for pentium pro friendly version
 $ppro=1;

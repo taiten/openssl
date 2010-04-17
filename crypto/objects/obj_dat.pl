@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 # fixes bug in floating point emulation on sparc64 when
 # this script produces off-by-one output on sparc64

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # This is just a quick script to scan for cases where the 'error'
 # function name in a XXXerr() macro is wrong.
