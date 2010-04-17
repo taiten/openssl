@@ -1,3 +1,12 @@
+openssl (0.9.8o-1) unstable; urgency=low
+
+  * New upstream version
+    - Add SHA2 algorithms to SSL_library_init().
+    - aes-x86_64.pl is now PIC, update pic.patch.
+  * Add sparc64 support (Closes: #560240)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 18 Apr 2010 01:42:44 +0200
+
 openssl (0.9.8n-1) unstable; urgency=high
 
   * New upstream version.
