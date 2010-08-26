@@ -62,7 +62,7 @@ my $output = shift;
   my ($outdev,$outino,@junk)=stat($output);
 
     open STDOUT,">$output" || die "can't open $output: $!"
-	if ($stddev!=$outdev || $stdino!=$outino);
+#	if ($stddev!=$outdev || $stdino!=$outino);
 }
 
 my $masmref=8 + 50727*2**-32;	# 8.00.50727 shipped with VS2005
