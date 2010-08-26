@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 #
 # Implemented as a Perl wrapper as we want to support several different
 # architectures with single file. We pick up the target based on the

@@ -1,4 +1,4 @@
-# Metrowerks Codewarrior or gcc / nlmconv for NetWare
+#!/usr/bin/perl
 #
 
 $version_header = "crypto/opensslv.h";

@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 #
 # modify the '#!/usr/local/bin/perl'
 # line in all scripts that rely on perl.
