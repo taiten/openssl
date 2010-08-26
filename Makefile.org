@@ -132,7 +132,7 @@ FIPSCANLIB=
 
 BASEADDR=
 
-DIRS=   crypto fips ssl engines apps test tools
+DIRS=   crypto fips ssl engines apps tools
 SHLIBDIRS= crypto ssl fips
 
 # dirs in crypto to build
