@@ -1,3 +1,9 @@
+openssl (0.9.8o-2) unstable; urgency=high
+
+  * Fix CVE-2010-2939: Double free using ECDH. (Closes: #594415)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 26 Aug 2010 18:25:29 +0200
+
 openssl (0.9.8o-1) unstable; urgency=low
 
   * New upstream version

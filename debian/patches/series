@@ -18,3 +18,4 @@ shared-lib-ext.patch
 stddef.patch
 version-script.patch
 perl-path.diff
+CVE-2010-2939.patch
