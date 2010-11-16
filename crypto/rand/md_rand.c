@@ -477,7 +477,9 @@ static int ssleay_rand_bytes(unsigned char *buf, int num)
 		MD_Update(&m,local_md,MD_DIGEST_LENGTH);
 		MD_Update(&m,(unsigned char *)&(md_c[0]),sizeof(md_c));
 #ifndef PURIFY
+#if 0 /* Don't add uninitialised data. */
 		MD_Update(&m,buf,j); /* purify complains */
+#endif
 #endif
 		k=(st_idx+MD_DIGEST_LENGTH/2)-st_num;
 		if (k > 0)
