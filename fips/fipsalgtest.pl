@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 # Perl utility to run or verify FIPS 140-2 CMVP algorithm tests based on the
 # pathnames of input algorithm test files actually present (the unqualified
 # file names are consistent but the pathnames are not).

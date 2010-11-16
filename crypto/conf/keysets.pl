@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 
 $NUMBER=0x01;
 $UPPER=0x02;
