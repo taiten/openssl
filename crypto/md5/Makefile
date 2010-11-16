@@ -52,7 +52,8 @@ mx86-cof.s: asm/md5-586.pl ../perlasm/x86asm.pl
 mx86-out.s: asm/md5-586.pl ../perlasm/x86asm.pl
 	(cd asm; $(PERL) md5-586.pl a.out $(CFLAGS) > ../$@)
 
-md5-x86_64.s:	asm/md5-x86_64.pl;	$(PERL) asm/md5-x86_64.pl $@
+md5-x86_64.s:	asm/md5-x86_64.pl
+	$(PERL) asm/md5-x86_64.pl $@
 
 files:
 	$(PERL) $(TOP)/util/files.pl Makefile >> $(TOP)/MINFO
