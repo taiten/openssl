@@ -57,12 +57,12 @@ build-stamp:
 #	make -f Makefile clean
 #	./Configure --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 debian-$(DEB_HOST_ARCH)
 #	make -f Makefile all
-	touch build
+	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
-	-rm -f build
+	-rm -f build-stamp
 	-./Configure $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	[ ! -f Makefile ] || make -f Makefile  clean clean-shared
 	#-make -f Makefile  dclean

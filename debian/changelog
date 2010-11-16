@@ -1,3 +1,20 @@
+openssl (0.9.8o-3) unstable; urgency=high
+
+  * Fix TLS extension parsing race condition (CVE-2010-3864) (Closes: #603709)
+  * Re-add the engines.  They were missing since 0.9.8m-1.
+    Patch by Joerg Schneider. (Closes: #603693)
+  * Not all architectures were build using -g (Closes: #570702)
+  * Add powerpcspe support (Closes: #579805)
+  * Add armhf support (Closes: #596881)
+  * Update translations:
+    - Brazilian Portuguese (Closes: #592154)
+    - Danish (Closes: #599459)
+    - Vietnamese (Closes: #601536)
+    - Arabic (Closes: #596166)
+  * Generate the proper stamp file so that everything doesn't get build twice.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 16 Nov 2010 19:20:55 +0100
+
 openssl (0.9.8o-2) unstable; urgency=high
 
   * Fix CVE-2010-2939: Double free using ECDH. (Closes: #594415)
