@@ -20,3 +20,4 @@ version-script.patch
 perl-path.diff
 CVE-2010-2939.patch
 CVE-2010-3864.patch
+CVE-2010-4180.patch
