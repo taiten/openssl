@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 #
 # For Microsoft CL this is implemented as inline assembler. So that
 # even though this script can generate even Win32 code, we'll be
