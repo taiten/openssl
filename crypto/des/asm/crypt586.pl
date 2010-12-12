@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 #
 # The inner loop instruction sequence and the IP/FP modifications are from
 # Svend Olaf Mikkelsen <svolaf@inet.uni-c.dk>
@@ -6,7 +6,8 @@
 # things perfect.
 #
 
-push(@INC,"perlasm","../../perlasm");
+$0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
+push(@INC,"${dir}","${dir}../../perlasm");
 require "x86asm.pl";
 
 &asm_init($ARGV[0],"crypt586.pl");
@@ -22,7 +23,7 @@ sub fcrypt_body
 	{
 	local($name,$do_ip)=@_;
 
-	&function_begin($name,"EXTRN   _DES_SPtrans:DWORD");
+	&function_begin($name);
 
 	&comment("");
 	&comment("Load the 2 words");

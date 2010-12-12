@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl -w
 # Clean the dependency list in a makefile of standard includes...
 # Written by Ben Laurie <ben@algroup.co.uk> 19 Jan 1999
 
@@ -42,6 +42,7 @@ foreach $file (sort keys %files) {
     my @deps = map { $_ =~ s/^\.\///; $_ } @{$files{$file}};
 
     foreach $dep (sort @deps) {
+	$dep=~s/^\.\///;
 	next if $prevdep eq $dep; # to exterminate duplicates...
 	$prevdep = $dep;
 	$len=0 if $len+length($dep)+1 >= 80;

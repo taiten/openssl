@@ -1,4 +1,4 @@
-OPENSSL_0.9.8 {
+OPENSSL_1.0.0 {
 	 global:
 		 *;
 };

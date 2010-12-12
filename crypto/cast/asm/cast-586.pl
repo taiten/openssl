@@ -1,9 +1,10 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 
 # define for pentium pro friendly version
 $ppro=1;
 
-push(@INC,"perlasm","../../perlasm");
+$0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
+push(@INC,"${dir}","${dir}../../perlasm");
 require "x86asm.pl";
 require "cbc.pl";
 

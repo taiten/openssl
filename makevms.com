@@ -18,8 +18,8 @@ $!
 $! Specify one of the following build options for P1.
 $!
 $!      ALL       Just build "everything".
-$!      CONFIG    Just build the "[.CRYPTO._<ARCH>]OPENSSLCONF.H" file.
-$!      BUILDINF  Just build the "[.CRYPTO._<ARCH>]BUILDINF.H" file.
+$!      CONFIG    Just build the "[.CRYPTO._xxx]OPENSSLCONF.H" file.
+$!      BUILDINF  Just build the "[.CRYPTO._xxx]BUILDINF.H" file.
 $!      SOFTLINKS Just fix the Unix soft links.
 $!      BUILDALL  Same as ALL, except CONFIG, BUILDINF and SOFTILNKS aren't done.
 $!      CRYPTO    Just build the "[.xxx.EXE.CRYPTO]LIBCRYPTO.OLB" library.
@@ -35,10 +35,10 @@ $!
 $! P2 is ignored (it was used to denote if RSAref should be used or not,
 $! and is simply kept so surrounding scripts don't get confused)
 $!
-$! Speficy DEBUG or NODEBUG as P3 to compile with or without debugging
+$! Specify DEBUG or NODEBUG as P3 to compile with or without debugging
 $! information.
 $!
-$! Specify which compiler at P4 to try to compile under.
+$! Specify which compiler as P4 to try to compile under.
 $!
 $!	  VAXC	 For VAX C.
 $!	  DECC	 For DEC C.
@@ -46,7 +46,7 @@ $!	  GNUC	 For GNU C.
 $!	  LINK   To only link the programs from existing object files.
 $!               (not yet implemented)
 $!
-$! If you don't speficy a compiler, it will try to determine which
+$! If you don't specify a compiler, it will try to determine which
 $! "C" compiler to use.
 $!
 $! P5, if defined, sets a TCP/IP library to use, through one of the following
@@ -84,7 +84,7 @@ $ THEN
 $!
 $!  The Architecture Is VAX.
 $!
-$   ARCH := VAX
+$   ARCH = "VAX"
 $!
 $! Else...
 $!
@@ -98,6 +98,10 @@ $!
 $! End The Architecture Check.
 $!
 $ ENDIF
+$!
+$! Get VMS version.
+$!
+$ VMS_VERSION = f$edit( f$getsyi( "VERSION"), "TRIM")
 $!
 $! Check To Make Sure We Have Valid Command Line Parameters.
 $!
@@ -163,11 +167,11 @@ $! Time To EXIT.
 $!
 $ GOTO TIDY
 $!
-$! Rebuild The "[.CRYPTO._''ARCH']OPENSSLCONF.H" file.
+$! Rebuild The [.CRYPTO._xxx]OPENSSLCONF.H" file.
 $!
 $ CONFIG:
 $!
-$! Tell The User We Are Creating The [.CRYPTO._<ARCH>]OPENSSLCONF.H File.
+$! Tell The User We Are Creating The [.CRYPTO._xxx]OPENSSLCONF.H File.
 $!
 $ WRITE SYS$OUTPUT "Creating [.CRYPTO._''ARCH']OPENSSLCONF.H Include File."
 $!
@@ -176,7 +180,28 @@ $!
 $ IF F$PARSE("SYS$DISK:[.CRYPTO._''ARCH']") .EQS. "" THEN -
      CREATE/DIRECTORY SYS$DISK:[.CRYPTO._'ARCH']
 $!
-$! Create The [.CRYPTO._<ARCH>]OPENSSLCONF.H File.
+$! Different tar/UnZip versions/option may have named the file differently
+$ IF F$SEARCH("[.crypto]opensslconf.h_in") .NES. ""
+$ THEN
+$   OPENSSLCONF_H_IN = "[.crypto]opensslconf.h_in"
+$ ELSE
+$   IF F$SEARCH( "[.crypto]opensslconf_h.in") .NES. ""
+$   THEN
+$     OPENSSLCONF_H_IN = "[.crypto]opensslconf_h.in"
+$   ELSE
+$     ! For ODS-5
+$     IF F$SEARCH( "[.crypto]opensslconf.h.in") .NES. ""
+$     THEN
+$       OPENSSLCONF_H_IN = "[.crypto]opensslconf.h.in"
+$     ELSE
+$       WRITE SYS$ERROR "Couldn't find a [.crypto]opensslconf.h.in.  Exiting!"
+$       $STATUS = %X00018294 ! "%RMS-F-FNF, file not found".
+$       GOTO TIDY
+$     ENDIF
+$   ENDIF
+$ ENDIF
+$!
+$! Create The [.CRYPTO._xxx]OPENSSLCONF.H File.
 $! Make sure it has the right format.
 $!
 $ OSCH_NAME = "SYS$DISK:[.CRYPTO._''ARCH']OPENSSLCONF.H"
@@ -185,10 +210,10 @@ RECORD
         FORMAT stream_lf
 $ OPEN /APPEND H_FILE 'OSCH_NAME'
 $!
-$! Write The [.CRYPTO._<ARCH>]OPENSSLCONF.H File.
+$! Write The [.CRYPTO._xxx]OPENSSLCONF.H File.
 $!
 $ WRITE H_FILE "/* This file was automatically built using makevms.com */"
-$ WRITE H_FILE "/* and [.CRYPTO._''ARCH']OPENSSLCONF.H_IN */"
+$ WRITE H_FILE "/* and ''OPENSSLCONF_H_IN' */"
 $!
 $! Write a few macros that indicate how this system was built.
 $!
@@ -196,79 +221,253 @@ $ WRITE H_FILE ""
 $ WRITE H_FILE "#ifndef OPENSSL_SYS_VMS"
 $ WRITE H_FILE "# define OPENSSL_SYS_VMS"
 $ WRITE H_FILE "#endif"
-$ CONFIG_LOGICALS := NO_ASM,NO_RSA,NO_DSA,NO_DH,NO_MD2,NO_MD5,NO_RIPEMD,-
-	NO_SHA,NO_SHA0,NO_SHA1,NO_DES/NO_MDC2;NO_MDC2,NO_RC2,NO_RC4,NO_RC5,-
-	NO_IDEA,NO_BF,NO_CAST,NO_CAMELLIA,NO_SEED,NO_HMAC,NO_SSL2
-$ CONFIG_LOG_I = 0
-$ CONFIG_LOG_LOOP:
-$   CONFIG_LOG_E1 = F$ELEMENT(CONFIG_LOG_I,",",CONFIG_LOGICALS)
-$   CONFIG_LOG_I = CONFIG_LOG_I + 1
-$   IF CONFIG_LOG_E1 .EQS. "" THEN GOTO CONFIG_LOG_LOOP
-$   IF CONFIG_LOG_E1 .EQS. "," THEN GOTO CONFIG_LOG_LOOP_END
-$   CONFIG_LOG_E2 = F$EDIT(CONFIG_LOG_E1,"TRIM")
-$   CONFIG_LOG_E1 = F$ELEMENT(0,";",CONFIG_LOG_E2)
-$   CONFIG_LOG_E2 = F$ELEMENT(1,";",CONFIG_LOG_E2)
-$   CONFIG_LOG_E0 = F$ELEMENT(0,"/",CONFIG_LOG_E1)
-$   CONFIG_LOG_E1 = F$ELEMENT(1,"/",CONFIG_LOG_E1)
-$   IF F$TRNLNM("OPENSSL_"+CONFIG_LOG_E0)
-$   THEN
-$     WRITE H_FILE "#ifndef OPENSSL_",CONFIG_LOG_E0
-$     WRITE H_FILE "# define OPENSSL_",CONFIG_LOG_E0
-$     WRITE H_FILE "#endif"
-$     IF CONFIG_LOG_E1 .NES. "/"
-$     THEN
-$       WRITE H_FILE "#ifndef OPENSSL_",CONFIG_LOG_E1
-$       WRITE H_FILE "# define OPENSSL_",CONFIG_LOG_E1
-$       WRITE H_FILE "#endif"
-$     ENDIF
-$   ELSE
-$     IF CONFIG_LOG_E2 .NES. ";"
-$     THEN
-$       IF F$TRNLNM("OPENSSL_"+CONFIG_LOG_E2)
-$       THEN
-$         WRITE H_FILE "#ifndef OPENSSL_",CONFIG_LOG_E2
-$         WRITE H_FILE "# define OPENSSL_",CONFIG_LOG_E2
-$         WRITE H_FILE "#endif"
-$       ENDIF
-$     ENDIF
-$   ENDIF
-$   GOTO CONFIG_LOG_LOOP
-$ CONFIG_LOG_LOOP_END:
-$ WRITE H_FILE "#ifndef OPENSSL_NO_STATIC_ENGINE"
-$ WRITE H_FILE "# define OPENSSL_NO_STATIC_ENGINE"
-$ WRITE H_FILE "#endif"
-$ WRITE H_FILE "#ifndef OPENSSL_THREADS"
-$ WRITE H_FILE "# define OPENSSL_THREADS"
-$ WRITE H_FILE "#endif"
-$ WRITE H_FILE "#ifndef OPENSSL_NO_KRB5"
-$ WRITE H_FILE "# define OPENSSL_NO_KRB5"
-$ WRITE H_FILE "#endif"
-$ WRITE H_FILE ""
-$!
-$! Different tar version may have named the file differently
-$ IF F$SEARCH("[.CRYPTO]OPENSSLCONF.H_IN") .NES. ""
+$
+$! One of the best way to figure out what the list should be is to do
+$! the followin on a Unix system:
+$!   grep OPENSSL_NO_ crypto/*/*.h ssl/*.h engines/*.h engines/*/*.h|grep ':# *if'|sed -e 's/^.*def //'|sort|uniq
+$! For that reason, the list will also always end up in alphabetical order
+$ CONFIG_LOGICALS := AES,-
+		     ASM,INLINE_ASM,-
+		     BF,-
+		     BIO,-
+		     BUFFER,-
+		     BUF_FREELISTS,-
+		     CAMELLIA,-
+		     CAST,-
+		     CMS,-
+		     COMP,-
+		     DEPRECATED,-
+		     DES,-
+		     DGRAM,-
+		     DH,-
+		     DSA,-
+		     EC,-
+		     ECDH,-
+		     ECDSA,-
+		     ENGINE,-
+		     ERR,-
+		     EVP,-
+		     FP_API,-
+		     GMP,-
+		     GOST,-
+		     HASH_COMP,-
+		     HMAC,-
+		     IDEA,-
+		     JPAKE,-
+		     KRB5,-
+		     LHASH,-
+		     MD2,-
+		     MD4,-
+		     MD5,-
+		     MDC2,-
+		     OCSP,-
+		     PSK,-
+		     RC2,-
+		     RC4,-
+		     RC5,-
+		     RFC3779,-
+		     RIPEMD,-
+		     RSA,-
+		     SEED,-
+		     SHA,-
+		     SHA0,-
+		     SHA1,-
+		     SHA256,-
+		     SHA512,-
+		     SOCK,-
+		     SSL2,-
+		     STACK,-
+		     STATIC_ENGINE,-
+		     STDIO,-
+		     STORE,-
+		     TLSEXT,-
+		     WHIRLPOOL,-
+		     X509
+$! Add a few that we know about
+$ CONFIG_LOGICALS := 'CONFIG_LOGICALS',-
+		     THREADS
+$! The following rules, which dictate how some algorithm choices affect
+$! others, are picked from Configure.
+$! Quick syntax:
+$!  list = item[ ; list]
+$!  item = algos / dependents
+$!  algos = algo [, algos]
+$!  dependents = dependent [, dependents]
+$! When a list of algos is specified in one item, it means that they must
+$! all be disabled for the rule to apply.
+$! When a list of dependents is specified in one item, it means that they
+$! will all be disabled if the rule applies.
+$! Rules are checked sequentially.  If a rule disables an algorithm, it will
+$! affect all following rules that depend on that algorithm being disabled.
+$! To force something to be enabled or disabled, have no algorithms in the
+$! algos part.
+$ CONFIG_DISABLE_RULES := RIJNDAEL/AES;-
+			  DES/MDC2;-
+			  EC/ECDSA,ECDH;-
+			  MD5/SSL2,SSL3,TLS1;-
+			  SHA/SSL3,TLS1;-
+			  RSA/SSL2;-
+			  RSA,DSA/SSL2;-
+			  DH/SSL3,TLS1;-
+			  TLS1/TLSEXT;-
+			  EC/GOST;-
+			  DSA/GOST;-
+			  DH/GOST;-
+			  /STATIC_ENGINE;-
+			  /KRB5
+$ CONFIG_ENABLE_RULES := ZLIB_DYNAMIC/ZLIB;-
+			 /THREADS
+$
+$! Architecture specific rule addtions
+$ IF ARCH .EQS. "VAX"
 $ THEN
-$   TYPE [.CRYPTO]OPENSSLCONF.H_IN /OUTPUT=H_FILE:
-$ ELSE
-$   IF F$SEARCH("[.CRYPTO]OPENSSLCONF_H.IN") .NES. ""
+$   ! Disable algorithms that require 64 bit integers in C
+$   CONFIG_DISABLE_RULES = CONFIG_DISABLE_RULES + -
+			   ";/GOST" + -
+			   ";/WHIRLPOOL"
+$ ENDIF
+$
+$ CONFIG_LOG_I = 0
+$ CONFIG_LOG_LOOP1:
+$   CONFIG_LOG_E = F$EDIT(F$ELEMENT(CONFIG_LOG_I,",",CONFIG_LOGICALS),"TRIM")
+$   CONFIG_LOG_I = CONFIG_LOG_I + 1
+$   IF CONFIG_LOG_E .EQS. "" THEN GOTO CONFIG_LOG_LOOP1
+$   IF CONFIG_LOG_E .EQS. "," THEN GOTO CONFIG_LOG_LOOP1_END
+$   IF F$TRNLNM("OPENSSL_NO_"+CONFIG_LOG_E)
 $   THEN
-$     TYPE [.CRYPTO]OPENSSLCONF_H.IN /OUTPUT=H_FILE:
+$       CONFIG_DISABLED_'CONFIG_LOG_E' := YES
+$       CONFIG_ENABLED_'CONFIG_LOG_E' := NO
+$	CONFIG_CHANGED_'CONFIG_LOG_E' := YES
 $   ELSE
-$     ! For ODS-5
-$     IF F$SEARCH("[.CRYPTO]OPENSSLCONF.H.IN") .NES. ""
+$       CONFIG_DISABLED_'CONFIG_LOG_E' := NO
+$       CONFIG_ENABLED_'CONFIG_LOG_E' := YES
+$	! Because all algorithms are assumed enabled by default
+$	CONFIG_CHANGED_'CONFIG_LOG_E' := NO
+$   ENDIF
+$   GOTO CONFIG_LOG_LOOP1
+$ CONFIG_LOG_LOOP1_END:
+$
+$! Apply cascading disable rules
+$ CONFIG_DISABLE_I = 0
+$ CONFIG_DISABLE_LOOP0:
+$   CONFIG_DISABLE_E = F$EDIT(F$ELEMENT(CONFIG_DISABLE_I,";",CONFIG_DISABLE_RULES),"TRIM")
+$   CONFIG_DISABLE_I = CONFIG_DISABLE_I + 1
+$   IF CONFIG_DISABLE_E .EQS. "" THEN GOTO CONFIG_DISABLE_LOOP0
+$   IF CONFIG_DISABLE_E .EQS. ";" THEN GOTO CONFIG_DISABLE_LOOP0_END
+$
+$   CONFIG_DISABLE_ALGOS = F$EDIT(F$ELEMENT(0,"/",CONFIG_DISABLE_E),"TRIM")
+$   CONFIG_DISABLE_DEPENDENTS = F$EDIT(F$ELEMENT(1,"/",CONFIG_DISABLE_E),"TRIM")
+$   TO_DISABLE := YES
+$   CONFIG_ALGO_I = 0
+$   CONFIG_DISABLE_LOOP1:
+$     CONFIG_ALGO_E = F$EDIT(F$ELEMENT(CONFIG_ALGO_I,",",CONFIG_DISABLE_ALGOS),"TRIM")
+$     CONFIG_ALGO_I = CONFIG_ALGO_I + 1
+$     IF CONFIG_ALGO_E .EQS. "" THEN GOTO CONFIG_DISABLE_LOOP1
+$     IF CONFIG_ALGO_E .EQS. "," THEN GOTO CONFIG_DISABLE_LOOP1_END
+$     IF F$TYPE(CONFIG_DISABLED_'CONFIG_ALGO_E') .EQS. ""
 $     THEN
-$       TYPE [.CRYPTO]OPENSSLCONF.H.IN /OUTPUT=H_FILE:
+$	TO_DISABLE := NO
 $     ELSE
-$       WRITE SYS$ERROR "Couldn't find a [.CRYPTO]OPENSSLCONF.H_IN.  Exiting!"
-$       $STATUS = %X00018294 ! "%RMS-F-FNF, file not found".
-$       GOTO TIDY
+$	IF .NOT. CONFIG_DISABLED_'CONFIG_ALGO_E' THEN TO_DISABLE := NO
+$     ENDIF
+$     GOTO CONFIG_DISABLE_LOOP1
+$   CONFIG_DISABLE_LOOP1_END:
+$
+$   IF TO_DISABLE
+$   THEN
+$     CONFIG_DEPENDENT_I = 0
+$     CONFIG_DISABLE_LOOP2:
+$	CONFIG_DEPENDENT_E = F$EDIT(F$ELEMENT(CONFIG_DEPENDENT_I,",",CONFIG_DISABLE_DEPENDENTS),"TRIM")
+$	CONFIG_DEPENDENT_I = CONFIG_DEPENDENT_I + 1
+$	IF CONFIG_DEPENDENT_E .EQS. "" THEN GOTO CONFIG_DISABLE_LOOP2
+$	IF CONFIG_DEPENDENT_E .EQS. "," THEN GOTO CONFIG_DISABLE_LOOP2_END
+$       CONFIG_DISABLED_'CONFIG_DEPENDENT_E' := YES
+$       CONFIG_ENABLED_'CONFIG_DEPENDENT_E' := NO
+$	! Better not to assume defaults at this point...
+$	CONFIG_CHANGED_'CONFIG_DEPENDENT_E' := YES
+$	WRITE SYS$ERROR "''CONFIG_DEPENDENT_E' disabled by rule ''CONFIG_DISABLE_E'"
+$	GOTO CONFIG_DISABLE_LOOP2
+$     CONFIG_DISABLE_LOOP2_END:
+$   ENDIF
+$   GOTO CONFIG_DISABLE_LOOP0
+$ CONFIG_DISABLE_LOOP0_END:
+$	
+$! Apply cascading enable rules
+$ CONFIG_ENABLE_I = 0
+$ CONFIG_ENABLE_LOOP0:
+$   CONFIG_ENABLE_E = F$EDIT(F$ELEMENT(CONFIG_ENABLE_I,";",CONFIG_ENABLE_RULES),"TRIM")
+$   CONFIG_ENABLE_I = CONFIG_ENABLE_I + 1
+$   IF CONFIG_ENABLE_E .EQS. "" THEN GOTO CONFIG_ENABLE_LOOP0
+$   IF CONFIG_ENABLE_E .EQS. ";" THEN GOTO CONFIG_ENABLE_LOOP0_END
+$
+$   CONFIG_ENABLE_ALGOS = F$EDIT(F$ELEMENT(0,"/",CONFIG_ENABLE_E),"TRIM")
+$   CONFIG_ENABLE_DEPENDENTS = F$EDIT(F$ELEMENT(1,"/",CONFIG_ENABLE_E),"TRIM")
+$   TO_ENABLE := YES
+$   CONFIG_ALGO_I = 0
+$   CONFIG_ENABLE_LOOP1:
+$     CONFIG_ALGO_E = F$EDIT(F$ELEMENT(CONFIG_ALGO_I,",",CONFIG_ENABLE_ALGOS),"TRIM")
+$     CONFIG_ALGO_I = CONFIG_ALGO_I + 1
+$     IF CONFIG_ALGO_E .EQS. "" THEN GOTO CONFIG_ENABLE_LOOP1
+$     IF CONFIG_ALGO_E .EQS. "," THEN GOTO CONFIG_ENABLE_LOOP1_END
+$     IF F$TYPE(CONFIG_ENABLED_'CONFIG_ALGO_E') .EQS. ""
+$     THEN
+$	TO_ENABLE := NO
+$     ELSE
+$	IF .NOT. CONFIG_ENABLED_'CONFIG_ALGO_E' THEN TO_ENABLE := NO
+$     ENDIF
+$     GOTO CONFIG_ENABLE_LOOP1
+$   CONFIG_ENABLE_LOOP1_END:
+$
+$   IF TO_ENABLE
+$   THEN
+$     CONFIG_DEPENDENT_I = 0
+$     CONFIG_ENABLE_LOOP2:
+$	CONFIG_DEPENDENT_E = F$EDIT(F$ELEMENT(CONFIG_DEPENDENT_I,",",CONFIG_ENABLE_DEPENDENTS),"TRIM")
+$	CONFIG_DEPENDENT_I = CONFIG_DEPENDENT_I + 1
+$	IF CONFIG_DEPENDENT_E .EQS. "" THEN GOTO CONFIG_ENABLE_LOOP2
+$	IF CONFIG_DEPENDENT_E .EQS. "," THEN GOTO CONFIG_ENABLE_LOOP2_END
+$       CONFIG_DISABLED_'CONFIG_DEPENDENT_E' := NO
+$       CONFIG_ENABLED_'CONFIG_DEPENDENT_E' := YES
+$	! Better not to assume defaults at this point...
+$	CONFIG_CHANGED_'CONFIG_DEPENDENT_E' := YES
+$	WRITE SYS$ERROR "''CONFIG_DEPENDENT_E' enabled by rule ''CONFIG_ENABLE_E'"
+$	GOTO CONFIG_ENABLE_LOOP2
+$     CONFIG_ENABLE_LOOP2_END:
+$   ENDIF
+$   GOTO CONFIG_ENABLE_LOOP0
+$ CONFIG_ENABLE_LOOP0_END:
+$
+$! Write to the configuration
+$ CONFIG_LOG_I = 0
+$ CONFIG_LOG_LOOP2:
+$   CONFIG_LOG_E = F$EDIT(F$ELEMENT(CONFIG_LOG_I,",",CONFIG_LOGICALS),"TRIM")
+$   CONFIG_LOG_I = CONFIG_LOG_I + 1
+$   IF CONFIG_LOG_E .EQS. "" THEN GOTO CONFIG_LOG_LOOP2
+$   IF CONFIG_LOG_E .EQS. "," THEN GOTO CONFIG_LOG_LOOP2_END
+$   IF CONFIG_CHANGED_'CONFIG_LOG_E'
+$   THEN
+$     IF CONFIG_DISABLED_'CONFIG_LOG_E'
+$     THEN
+$	WRITE H_FILE "#ifndef OPENSSL_NO_",CONFIG_LOG_E
+$	WRITE H_FILE "# define OPENSSL_NO_",CONFIG_LOG_E
+$	WRITE H_FILE "#endif"
+$     ELSE
+$	WRITE H_FILE "#ifndef OPENSSL_",CONFIG_LOG_E
+$	WRITE H_FILE "# define OPENSSL_",CONFIG_LOG_E
+$	WRITE H_FILE "#endif"
 $     ENDIF
 $   ENDIF
-$ ENDIF
+$   GOTO CONFIG_LOG_LOOP2
+$ CONFIG_LOG_LOOP2_END:
+$!
+$! Add in the common "crypto/opensslconf.h.in".
+$!
+$ TYPE 'OPENSSLCONF_H_IN' /OUTPUT=H_FILE:
+$!
 $ IF ARCH .NES. "VAX"
 $ THEN
 $!
-$!  Write the Alpha specific data
+$!  Write the non-VAX specific data
 $!
 $   WRITE H_FILE "#if defined(HEADER_RC4_H)"
 $   WRITE H_FILE "#undef RC4_INT"
@@ -347,15 +546,11 @@ $!  End
 $!
 $ ENDIF
 $!
-$! There are many places where this is needed.
-$!
-$!!! WRITE H_FILE "#define _XOPEN_SOURCE_EXTENDED"
-$!
-$! Close the [.CRYPTO._<ARCH>]OPENSSLCONF.H file
+$! Close the [.CRYPTO._xxx]OPENSSLCONF.H file
 $!
 $ CLOSE H_FILE
 $!
-$! Purge The [.CRYPTO._<ARCH>]OPENSSLCONF.H file
+$! Purge The [.CRYPTO._xxx]OPENSSLCONF.H file
 $!
 $ PURGE SYS$DISK:[.CRYPTO._'ARCH']OPENSSLCONF.H
 $!
@@ -363,15 +558,15 @@ $! That's All, Time To RETURN.
 $!
 $ RETURN
 $!
-$! Rebuild The "[.CRYPTO._<ARCH>]BUILDINF.H" file.
+$! Rebuild The "[.CRYPTO._xxx]BUILDINF.H" file.
 $!
 $ BUILDINF:
 $!
-$! Tell The User We Are Creating The [.CRYPTO._<ARCH>]BUILDINF.H File.
+$! Tell The User We Are Creating The [.CRYPTO._xxx]BUILDINF.H File.
 $!
 $ WRITE SYS$OUTPUT "Creating [.CRYPTO._''ARCH']BUILDINF.H Include File."
 $!
-$! Create The [.CRYPTO._<ARCH>]BUILDINF.H File.
+$! Create The [.CRYPTO._xxx]BUILDINF.H File.
 $!
 $ BIH_NAME = "SYS$DISK:[.CRYPTO._''ARCH']BUILDINF.H"
 $ CREATE /FDL=SYS$INPUT: 'BIH_NAME'
@@ -384,19 +579,24 @@ $! Get The Current Date & Time.
 $!
 $ TIME = F$TIME()
 $!
-$! Write The [.CRYPTO._<ARCH>]BUILDINF.H File.
+$! Write The [.CRYPTO._xxx]BUILDINF.H File.
 $!
-$ WRITE H_FILE "#define CFLAGS """" /* Not filled in for now */"
-$ WRITE H_FILE "#define PLATFORM ""VMS ''ARCH' ''VMS_VER'"""
+$! WRITE H_FILE "#define CFLAGS """" /* Not filled in for now */"
+$ WRITE H_FILE "#define PLATFORM ""VMS ''ARCH' ''VMS_VERSION'"""
 $ WRITE H_FILE "#define DATE ""''TIME'"" "
 $!
-$! Close The [.CRYPTO._<ARCH>]BUILDINF.H File.
+$! Close The [.CRYPTO._xxx]BUILDINF.H File.
 $!
 $ CLOSE H_FILE
 $!
-$! Purge The [.CRYPTO._<ARCH>]BUILDINF.H File.
+$! Purge The [.CRYPTO._xxx]BUILDINF.H File.
 $!
 $ PURGE SYS$DISK:[.CRYPTO._'ARCH']BUILDINF.H
+$!
+$! Delete [.CRYPTO]BUILDINF.H File, as there might be some residue from Unix.
+$!
+$ IF F$SEARCH("[.CRYPTO]BUILDINF.H") .NES. "" THEN -
+     DELETE SYS$DISK:[.CRYPTO]BUILDINF.H;*
 $!
 $! That's All, Time To RETURN.
 $!
@@ -435,14 +635,13 @@ $!
 $ SDIRS := ,-
    _'ARCH',-
    OBJECTS,-
-   MD2,MD4,MD5,SHA,MDC2,HMAC,RIPEMD,-
-   DES,AES,RC2,RC4,RC5,IDEA,BF,CAST,CAMELLIA,SEED,-
+   MD2,MD4,MD5,SHA,MDC2,HMAC,RIPEMD,WHRLPOOL,-
+   DES,AES,RC2,RC4,RC5,IDEA,BF,CAST,CAMELLIA,SEED,MODES,-
    BN,EC,RSA,DSA,ECDSA,DH,ECDH,DSO,ENGINE,-
    BUFFER,BIO,STACK,LHASH,RAND,ERR,-
    EVP,ASN1,PEM,X509,X509V3,CONF,TXT_DB,PKCS7,PKCS12,COMP,OCSP,UI,KRB5,-
-   STORE,CMS,PQUEUE,JPAKE
-$ EXHEADER_ := crypto.h,tmdiff.h,opensslv.h,ebcdic.h,symhacks.h,-
-		ossl_typ.h
+   STORE,CMS,PQUEUE,TS,JPAKE
+$ EXHEADER_ := crypto.h,opensslv.h,ebcdic.h,symhacks.h,ossl_typ.h
 $ EXHEADER__'ARCH' := opensslconf.h
 $ EXHEADER_OBJECTS := objects.h,obj_mac.h
 $ EXHEADER_MD2 := md2.h
@@ -452,6 +651,7 @@ $ EXHEADER_SHA := sha.h
 $ EXHEADER_MDC2 := mdc2.h
 $ EXHEADER_HMAC := hmac.h
 $ EXHEADER_RIPEMD := ripemd.h
+$ EXHEADER_WHRLPOOL := whrlpool.h
 $ EXHEADER_DES := des.h,des_old.h
 $ EXHEADER_AES := aes.h
 $ EXHEADER_RC2 := rc2.h
@@ -462,6 +662,7 @@ $ EXHEADER_BF := blowfish.h
 $ EXHEADER_CAST := cast.h
 $ EXHEADER_CAMELLIA := camellia.h
 $ EXHEADER_SEED := seed.h
+$ EXHEADER_MODES := modes.h
 $ EXHEADER_BN := bn.h
 $ EXHEADER_EC := ec.h
 $ EXHEADER_RSA := rsa.h
@@ -493,7 +694,8 @@ $ EXHEADER_KRB5 := krb5_asn.h
 $!EXHEADER_STORE := store.h,str_compat.h
 $ EXHEADER_STORE := store.h
 $ EXHEADER_CMS := cms.h
-$ EXHEADER_PQUEUE := pqueue.h,pq_compat.h
+$ EXHEADER_PQUEUE := pqueue.h
+$ EXHEADER_TS := ts.h
 $ EXHEADER_JPAKE := jpake.h
 $
 $ I = 0
@@ -705,7 +907,7 @@ $! Else...
 $!
 $ ELSE
 $!
-$!  Else, Check To See If P1 Has A Valid Arguement.
+$!  Else, Check To See If P1 Has A Valid Argument.
 $!
 $   IF (P1.EQS."CONFIG").OR.(P1.EQS."BUILDINF").OR.(P1.EQS."SOFTLINKS") -
        .OR.(P1.EQS."BUILDALL") -
@@ -714,7 +916,7 @@ $   IF (P1.EQS."CONFIG").OR.(P1.EQS."BUILDINF").OR.(P1.EQS."SOFTLINKS") -
        .OR.(P1.EQS."ENGINES")
 $   THEN
 $!
-$!    A Valid Arguement.
+$!    A Valid Argument.
 $!
 $     BUILDCOMMAND = P1
 $!
@@ -732,8 +934,8 @@ $     WRITE SYS$OUTPUT ""
 $     WRITE SYS$OUTPUT "The Target ",P1," Is Invalid.  The Valid Target Options Are:"
 $     WRITE SYS$OUTPUT ""
 $     WRITE SYS$OUTPUT "    ALL      :  Just Build Everything."
-$     WRITE SYS$OUTPUT "    CONFIG   :  Just build the [.CRYPTO._''ARCH']OPENSSLCONF.H file."
-$     WRITE SYS$OUTPUT "    BUILDINF :  Just build the [.CRYPTO._''ARCH']BUILDINF.H file."
+$     WRITE SYS$OUTPUT "    CONFIG   :  Just build the [.CRYPTO._xxx]OPENSSLCONF.H file."
+$     WRITE SYS$OUTPUT "    BUILDINF :  Just build the [.CRYPTO._xxx]BUILDINF.H file."
 $     WRITE SYS$OUTPUT "    SOFTLINKS:  Just Fix The Unix soft links."
 $     WRITE SYS$OUTPUT "    BUILDALL :  Same as ALL, except CONFIG, BUILDINF and SOFTILNKS aren't done."
 $     WRITE SYS$OUTPUT "    CRYPTO   :  To Build Just The [.xxx.EXE.CRYPTO]LIBCRYPTO.OLB Library."
@@ -803,7 +1005,7 @@ $!    Time To EXIT.
 $!
 $     GOTO TIDY
 $!
-$!  End The Valid Arguement Check.
+$!  End The Valid Argument Check.
 $!
 $   ENDIF
 $!
@@ -942,7 +1144,7 @@ $!    End The GNU C Check.
 $!
 $     ENDIF
 $!
-$!  Else The User Entered An Invalid Arguement.
+$!  Else The User Entered An Invalid Argument.
 $!
 $   ELSE
 $!
@@ -960,7 +1162,7 @@ $!    Time To EXIT.
 $!
 $     GOTO TIDY
 $!
-$!  End The Valid Arguement Check.
+$!  End The Valid Argument Check.
 $!
 $   ENDIF
 $!
@@ -1067,7 +1269,7 @@ $!  Print info
 $!
 $   WRITE SYS$OUTPUT "TCP/IP library spec: ", TCPIP_LIB
 $!
-$!  Else The User Entered An Invalid Arguement.
+$!  Else The User Entered An Invalid Argument.
 $!
 $ ELSE
 $   IF P5 .NES. ""
@@ -1122,7 +1324,7 @@ $!
 $!  Get The Version Of VMS We Are Using.
 $!
 $   ISSEVEN :=
-$   TMP = F$ELEMENT(0,"-",F$EXTRACT(1,4,F$GETSYI("VERSION")))
+$   TMP = F$ELEMENT(0,"-",F$EXTRACT(1,4,VMS_VERSION))
 $   TMP = F$INTEGER(F$ELEMENT(0,".",TMP)+F$ELEMENT(1,".",TMP))
 $!
 $!  Check To See If The VMS Version Is v7.1 Or Later.

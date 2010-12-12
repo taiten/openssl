@@ -16,7 +16,7 @@ Index: openssl-0.9.8m/openssl.ld
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ openssl-0.9.8m/openssl.ld	2010-02-27 12:28:35.000000000 +0100
 @@ -0,0 +1,5 @@
-+OPENSSL_0.9.8 {
++OPENSSL_1.0.0 {
 +	 global:
 +		 *;
 +};
@@ -26,7 +26,7 @@ Index: openssl-0.9.8m/engines/openssl.ld
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ openssl-0.9.8m/engines/openssl.ld	2010-02-27 12:28:35.000000000 +0100
 @@ -0,0 +1,5 @@
-+OPENSSL_0.9.8 {
++OPENSSL_1.0.0 {
 +	 global:
 +		 *;
 +};
