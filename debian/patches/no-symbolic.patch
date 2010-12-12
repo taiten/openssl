@@ -1,8 +1,8 @@
-Index: openssl-0.9.8k/Makefile.shared
+Index: openssl-1.0.0c/Makefile.shared
 ===================================================================
---- openssl-0.9.8k.orig/Makefile.shared	2009-07-19 11:35:02.000000000 +0200
-+++ openssl-0.9.8k/Makefile.shared	2009-07-19 11:35:48.000000000 +0200
-@@ -149,7 +149,7 @@
+--- openssl-1.0.0c.orig/Makefile.shared	2010-12-12 16:13:36.000000000 +0100
++++ openssl-1.0.0c/Makefile.shared	2010-12-12 16:13:44.000000000 +0100
+@@ -151,7 +151,7 @@
  	SHLIB_SUFFIX=; \
  	ALLSYMSFLAGS='-Wl,--whole-archive'; \
  	NOALLSYMSFLAGS='-Wl,--no-whole-archive'; \

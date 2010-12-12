@@ -99,15 +99,15 @@ $! reflect the EXE variable in Makefile as closely as possible,
 $! thereby making it fairly easy to verify that the lists are the same.
 $!
 $ TEST_FILES = "BNTEST,ECTEST,ECDSATEST,ECDHTEST,IDEATEST,"+ -
-	       "MD2TEST,MD4TEST,MD5TEST,HMACTEST,"+ -
+	       "MD2TEST,MD4TEST,MD5TEST,HMACTEST,WP_TEST,"+ -
 	       "RC2TEST,RC4TEST,RC5TEST,"+ -
 	       "DESTEST,SHATEST,SHA1TEST,SHA256T,SHA512T,"+ -
 	       "MDC2TEST,RMDTEST,"+ -
 	       "RANDTEST,DHTEST,ENGINETEST,"+ -
 	       "BFTEST,CASTTEST,SSLTEST,EXPTEST,DSATEST,RSA_TEST,"+ -
-	       "EVP_TEST,JPAKETEST,IGETEST"
+	       "EVP_TEST,IGETEST,JPAKETEST,ASN1TEST"
 $! Should we add MTTEST,PQ_TEST,LH_TEST,DIVTEST,TABTEST as well?
-$
+$!
 $! Additional directory information.
 $ T_D_BNTEST     := [-.crypto.bn]
 $ T_D_ECTEST     := [-.crypto.ec]
@@ -118,6 +118,7 @@ $ T_D_MD2TEST    := [-.crypto.md2]
 $ T_D_MD4TEST    := [-.crypto.md4]
 $ T_D_MD5TEST    := [-.crypto.md5]
 $ T_D_HMACTEST   := [-.crypto.hmac]
+$ T_D_WP_TEST    := [-.crypto.whrlpool]
 $ T_D_RC2TEST    := [-.crypto.rc2]
 $ T_D_RC4TEST    := [-.crypto.rc4]
 $ T_D_RC5TEST    := [-.crypto.rc5]
@@ -138,8 +139,9 @@ $ T_D_EXPTEST    := [-.crypto.bn]
 $ T_D_DSATEST    := [-.crypto.dsa]
 $ T_D_RSA_TEST   := [-.crypto.rsa]
 $ T_D_EVP_TEST   := [-.crypto.evp]
-$ T_D_JPAKETEST  := [-.crypto.jpake]
 $ T_D_IGETEST    := [-.test]
+$ T_D_JPAKETEST  := [-.crypto.jpake]
+$ T_D_ASN1TEST   := [-.test]
 $!
 $ TCPIP_PROGRAMS = ",,"
 $ IF COMPILER .EQS. "VAXC" THEN -
@@ -212,7 +214,7 @@ $!
 $!  Inform The User That A TCP/IP Library Is Needed To Compile This Program.
 $!
 $   WRITE SYS$OUTPUT -
-       FILE_NAME," Needs A TCP/IP Library.  Can't Link.  Skipping..."
+	  FILE_NAME," Needs A TCP/IP Library.  Can't Link.  Skipping..."
 $   GOTO NEXT_FILE
 $!
 $! End The TCP/IP Library Check.
@@ -227,12 +229,12 @@ $ THEN
 $!
 $!  Don't Link With The RSAREF Routines And TCP/IP Library.
 $!
-$   LINK /'DEBUGGER' /'TRACEBACK' /EXECUTABLE = 'EXE_FILE' -
-       'OBJECT_FILE', -
-       'SSL_LIB' /LIBRARY, -
-       'CRYPTO_LIB' /LIBRARY, -
-       'TCPIP_LIB', -
-       'OPT_FILE' /OPTIONS
+$   LINK /'DEBUGGER' /'TRACEBACK' /EXECTABLE = 'EXE_FILE' -
+	'OBJECT_FILE', -
+	'SSL_LIB' /LIBRARY, -
+	'CRYPTO_LIB' /LIBRARY, -
+	'TCPIP_LIB', -
+	'OPT_FILE' /OPTIONS
 $!
 $! Else...
 $!
@@ -241,10 +243,10 @@ $!
 $!  Don't Link With The RSAREF Routines And Link With A TCP/IP Library.
 $!
 $   LINK /'DEBUGGER' /'TRACEBACK' /EXECUTABLE = 'EXE_FILE' -
-       'OBJECT_FILE', -
-       'SSL_LIB' /LIBRARY, -
-       'CRYPTO_LIB' /LIBRARY, -
-       'OPT_FILE' /OPTIONS
+	'OBJECT_FILE', -
+	'SSL_LIB' /LIBRARY, -
+	'CRYPTO_LIB' /LIBRARY, -
+	'OPT_FILE' /OPTIONS
 $!
 $! End The TCP/IP Library Check.
 $!
@@ -283,8 +285,8 @@ $!
 $     CREATE 'OPT_FILE'
 $DECK
 !
-! Default System Options File To Link Against
-! The Shareable VAX C Runtime Library.
+! Default System Options File To Link Against 
+! The Sharable VAX C Runtime Library.
 !
 SYS$SHARE:VAXCRTL.EXE /SHAREABLE
 $EOD
@@ -312,8 +314,8 @@ $!
 $     CREATE 'OPT_FILE'
 $DECK
 !
-! Default System Options File To Link Against
-! The Shareable C Runtime Library.
+! Default System Options File To Link Agianst 
+! The Sharable C Runtime Library.
 !
 GNU_CC:[000000]GCCLIB.OLB /LIBRARY
 SYS$SHARE:VAXCRTL.EXE /SHAREABLE
@@ -347,8 +349,8 @@ $!
 $       CREATE 'OPT_FILE'
 $DECK
 !
-! Default System Options File To Link Against
-! The Shareable DEC C Runtime Library.
+! Default System Options File To Link Agianst 
+! The Sharable DEC C Runtime Library.
 !
 SYS$SHARE:DECC$SHR.EXE /SHAREABLE
 $EOD
@@ -362,8 +364,8 @@ $!
 $       CREATE 'OPT_FILE'
 $DECK
 !
-! Default System Options File For non-VAX To Link Against
-! The Shareable C Runtime Library.
+! Default System Options File For non-VAX To Link Agianst 
+! The Sharable C Runtime Library.
 !
 SYS$SHARE:CMA$OPEN_LIB_SHR.EXE /SHAREABLE
 SYS$SHARE:CMA$OPEN_RTL.EXE /SHAREABLE

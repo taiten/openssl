@@ -1,3 +1,26 @@
+openssl (1.0.0c-1) experimental; urgency=low
+
+  * New upstream version (Closes: #578376)
+    - New soname: Rename library packages
+    - Drop patch perl-path.diff, not needed anymore
+    - Drop patches CVE-2010-2939.patch, CVE-2010-3864.patch
+      and CVE-2010-4180.patch: applied upstream.
+    - Update Configure for the new fields for the assembler options
+      per arch.  alpha now makes use of assembler.
+  * Move man3 manpages and demos to libssl-doc (Closes: #470594)
+  * Drop .pod files from openssl package (Closes: #518167)
+  * Don't use RC4_CHAR on amd64 and drop rc4-amd64.patch
+  * Stop using BF_PTR2 on (kfreebd-)amd64.
+  * Drop debian-arm from the list of arches.
+  * Update arm arches to use BN_LLONG RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL
+    BF_PTR instead of BN_LLONG DES_RISC1
+  * ia64: Drop RC4_CHAR, add DES_UNROLL DES_INT
+  * powerpc: Use RC4_CHAR RC4_CHUNK DES_RISC1 instead
+    of DES_RISC2 DES_PTR MD2_CHAR RC4_INDEX
+  * s390: Use RC4_CHAR RC4_CHUNK DES_INT DES_UNROLL instead of BN_LLONG
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 12 Dec 2010 15:37:21 +0100
+
 openssl (0.9.8o-4) unstable; urgency=low
 
   * Fix CVE-2010-4180 (Closes: #529221)

@@ -1,5 +1,5 @@
 Source: openssl
-Build-Depends: debhelper (>= 5.0.22), binutils (>= 2.14.90.0.7), zlib1g-dev, m4, bc
+Build-Depends: debhelper (>= 5.0.22), zlib1g-dev, m4, bc
 Section: utils
 Priority: optional
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
@@ -12,7 +12,6 @@ Package: openssl
 Priority: optional
 Architecture: any
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}
-Conflicts: ssleay (<< 0.9.2b)
 Suggests: ca-certificates
 Description: Secure Socket Layer (SSL) binary and related cryptographic tools
  This package contains the openssl binary and related tools.
@@ -27,19 +26,18 @@ Description: Secure Socket Layer (SSL) binary and related cryptographic tools
   -  SSL/TLS client and server tests;
   -  Handling of S/MIME signed or encrypted mail.
 
-Package: libssl0.9.8
+Package: libssl1.0.0
 Section: libs
 Priority: important
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: ssleay (<< 0.9.2b), libssl, openssl (<< 0.9.6-2), libssl096-dev (<< 0.9.6-2)
 Description: SSL shared libraries
  libssl and libcrypto shared libraries needed by programs like
  apache-ssl, telnet-ssl and openssh.
  .
  It is part of the OpenSSL implementation of SSL.
 
-Package: libcrypto0.9.8-udeb
+Package: libcrypto1.0.0-udeb
 XC-Package-Type: udeb
 Section: debian-installer
 Priority: optional
@@ -54,17 +52,28 @@ Package: libssl-dev
 Section: libdevel
 Priority: optional
 Architecture: any
-Depends: libssl0.9.8 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
-Conflicts: ssleay (<< 0.9.2b), libssl08-dev, libssl09-dev, libssl095a-dev, libssl096-dev
+Recommends: libssl-doc
+Depends: libssl1.0.0 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
 Description: SSL development libraries, header files and documentation
  libssl and libcrypto development libraries, header files and manpages.
  .
  It is part of the OpenSSL implementation of SSL.
 
-Package: libssl0.9.8-dbg
+
+Package: libssl-doc
+Section: doc
+Priority: optional
+Architecture: all
+Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}
+Description: SSL development documentation documentation
+ libssl and libcrypto manpages and demo files.
+ .
+ It is part of the OpenSSL implementation of SSL.
+
+Package: libssl1.0.0-dbg
 Section: debug
 Priority: extra
 Architecture: any
-Depends: libssl0.9.8 (= ${binary:Version}), ${misc:Depends}
+Depends: libssl1.0.0 (= ${binary:Version}), ${misc:Depends}
 Description: Symbol tables for libssl and libcrypto
  This package is part of the OpenSSL implementation of SSL.
