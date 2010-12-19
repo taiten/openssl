@@ -16,3 +16,4 @@ rehash_pod.patch
 shared-lib-ext.patch
 stddef.patch
 version-script.patch
+gnu_source.patch

@@ -1,3 +1,11 @@
+openssl (1.0.0c-2) experimental; urgency=low
+
+  * Set $ in front of {sparcv9_asm} so that the sparc v9 variant builds.
+  * Always define _GNU_SOURCE, not only for Linux.
+  * Drop SSL2 support (Closes: #589706)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 19 Dec 2010 16:24:16 +0100
+
 openssl (1.0.0c-1) experimental; urgency=low
 
   * New upstream version (Closes: #578376)
