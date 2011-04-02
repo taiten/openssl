@@ -1,5 +1,7 @@
 OPENSSL_1.0.0 {
-	 global:
-		 *;
+	global:
+		bind_engine;
+	local:
+		*;
 };
 

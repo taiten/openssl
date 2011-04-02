@@ -1,3 +1,15 @@
+openssl (1.0.0d-1) unstable; urgency=low
+
+  * New upstream version
+    - Fixes CVE-2011-0014
+  * Make libssl-doc Replaces/Breaks with old libssl-dev packages
+    (Closes: #607609)
+  * Only export the symbols we should, instead of all.
+  * Add symbol file.
+  * Upload to unstable
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 02 Apr 2011 13:19:19 +0000
+
 openssl (1.0.0c-2) experimental; urgency=low
 
   * Set $ in front of {sparcv9_asm} so that the sparc v9 variant builds.
