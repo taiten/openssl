@@ -209,7 +209,17 @@ sub ::initseg
     if ($::elf)
     {	$initseg.=<<___;
 .section	.init
+#ifdef OPENSSL_PIC
+	pushl	%ebx
+	call    .pic_point0
+.pic_point0:
+	popl    %ebx
+	addl    \$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
+	call	$f\@PLT
+	popl	%ebx
+#else
 	call	$f
+#endif
 	jmp	.Linitalign
 .align	$align
 .Linitalign:
