@@ -64,6 +64,8 @@ Package: libssl-doc
 Section: doc
 Priority: optional
 Architecture: all
+Replaces: libssl-dev (<< 1.0.0)
+Breaks: libssl-dev (<< 1.0.0)
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}
 Description: SSL development documentation documentation
  libssl and libcrypto manpages and demo files.
