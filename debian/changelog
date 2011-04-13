@@ -1,3 +1,10 @@
+openssl (1.0.0d-2) unstable; urgency=high
+
+  * Make c_rehash also generate the old subject hash.  Gnutls applications
+    seem to require it.  (Closes: #611102)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 13 Apr 2011 22:36:49 +0200
+
 openssl (1.0.0d-1) unstable; urgency=low
 
   * New upstream version
