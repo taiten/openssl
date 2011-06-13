@@ -42,11 +42,11 @@ The name (and path) of an executable to use to generate hashes and fingerprints 
 
 Colon separated list of directories to operate on. Ignored if directories are listed on the command line.
 
+=back
+
 =head1 SEE ALSO
 
 L<openssl(1)|openssl(1)>, L<x509(1)|x509(1)>
-
-=back
 
 =head1 BUGS
 
