@@ -18,3 +18,13 @@ stddef.patch
 version-script.patch
 gnu_source.patch
 c_rehash-compat.patch
+libdoc-manpgs-pod-spell.patch
+libssl-misspell.patch
+openssl-pod-misspell.patch
+pod_req_misspell2.patch
+pod_pksc12.misspell.patch
+pod_s_server.misspell.patch
+pod_x509setflags.misspell.patch
+pod_ec.misspell.patch
+pkcs12-doc.patch
+dgst_hmac.patch
