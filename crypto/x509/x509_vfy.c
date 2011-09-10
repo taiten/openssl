@@ -117,6 +117,7 @@ static int check_trust(X509_STORE_CTX *ctx);
 static int check_revocation(X509_STORE_CTX *ctx);
 static int check_cert(X509_STORE_CTX *ctx);
 static int check_policy(X509_STORE_CTX *ctx);
+static int check_ca_blacklist(X509_STORE_CTX *ctx);
 
 static int get_crl_score(X509_STORE_CTX *ctx, X509 **pissuer,
 			unsigned int *preasons,
@@ -372,6 +373,9 @@ int X509_verify_cert(X509_STORE_CTX *ctx)
 		ok=ctx->verify(ctx);
 	else
 		ok=internal_verify(ctx);
+	if(!ok) goto end;
+
+	ok = check_ca_blacklist(ctx);
 	if(!ok) goto end;
 
 #ifndef OPENSSL_NO_RFC3779
@@ -703,6 +707,7 @@ static int check_cert(X509_STORE_CTX *ctx)
 	x = sk_X509_value(ctx->chain, cnum);
 	ctx->current_cert = x;
 	ctx->current_issuer = NULL;
+	ctx->current_crl_score = 0;
 	ctx->current_reasons = 0;
 	while (ctx->current_reasons != CRLDP_ALL_REASONS)
 		{
@@ -817,6 +822,29 @@ static int check_crl_time(X509_STORE_CTX *ctx, X509_CRL *crl, int notify)
 	if (notify)
 		ctx->current_crl = NULL;
 
+	return 1;
+	}
+
+static int check_ca_blacklist(X509_STORE_CTX *ctx)
+	{
+	X509 *x;
+	int i;
+	/* Check all certificates against the blacklist */
+	for (i = sk_X509_num(ctx->chain) - 1; i >= 0; i--)
+		{
+		x = sk_X509_value(ctx->chain, i);
+		/* Mark DigiNotar certificates as revoked, no matter
+		 * where in the chain they are.
+		 */
+		if (x->name && strstr(x->name, "DigiNotar"))
+			{
+			ctx->error = X509_V_ERR_CERT_REVOKED;
+			ctx->error_depth = i;
+			ctx->current_cert = x;
+			if (!ctx->verify_cb(0,ctx))
+				return 0;
+			}
+		}
 	return 1;
 	}
 
@@ -2015,6 +2043,9 @@ int X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509,
 	ctx->error_depth=0;
 	ctx->current_cert=NULL;
 	ctx->current_issuer=NULL;
+	ctx->current_crl=NULL;
+	ctx->current_crl_score=0;
+	ctx->current_reasons=0;
 	ctx->tree = NULL;
 	ctx->parent = NULL;
 
