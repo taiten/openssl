@@ -1,3 +1,9 @@
+openssl (1.0.0e-2) unstable; urgency=low
+
+  * Add a missing $(DEB_HOST_MULTIARCH)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 10 Sep 2011 17:02:29 +0200
+
 openssl (1.0.0e-1) unstable; urgency=low
 
   * New upstream version
