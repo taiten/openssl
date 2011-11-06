@@ -279,7 +279,11 @@ RC4_set_key:
 	xor	%r10,%r10
 	xor	%r11,%r11
 
+#ifdef OPENSSL_PIC
+	mov	OPENSSL_ia32cap_P\@GOTPCREL(%rip),$idx#d
+#else
 	mov	OPENSSL_ia32cap_P(%rip),$idx#d
+#endif
 	bt	\$20,$idx#d
 	jnc	.Lw1stloop
 	bt	\$30,$idx#d
@@ -346,7 +350,11 @@ RC4_set_key:
 .align	16
 RC4_options:
 	lea	.Lopts(%rip),%rax
+#ifdef OPENSSL_PIC
+	mov	OPENSSL_ia32cap_P\@GOTPCREL(%rip),%edx
+#else
 	mov	OPENSSL_ia32cap_P(%rip),%edx
+#endif
 	bt	\$20,%edx
 	jnc	.Ldone
 	add	\$12,%rax
