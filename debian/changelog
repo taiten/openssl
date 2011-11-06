@@ -1,3 +1,11 @@
+openssl (1.0.0e-2.1) unstable; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+  * Block Malaysian's Digicert Sdn. Bhd. certificates by marking them
+    as revoked.
+
+ -- Raphael Geissert <geissert@debian.org>  Sun, 06 Nov 2011 01:39:30 -0600
+
 openssl (1.0.0e-2) unstable; urgency=low
 
   * Add a missing $(DEB_HOST_MULTIARCH)
