@@ -1669,7 +1669,11 @@ AES_cbc_encrypt:
 	lea	.LAES_Td(%rip),$sbox
 .Lcbc_picked_te:
 
+#ifdef OPENSSL_PIC
+	mov	OPENSSL_ia32cap_P\@GOTPCREL(%rip),%r10d
+#else
 	mov	OPENSSL_ia32cap_P(%rip),%r10d
+#endif
 	cmp	\$$speed_limit,%rdx
 	jb	.Lcbc_slow_prologue
 	test	\$15,%rdx
