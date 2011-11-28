@@ -1,3 +1,12 @@
+openssl (1.0.0e-3) unstable; urgency=low
+
+  * Don't build v8 and v9 variants of sparc anymore, they're older than
+    the default.  (Closes: #649841)
+  * Don't build i486 optimized version, that's the default anyway, and
+    it uses assembler that doesn't always work on i486.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 28 Nov 2011 22:17:26 +0100
+
 openssl (1.0.0e-2.1) unstable; urgency=high
 
   * Non-maintainer upload by the Security Team.
