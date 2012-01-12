@@ -1,3 +1,11 @@
+openssl (1.0.0f-1) unstable; urgency=high
+
+  * New upstream version
+    - Fixes CVE-2011-4108, CVE-2011-4576, CVE-2011-4619, CVE-2012-0027,
+      CVE-2011-4577
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 12 Jan 2012 19:02:43 +0100
+
 openssl (1.0.0e-3) unstable; urgency=low
 
   * Don't build v8 and v9 variants of sparc anymore, they're older than
