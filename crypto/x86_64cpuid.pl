@@ -14,7 +14,11 @@ else		{ $arg1="%rdi"; $arg2="%rsi"; }
 print<<___;
 .extern		OPENSSL_cpuid_setup
 .section	.init
+#ifdef OPENSSL_PIC
+	call	OPENSSL_cpuid_setup\@PLT
+#else
 	call	OPENSSL_cpuid_setup
+#endif
 
 .text
 
