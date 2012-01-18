@@ -1,3 +1,10 @@
+openssl (1.0.0g-1) unstable; urgency=high
+
+  * New upstream version
+    - Fixes CVE-2012-0050
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 18 Jan 2012 20:46:13 +0100
+
 openssl (1.0.0f-1) unstable; urgency=high
 
   * New upstream version
