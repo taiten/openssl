@@ -134,7 +134,8 @@ MAKEFILE= Makefile
 MANDIR=/usr/share/man
 MAN1=1
 MAN3=3
-MANSUFFIX=
+MANSUFFIX=ssl
+MANSECTION=SSL
 HTMLSUFFIX=html
 HTMLDIR=$(OPENSSLDIR)/html
 SHELL=/bin/sh
@@ -609,7 +610,7 @@ install_docs:
 		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
 		(cd `$(PERL) util/dirname.pl $$i`; \
 		sh -c "$$pod2man \
-			--section=$$sec --center=OpenSSL \
+			--section=$${sec}$(MANSECTION) --center=OpenSSL \
 			--release=$(VERSION) `basename $$i`") \
 			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
 		$(PERL) util/extract-names.pl < $$i | \
@@ -626,7 +627,7 @@ install_docs:
 		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
 		(cd `$(PERL) util/dirname.pl $$i`; \
 		sh -c "$$pod2man \
-			--section=$$sec --center=OpenSSL \
+			--section=$${sec}$(MANSECTION) --center=OpenSSL \
 			--release=$(VERSION) `basename $$i`") \
 			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
 		$(PERL) util/extract-names.pl < $$i | \
