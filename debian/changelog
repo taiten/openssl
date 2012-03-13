@@ -1,3 +1,17 @@
+openssl (1.0.0h-1) unstable; urgency=high
+
+  * New upstream version
+    - Fixes CVE-2012-0884
+    - Properly fix CVE-2011-4619
+    - pkg-config.patch applied upstream, remove it.
+  * Enable assembler for all i386 arches.  The assembler does proper
+    detection of CPU support, including cpuid support.
+    This should fix a problem with AES 192 and 256 with the padlock
+    engine because of the difference in NO_ASM between the between
+    the i686 optimized library and the engine.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 13 Mar 2012 21:08:17 +0100
+
 openssl (1.0.0g-1) unstable; urgency=high
 
   * New upstream version
