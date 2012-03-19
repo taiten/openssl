@@ -1,7 +1,26 @@
+openssl (1.0.1-1) unstable; urgency=low
+
+  * New upstream version
+    - Remove kfreebsd-pipe.patch, fixed upstream
+    - Update pic.patch, openssl-pod-misspell.patch and make-targets.patch
+    - Add OPENSSL_1.0.1 to version-script.patch and libssl1.0.0.symbols for
+      the new functions.
+    - AES-NI support (Closes: #644743)
+  * pic.patch: upstream made OPENSSL_ia32cap_P and OPENSSL_cpuid_setup
+    hidden on amd64, no need to access it PIC anymore.
+  * pic.patch: Make OPENSSL_ia32cap_P hidden on i386 too (Closes: #663977)
+  * Enable hardening using dpkg-buildflags (Closes: #653495)
+  * s_client and s_server were forcing SSLv3 only connection when SSLv2 was
+    disabled instead of the SSLv2 with upgrade method.  (Closes: #664454)
+  * Add Beaks on openssh < 1:5.9p1-4, it has a too strict version check.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 19 Mar 2012 18:23:32 +0100
+
 openssl (1.0.0h-1) unstable; urgency=high
 
   * New upstream version
     - Fixes CVE-2012-0884
+    - Fixes CVE-2012-1165
     - Properly fix CVE-2011-4619
     - pkg-config.patch applied upstream, remove it.
   * Enable assembler for all i386 arches.  The assembler does proper
