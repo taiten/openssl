@@ -1,45 +1,7 @@
-Index: openssl-1.0.0c/crypto/Makefile
+Index: openssl-1.0.1/crypto/des/asm/desboth.pl
 ===================================================================
---- openssl-1.0.0c.orig/crypto/Makefile	2010-07-27 00:09:59.000000000 +0200
-+++ openssl-1.0.0c/crypto/Makefile	2010-12-12 18:05:36.000000000 +0100
-@@ -58,7 +58,7 @@
- 	echo "  #define DATE \"`LC_ALL=C LC_TIME=C date`\""; \
- 	echo '#endif' ) >buildinf.h
- 
--x86cpuid.s:	x86cpuid.pl perlasm/x86asm.pl
-+x86cpuid.S:	x86cpuid.pl perlasm/x86asm.pl
- 	$(PERL) x86cpuid.pl $(PERLASM_SCHEME) $(CFLAGS) $(PROCESSOR) > $@
- 
- applink.o:	$(TOP)/ms/applink.c
-@@ -70,7 +70,7 @@
- uplink-cof.s:	$(TOP)/ms/uplink.pl
- 	$(PERL) $(TOP)/ms/uplink.pl coff > $@
- 
--x86_64cpuid.s: x86_64cpuid.pl
-+x86_64cpuid.S: x86_64cpuid.pl
- 	$(PERL) x86_64cpuid.pl $(PERLASM_SCHEME) > $@
- ia64cpuid.s: ia64cpuid.S
- 	$(CC) $(CFLAGS) -E ia64cpuid.S > $@
-Index: openssl-1.0.0c/crypto/x86_64cpuid.pl
-===================================================================
---- openssl-1.0.0c.orig/crypto/x86_64cpuid.pl	2010-04-14 21:25:09.000000000 +0200
-+++ openssl-1.0.0c/crypto/x86_64cpuid.pl	2010-12-12 18:05:36.000000000 +0100
-@@ -14,7 +14,11 @@
- print<<___;
- .extern		OPENSSL_cpuid_setup
- .section	.init
-+#ifdef OPENSSL_PIC
-+	call	OPENSSL_cpuid_setup\@PLT
-+#else
- 	call	OPENSSL_cpuid_setup
-+#endif
- 
- .text
- 
-Index: openssl-1.0.0c/crypto/des/asm/desboth.pl
-===================================================================
---- openssl-1.0.0c.orig/crypto/des/asm/desboth.pl	2001-10-24 23:20:56.000000000 +0200
-+++ openssl-1.0.0c/crypto/des/asm/desboth.pl	2010-12-12 18:05:36.000000000 +0100
+--- openssl-1.0.1.orig/crypto/des/asm/desboth.pl	2001-10-24 23:20:56.000000000 +0200
++++ openssl-1.0.1/crypto/des/asm/desboth.pl	2012-03-17 14:03:25.000000000 +0100
 @@ -16,6 +16,11 @@
  
  	&push("edi");
@@ -77,51 +39,10 @@ Index: openssl-1.0.0c/crypto/des/asm/desboth.pl
  
  	&stack_pop(3);
  	&mov($L,&DWP(0,"ebx","",0));
-Index: openssl-1.0.0c/crypto/rc4/Makefile
+Index: openssl-1.0.1/crypto/perlasm/cbc.pl
 ===================================================================
---- openssl-1.0.0c.orig/crypto/rc4/Makefile	2009-02-11 11:01:36.000000000 +0100
-+++ openssl-1.0.0c/crypto/rc4/Makefile	2010-12-12 18:05:36.000000000 +0100
-@@ -44,7 +44,7 @@
- rc4-586.s:	asm/rc4-586.pl ../perlasm/x86asm.pl
- 	$(PERL) asm/rc4-586.pl $(PERLASM_SCHEME) $(CFLAGS) > $@
- 
--rc4-x86_64.s: asm/rc4-x86_64.pl
-+rc4-x86_64.S: asm/rc4-x86_64.pl
- 	$(PERL) asm/rc4-x86_64.pl $(PERLASM_SCHEME) > $@
- 
- rc4-ia64.S: asm/rc4-ia64.pl
-Index: openssl-1.0.0c/crypto/rc4/asm/rc4-x86_64.pl
-===================================================================
---- openssl-1.0.0c.orig/crypto/rc4/asm/rc4-x86_64.pl	2009-04-27 21:31:04.000000000 +0200
-+++ openssl-1.0.0c/crypto/rc4/asm/rc4-x86_64.pl	2010-12-12 18:05:36.000000000 +0100
-@@ -279,7 +279,11 @@
- 	xor	%r10,%r10
- 	xor	%r11,%r11
- 
-+#ifdef OPENSSL_PIC
-+	mov	OPENSSL_ia32cap_P\@GOTPCREL(%rip),$idx#d
-+#else
- 	mov	OPENSSL_ia32cap_P(%rip),$idx#d
-+#endif
- 	bt	\$20,$idx#d
- 	jnc	.Lw1stloop
- 	bt	\$30,$idx#d
-@@ -346,7 +350,11 @@
- .align	16
- RC4_options:
- 	lea	.Lopts(%rip),%rax
-+#ifdef OPENSSL_PIC
-+	mov	OPENSSL_ia32cap_P\@GOTPCREL(%rip),%edx
-+#else
- 	mov	OPENSSL_ia32cap_P(%rip),%edx
-+#endif
- 	bt	\$20,%edx
- 	jnc	.Ldone
- 	add	\$12,%rax
-Index: openssl-1.0.0c/crypto/perlasm/cbc.pl
-===================================================================
---- openssl-1.0.0c.orig/crypto/perlasm/cbc.pl	2005-05-09 23:48:00.000000000 +0200
-+++ openssl-1.0.0c/crypto/perlasm/cbc.pl	2010-12-12 18:05:36.000000000 +0100
+--- openssl-1.0.1.orig/crypto/perlasm/cbc.pl	2011-07-13 08:22:46.000000000 +0200
++++ openssl-1.0.1/crypto/perlasm/cbc.pl	2012-03-17 14:03:25.000000000 +0100
 @@ -122,7 +122,11 @@
  	&mov(&DWP($data_off,"esp","",0),	"eax");	# put in array for call
  	&mov(&DWP($data_off+4,"esp","",0),	"ebx");	#
@@ -135,7 +56,7 @@ Index: openssl-1.0.0c/crypto/perlasm/cbc.pl
  
  	&mov("eax",	&DWP($data_off,"esp","",0));
  	&mov("ebx",	&DWP($data_off+4,"esp","",0));
-@@ -187,7 +191,11 @@
+@@ -185,7 +189,11 @@
  	&mov(&DWP($data_off,"esp","",0),	"eax");	# put in array for call
  	&mov(&DWP($data_off+4,"esp","",0),	"ebx");	#
  
@@ -148,7 +69,7 @@ Index: openssl-1.0.0c/crypto/perlasm/cbc.pl
  
  	&mov("eax",	&DWP($data_off,"esp","",0));
  	&mov("ebx",	&DWP($data_off+4,"esp","",0));
-@@ -220,7 +228,11 @@
+@@ -218,7 +226,11 @@
  	&mov(&DWP($data_off,"esp","",0),	"eax");	# put back
  	&mov(&DWP($data_off+4,"esp","",0),	"ebx");	#
  
@@ -161,7 +82,7 @@ Index: openssl-1.0.0c/crypto/perlasm/cbc.pl
  
  	&mov("eax",	&DWP($data_off,"esp","",0));	# get return
  	&mov("ebx",	&DWP($data_off+4,"esp","",0));	#
-@@ -263,7 +275,11 @@
+@@ -261,7 +273,11 @@
  	&mov(&DWP($data_off,"esp","",0),	"eax");	# put back
  	&mov(&DWP($data_off+4,"esp","",0),	"ebx");	#
  
@@ -174,67 +95,75 @@ Index: openssl-1.0.0c/crypto/perlasm/cbc.pl
  
  	&mov("eax",	&DWP($data_off,"esp","",0));	# get return
  	&mov("ebx",	&DWP($data_off+4,"esp","",0));	#
-Index: openssl-1.0.0c/crypto/perlasm/x86_64-xlate.pl
+Index: openssl-1.0.1/crypto/perlasm/x86gas.pl
 ===================================================================
---- openssl-1.0.0c.orig/crypto/perlasm/x86_64-xlate.pl	2010-12-12 18:05:36.000000000 +0100
-+++ openssl-1.0.0c/crypto/perlasm/x86_64-xlate.pl	2010-12-12 18:05:36.000000000 +0100
-@@ -638,7 +638,7 @@
- 
-     chomp($line);
- 
--    $line =~ s|[#!].*$||;	# get rid of asm-style comments...
-+#    $line =~ s|[#!].*$||;	# get rid of asm-style comments...
-     $line =~ s|/\*.*\*/||;	# ... and C-style comments...
-     $line =~ s|^\s+||;		# ... and skip white spaces in beginning
- 
-Index: openssl-1.0.0c/crypto/perlasm/x86gas.pl
-===================================================================
---- openssl-1.0.0c.orig/crypto/perlasm/x86gas.pl	2008-12-17 20:56:47.000000000 +0100
-+++ openssl-1.0.0c/crypto/perlasm/x86gas.pl	2010-12-12 18:05:36.000000000 +0100
-@@ -209,7 +209,17 @@
-     if ($::elf)
+--- openssl-1.0.1.orig/crypto/perlasm/x86gas.pl	2011-12-09 20:16:35.000000000 +0100
++++ openssl-1.0.1/crypto/perlasm/x86gas.pl	2012-03-17 14:03:25.000000000 +0100
+@@ -161,6 +161,7 @@
+ 	if ($::macosx)	{ push (@out,"$tmp,2\n"); }
+ 	elsif ($::elf)	{ push (@out,"$tmp,4\n"); }
+ 	else		{ push (@out,"$tmp\n"); }
++	if ($::elf)	{ push (@out,".hidden\tOPENSSL_ia32cap_P\n"); }
+     }
+     push(@out,$initseg) if ($initseg);
+ }
+@@ -218,7 +219,17 @@
+     elsif ($::elf)
      {	$initseg.=<<___;
  .section	.init
 +#ifdef OPENSSL_PIC
 +	pushl	%ebx
-+	call    .pic_point0
++	call	.pic_point0
 +.pic_point0:
-+	popl    %ebx
-+	addl    \$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
++	popl	%ebx
++	addl	\$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
 +	call	$f\@PLT
 +	popl	%ebx
 +#else
  	call	$f
 +#endif
- 	jmp	.Linitalign
- .align	$align
- .Linitalign:
-Index: openssl-1.0.0c/crypto/aes/asm/aes-x86_64.pl
+ ___
+     }
+     elsif ($::coff)
+Index: openssl-1.0.1/crypto/x86cpuid.pl
 ===================================================================
---- openssl-1.0.0c.orig/crypto/aes/asm/aes-x86_64.pl	2008-12-27 14:32:21.000000000 +0100
-+++ openssl-1.0.0c/crypto/aes/asm/aes-x86_64.pl	2010-12-12 18:05:36.000000000 +0100
-@@ -1669,7 +1669,11 @@
- 	lea	.LAES_Td(%rip),$sbox
- .Lcbc_picked_te:
+--- openssl-1.0.1.orig/crypto/x86cpuid.pl	2012-02-28 15:20:34.000000000 +0100
++++ openssl-1.0.1/crypto/x86cpuid.pl	2012-03-17 14:13:56.000000000 +0100
+@@ -8,6 +8,8 @@
  
-+#ifdef OPENSSL_PIC
-+	mov	OPENSSL_ia32cap_P\@GOTPCREL(%rip),%r10d
-+#else
- 	mov	OPENSSL_ia32cap_P(%rip),%r10d
-+#endif
- 	cmp	\$$speed_limit,%rdx
- 	jb	.Lcbc_slow_prologue
- 	test	\$15,%rdx
-Index: openssl-1.0.0c/crypto/aes/Makefile
-===================================================================
---- openssl-1.0.0c.orig/crypto/aes/Makefile	2010-12-12 18:15:06.000000000 +0100
-+++ openssl-1.0.0c/crypto/aes/Makefile	2010-12-12 18:15:30.000000000 +0100
-@@ -51,7 +51,7 @@
- aes-586.s:	asm/aes-586.pl ../perlasm/x86asm.pl
- 	$(PERL) asm/aes-586.pl $(PERLASM_SCHEME) $(CFLAGS) $(PROCESSOR) > $@
+ for (@ARGV) { $sse2=1 if (/-DOPENSSL_IA32_SSE2/); }
  
--aes-x86_64.s: asm/aes-x86_64.pl
-+aes-x86_64.S: asm/aes-x86_64.pl
- 	$(PERL) asm/aes-x86_64.pl $(PERLASM_SCHEME) > $@
++push(@out, ".hidden OPENSSL_ia32cap_P\n");
++
+ &function_begin("OPENSSL_ia32_cpuid");
+ 	&xor	("edx","edx");
+ 	&pushf	();
+@@ -139,9 +141,7 @@
+ &set_label("nocpuid");
+ &function_end("OPENSSL_ia32_cpuid");
  
- aes-sparcv9.s: asm/aes-sparcv9.pl
+-&external_label("OPENSSL_ia32cap_P");
+-
+-&function_begin_B("OPENSSL_rdtsc","EXTRN\t_OPENSSL_ia32cap_P:DWORD");
++&function_begin_B("OPENSSL_rdtsc");
+ 	&xor	("eax","eax");
+ 	&xor	("edx","edx");
+ 	&picmeup("ecx","OPENSSL_ia32cap_P");
+@@ -155,7 +155,7 @@
+ # This works in Ring 0 only [read DJGPP+MS-DOS+privileged DPMI host],
+ # but it's safe to call it on any [supported] 32-bit platform...
+ # Just check for [non-]zero return value...
+-&function_begin_B("OPENSSL_instrument_halt","EXTRN\t_OPENSSL_ia32cap_P:DWORD");
++&function_begin_B("OPENSSL_instrument_halt");
+ 	&picmeup("ecx","OPENSSL_ia32cap_P");
+ 	&bt	(&DWP(0,"ecx"),4);
+ 	&jnc	(&label("nohalt"));	# no TSC
+@@ -222,7 +222,7 @@
+ 	&ret	();
+ &function_end_B("OPENSSL_far_spin");
+ 
+-&function_begin_B("OPENSSL_wipe_cpu","EXTRN\t_OPENSSL_ia32cap_P:DWORD");
++&function_begin_B("OPENSSL_wipe_cpu");
+ 	&xor	("eax","eax");
+ 	&xor	("edx","edx");
+ 	&picmeup("ecx","OPENSSL_ia32cap_P");
