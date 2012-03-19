@@ -1,3 +1,9 @@
+openssl (1.0.1-2) unstable; urgency=low
+
+  * Properly quote the new cflags in Configure
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 19 Mar 2012 19:56:05 +0100
+
 openssl (1.0.1-1) unstable; urgency=low
 
   * New upstream version
