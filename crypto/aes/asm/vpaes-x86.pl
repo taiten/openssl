@@ -856,6 +856,7 @@ $k_dsbo=0x2c0;		# decryption sbox final output
 	&sub	($round,16);
 	&mov	(&DWP(4,"esp"),$key)		# save key
 	&mov	(&DWP(8,"esp"),$const);		# save ivp
+	&jc	(&label("cbc_done"));
 	&mov	($out,$round);			# $out works as $len
 
 	&lea	($const,&DWP(&label("_vpaes_consts")."+0x30-".&label("pic_point")));
