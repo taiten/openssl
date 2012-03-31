@@ -30,6 +30,6 @@ block_diginotar.patch
 block_digicert_malaysia.patch
 c_rehash-multi.patch
 no_ssl2.patch
-vpaes-x86.patch
+vpaes.patch
 tls1.2_client_algorithms.patch
 
