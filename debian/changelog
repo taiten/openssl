@@ -1,3 +1,9 @@
+openssl (1.0.1-4) unstable; urgency=low
+
+  * Use official patch for the vpaes problem, also covering amd64.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 31 Mar 2012 20:54:13 +0200
+
 openssl (1.0.1-3) unstable; urgency=high
 
   * Fix crash in vpaes (Closes: #665836)
