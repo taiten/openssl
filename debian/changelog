@@ -1,3 +1,15 @@
+openssl (1.0.1a-3) unstable; urgency=low
+
+  * Use patch from upstream for the rc4_hmac_md5 issue.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 19 Apr 2012 23:16:30 +0200
+
+openssl (1.0.1a-2) unstable; urgency=low
+
+  * Fix rc4_hmac_md5 on non-i386/amd64 arches.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 19 Apr 2012 21:54:42 +0200
+
 openssl (1.0.1a-1) unstable; urgency=high
 
   * New upstream version
