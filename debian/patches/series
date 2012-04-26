@@ -29,5 +29,3 @@ dgst_hmac.patch
 block_diginotar.patch
 block_digicert_malaysia.patch
 c_rehash-multi.patch
-
-rc4_hmac_md5.patch

@@ -1,3 +1,12 @@
+openssl (1.0.1b-1) unstable; urgency=high
+
+  * New upstream version
+    - Remaps SSL_OP_NO_TLSv1_1, so applications linked to 1.0.0
+      can talk to servers supporting TLS 1.1 but not TLS 1.2
+    - Drop rc4_hmac_md5.patch, applied upstream
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 26 Apr 2012 23:34:34 +0200
+
 openssl (1.0.1a-3) unstable; urgency=low
 
   * Use patch from upstream for the rc4_hmac_md5 issue.
