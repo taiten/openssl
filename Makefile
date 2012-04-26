@@ -4,7 +4,7 @@
 ## Makefile for OpenSSL
 ##
 
-VERSION=1.0.1a
+VERSION=1.0.1b
 MAJOR=1
 MINOR=0.1
 SHLIB_VERSION_NUMBER=1.0.0
@@ -471,9 +471,9 @@ tags:
 	find . -name '[^.]*.[ch]' | xargs etags -a
 
 errors:
+	$(PERL) util/ck_errf.pl -strict */*.c */*/*.c
 	$(PERL) util/mkerr.pl -recurse -write
 	(cd engines; $(MAKE) PERL=$(PERL) errors)
-	$(PERL) util/ck_errf.pl -strict */*.c */*/*.c
 
 stacks:
 	$(PERL) util/mkstack.pl -write
