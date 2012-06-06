@@ -30,5 +30,5 @@ block_diginotar.patch
 block_digicert_malaysia.patch
 c_rehash-multi.patch
 renegiotate_tls.patch
-padlock_conf.patch
+#padlock_conf.patch
 default_bits.patch
