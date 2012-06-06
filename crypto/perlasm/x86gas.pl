@@ -161,6 +161,7 @@ sub ::file_end
 	if ($::macosx)	{ push (@out,"$tmp,2\n"); }
 	elsif ($::elf)	{ push (@out,"$tmp,4\n"); }
 	else		{ push (@out,"$tmp\n"); }
+	if ($::elf)	{ push (@out,".hidden\tOPENSSL_ia32cap_P\n"); }
     }
     push(@out,$initseg) if ($initseg);
 }
@@ -218,7 +219,17 @@ ___
     elsif ($::elf)
     {	$initseg.=<<___;
 .section	.init
+#ifdef OPENSSL_PIC
+	pushl	%ebx
+	call	.pic_point0
+.pic_point0:
+	popl	%ebx
+	addl	\$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
+	call	$f\@PLT
+	popl	%ebx
+#else
 	call	$f
+#endif
 ___
     }
     elsif ($::coff)
