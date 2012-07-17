@@ -1,3 +1,17 @@
+openssl (1.0.1c-4) unstable; urgency=low
+
+  * Fix the configure rules for alpha (Closes: #672710)
+  * Switch the postinst to sh again, there never was a reason to
+    switch it to bash (Closes: #676398)
+  * Fix pic.patch to not use #ifdef in x86cpuid.s, only .S files are
+    preprocessed.  We generate the file again for pic anyway.
+    (Closes: #677468)
+  * Drop Breaks against openssh as it was only for upgrades
+    between versions that were only in testing/unstable.
+    (Closes: #668600)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 17 Jul 2012 11:49:19 +0200
+
 openssl (1.0.1c-3) unstable; urgency=low
 
   * Disable padlock engine again, causes problems for hosts not supporting it.

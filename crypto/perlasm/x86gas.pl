@@ -219,7 +219,9 @@ ___
     elsif ($::elf)
     {	$initseg.=<<___;
 .section	.init
-#ifdef OPENSSL_PIC
+___
+        if ($::pic)
+	{   $initseg.=<<___;
 	pushl	%ebx
 	call	.pic_point0
 .pic_point0:
@@ -227,10 +229,13 @@ ___
 	addl	\$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
 	call	$f\@PLT
 	popl	%ebx
-#else
-	call	$f
-#endif
 ___
+	}
+	else
+	{   $initseg.=<<___;
+	call	$f
+___
+	}
     }
     elsif ($::coff)
     {   $initseg.=<<___;	# applies to both Cygwin and Mingw
