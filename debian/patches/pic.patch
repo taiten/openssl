@@ -1,7 +1,7 @@
-Index: openssl-1.0.1/crypto/des/asm/desboth.pl
+Index: openssl-1.0.1c/crypto/des/asm/desboth.pl
 ===================================================================
---- openssl-1.0.1.orig/crypto/des/asm/desboth.pl	2001-10-24 23:20:56.000000000 +0200
-+++ openssl-1.0.1/crypto/des/asm/desboth.pl	2012-03-17 14:03:25.000000000 +0100
+--- openssl-1.0.1c.orig/crypto/des/asm/desboth.pl	2001-10-24 23:20:56.000000000 +0200
++++ openssl-1.0.1c/crypto/des/asm/desboth.pl	2012-07-29 14:15:26.000000000 +0200
 @@ -16,6 +16,11 @@
  
  	&push("edi");
@@ -39,10 +39,10 @@ Index: openssl-1.0.1/crypto/des/asm/desboth.pl
  
  	&stack_pop(3);
  	&mov($L,&DWP(0,"ebx","",0));
-Index: openssl-1.0.1/crypto/perlasm/cbc.pl
+Index: openssl-1.0.1c/crypto/perlasm/cbc.pl
 ===================================================================
---- openssl-1.0.1.orig/crypto/perlasm/cbc.pl	2011-07-13 08:22:46.000000000 +0200
-+++ openssl-1.0.1/crypto/perlasm/cbc.pl	2012-03-17 14:03:25.000000000 +0100
+--- openssl-1.0.1c.orig/crypto/perlasm/cbc.pl	2011-07-13 08:22:46.000000000 +0200
++++ openssl-1.0.1c/crypto/perlasm/cbc.pl	2012-07-29 14:15:26.000000000 +0200
 @@ -122,7 +122,11 @@
  	&mov(&DWP($data_off,"esp","",0),	"eax");	# put in array for call
  	&mov(&DWP($data_off+4,"esp","",0),	"ebx");	#
@@ -95,10 +95,10 @@ Index: openssl-1.0.1/crypto/perlasm/cbc.pl
  
  	&mov("eax",	&DWP($data_off,"esp","",0));	# get return
  	&mov("ebx",	&DWP($data_off+4,"esp","",0));	#
-Index: openssl-1.0.1/crypto/perlasm/x86gas.pl
+Index: openssl-1.0.1c/crypto/perlasm/x86gas.pl
 ===================================================================
---- openssl-1.0.1.orig/crypto/perlasm/x86gas.pl	2011-12-09 20:16:35.000000000 +0100
-+++ openssl-1.0.1/crypto/perlasm/x86gas.pl	2012-03-17 14:03:25.000000000 +0100
+--- openssl-1.0.1c.orig/crypto/perlasm/x86gas.pl	2011-12-09 20:16:35.000000000 +0100
++++ openssl-1.0.1c/crypto/perlasm/x86gas.pl	2012-07-29 14:15:26.000000000 +0200
 @@ -161,6 +161,7 @@
  	if ($::macosx)	{ push (@out,"$tmp,2\n"); }
  	elsif ($::elf)	{ push (@out,"$tmp,4\n"); }
@@ -107,11 +107,13 @@ Index: openssl-1.0.1/crypto/perlasm/x86gas.pl
      }
      push(@out,$initseg) if ($initseg);
  }
-@@ -218,7 +219,17 @@
+@@ -218,8 +219,23 @@
      elsif ($::elf)
      {	$initseg.=<<___;
  .section	.init
-+#ifdef OPENSSL_PIC
++___
++        if ($::pic)
++	{   $initseg.=<<___;
 +	pushl	%ebx
 +	call	.pic_point0
 +.pic_point0:
@@ -119,16 +121,20 @@ Index: openssl-1.0.1/crypto/perlasm/x86gas.pl
 +	addl	\$_GLOBAL_OFFSET_TABLE_+[.-.pic_point0],%ebx
 +	call	$f\@PLT
 +	popl	%ebx
-+#else
++___
++	}
++	else
++	{   $initseg.=<<___;
  	call	$f
-+#endif
  ___
++	}
      }
      elsif ($::coff)
-Index: openssl-1.0.1/crypto/x86cpuid.pl
+     {   $initseg.=<<___;	# applies to both Cygwin and Mingw
+Index: openssl-1.0.1c/crypto/x86cpuid.pl
 ===================================================================
---- openssl-1.0.1.orig/crypto/x86cpuid.pl	2012-02-28 15:20:34.000000000 +0100
-+++ openssl-1.0.1/crypto/x86cpuid.pl	2012-03-17 14:13:56.000000000 +0100
+--- openssl-1.0.1c.orig/crypto/x86cpuid.pl	2012-02-28 15:20:34.000000000 +0100
++++ openssl-1.0.1c/crypto/x86cpuid.pl	2012-07-29 14:15:26.000000000 +0200
 @@ -8,6 +8,8 @@
  
  for (@ARGV) { $sse2=1 if (/-DOPENSSL_IA32_SSE2/); }
