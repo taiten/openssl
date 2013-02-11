@@ -4613,3 +4613,8 @@ OPENSSL_1.0.1 {
 		BIO_dgram_sctp_notification_cb;
 } OPENSSL_1.0.0;
 
+OPENSSL_1.0.1d {
+	global:
+		CRYPTO_memcmp;
+} OPENSSL_1.0.1;
+

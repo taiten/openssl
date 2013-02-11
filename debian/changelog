@@ -1,3 +1,20 @@
+openssl (1.0.1e-1) unstable; urgency=high
+
+  * New upstream version (Closes: #699889)
+    - Fixes CVE-2013-0169, CVE-2012-2686, CVE-2013-0166
+    - Drop renegiotate_tls.patch, applied upstream
+    - Export new CRYPTO_memcmp symbol, update symbol file
+  * Add ssltest_no_sslv2.patch so that "make test" works.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 11 Feb 2013 19:39:44 +0100
+
+openssl (1.0.1c-5) unstable; urgency=low
+
+  * Re-enable assembler versions on sparc.  They shouldn't have
+    been disabled for sparc v9.  (Closes: #649841)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 09 Sep 2012 08:43:40 +0200
+
 openssl (1.0.1c-4) unstable; urgency=low
 
   * Fix the configure rules for alpha (Closes: #672710)
