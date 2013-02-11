@@ -70,6 +70,10 @@ values:
 
 The operation succeeded.
 
+=back
+
+=over 4
+
 =item 0
 
 A failure while manipulating the STACK_OF(X509_NAME) object occurred or
