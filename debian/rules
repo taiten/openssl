@@ -137,7 +137,7 @@ binary-arch:	build install
 	dh_strip -a --dbg-package=libssl1.0.0
 	dh_perl -a -d
 	dpkg-gensymbols -Pdebian/libssl1.0.0/ -plibssl1.0.0 -c4
-	dh_makeshlibs -a -V "libssl1.0.0 (>= 1.0.0)" --add-udeb="libcrypto1.0.0-udeb"
+	dh_makeshlibs -a -V "libssl1.0.0 (>= 1.0.1d)" --add-udeb="libcrypto1.0.0-udeb"
 	dh_shlibdeps -a -L libssl1.0.0 -l debian/libssl1.0.0/usr/lib/$(DEB_HOST_MULTIARCH)
 	dh_gencontrol -a
 	dh_installdeb -a
