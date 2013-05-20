@@ -1,3 +1,17 @@
+openssl (1.0.1e-3) unstable; urgency=low
+
+  * Move <openssl/opensslconf.h> to /usr/include/$(DEB_HOST_MULTIARCH), and
+    mark libssl-dev Multi-Arch: same.
+    Patch by Colin Watson <cjwatson@ubuntu.com> (Closes: #689093)
+  * Add Polish translation (Closes: #658162)
+  * Add Turkish translation (Closes: #660971)
+  * Enable assembler for the arm targets, and remove armeb.
+    Patch by Riku Voipio <riku.voipio@iki.fi> (Closes: #676533)
+  * Add support for x32 (Closes: #698406)
+  * enable ec_nistp_64_gcc_128 on *-amd64 (Closes: #698447)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 20 May 2013 16:56:06 +0200
+
 openssl (1.0.1e-2) unstable; urgency=high
 
   * Bump shlibs.  It's needed for the udeb.
