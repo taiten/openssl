@@ -148,7 +148,7 @@
 static const char *ca_usage[]={
 "usage: ca args\n",
 "\n",
-" -verbose        - Talk alot while doing things\n",
+" -verbose        - Talk a lot while doing things\n",
 " -config file    - A config file\n",
 " -name arg       - The particular CA definition to use\n",
 " -gencrl         - Generate a new CRL\n",
