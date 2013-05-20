@@ -54,6 +54,7 @@ Package: libssl-dev
 Section: libdevel
 Priority: optional
 Architecture: any
+Multi-Arch: same
 Recommends: libssl-doc
 Depends: libssl1.0.0 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
 Description: SSL development libraries, header files and documentation
