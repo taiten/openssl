@@ -31,6 +31,11 @@ ifeq ($(DEB_HOST_ARCH_CPU), amd64)
 	CONFARGS += enable-ec_nistp_64_gcc_128
 endif
 
+MAKE_TEST = make test
+ifneq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	MAKE_TEST = :
+endif
+
 build: build-arch build-indep
 build-arch: build-stamp
 build-indep: build-stamp
@@ -40,7 +45,7 @@ build-stamp:
 #	chmod +x debian/libtool
 	./Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	make -f Makefile all
-	make test
+	$(MAKE_TEST)
 	mv libcrypto.a libcrypto.static
 	mv libssl.a libssl.static
 	make -f Makefile clean
@@ -49,7 +54,7 @@ build-stamp:
 		set -xe; \
 		./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)-$$opt; \
 		make -f Makefile all; \
-		make test; \
+		$(MAKE_TEST); \
 		mkdir -p $$opt; \
 		mv libcrypto.so* libssl.so* $$opt/; \
 		make -f Makefile clean; \
@@ -59,7 +64,7 @@ build-stamp:
 	ln -sf apps/openssl.pod crypto/crypto.pod ssl/ssl.pod doc/
 #	make -f Makefile linux-shared
 	make -f Makefile all
-	make test
+	$(MAKE_TEST)
 #	strip apps/openssl
 #	make -f Makefile clean
 #	./Configure --prefix=/usr --openssldir=/usr/lib/ssl no-idea no-mdc2 no-rc5 debian-$(DEB_HOST_ARCH)
@@ -86,6 +91,9 @@ clean:
 	-rm -f libcrypto.* libssl.*
 	-cd test && rm -f .rnd tmp.bntest tmp.bctest *.o *.obj lib tags core .pure .nfs* *.old *.bak fluff bntest ectest  ecdsatest ecdhtest ideatest md2test  md4test md5test hmactest rc2test rc4test rc5test destest shatest sha1test sha256t sha512t mdc2test rmdtest randtest dhtest enginetest bftest casttest ssltest exptest dsatest rsa_test evp_test *.ss *.srl log dummytest newkey.pem igetest
 	-rm Makefile apps/CA.pl tools/c_rehash crypto/opensslconf.h crypto/x86_64cpuid.S
+	rm -f test/asn1test test/wp_test test/srptest test/jpaketest
+	rm -f certs/demo/*.0
+	rm -rf crypto/aes/aes-armv4.S crypto/bn/armv4-gf2m.S crypto/modes/ghash-armv4.S crypto/sha/*.S
 	dh_clean
 
 install: build
@@ -141,10 +149,11 @@ binary-arch:	build install
 	dh_compress -a
 	chmod 700 debian/openssl/etc/ssl/private
 	dh_fixperms -a -X etc/ssl/private
-	dh_strip -a --dbg-package=libssl1.0.0
+	dh_strip -plibssl1.0.0 --dbg-package=libssl1.0.0-dbg
+	dh_strip -a -Nlibssl1.0.0
 	dh_perl -a -d
 	dpkg-gensymbols -Pdebian/libssl1.0.0/ -plibssl1.0.0 -c4
-	dh_makeshlibs -a -V "libssl1.0.0 (>= 1.0.1d)" --add-udeb="libcrypto1.0.0-udeb"
+	dh_makeshlibs -a -V "libssl1.0.0 (>= 1.0.1d)" --add-udeb="libcrypto1.0.0-udeb" -Xengines
 	dh_shlibdeps -a -L libssl1.0.0 -l debian/libssl1.0.0/usr/lib/$(DEB_HOST_MULTIARCH)
 	dh_gencontrol -a
 	dh_installdeb -a

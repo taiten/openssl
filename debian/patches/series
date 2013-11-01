@@ -37,3 +37,4 @@ aesni-mac.patch
 dtls_version.patch
 get_certificate.patch
 openssl_fix_for_x32.patch
+fix-pod-errors.patch

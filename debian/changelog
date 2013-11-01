@@ -1,3 +1,25 @@
+openssl (1.0.1e-4) unstable; urgency=low
+
+  [ Peter Michael Green ]
+  * Fix pod errors (Closes: #723954)
+  * Fix clean target
+
+  [ Kurt Roeckx ]
+  * Add mipsn32 and mips64 targets.  Patch from Eleanor Chen
+    <chenyueg@gmail.com>  (Closes: #720654)
+  * Add support for nocheck in DEB_BUILD_OPTIONS
+  * Update Norwegian translation (Closes: #653574)
+  * Update description of the packages.  Patch by Justin B Rye
+    (Closes: #719262)
+  * change to debhelper compat level 9:
+    - change dh_strip call so only the files from libssl1.0.0 get debug
+      symbols.
+    - change dh_makeshlibs call so the engines don't get added to the
+      shlibs
+  * Update Standards-Version from 3.8.0 to 3.9.5.  No changes required.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Fri, 01 Nov 2013 17:11:53 +0100
+
 openssl (1.0.1e-3) unstable; urgency=low
 
   * Move <openssl/opensslconf.h> to /usr/include/$(DEB_HOST_MULTIARCH), and
