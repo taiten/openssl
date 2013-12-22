@@ -1,0 +1,25 @@
+From: "Dr. Stephen Henson" <steve@openssl.org>
+Date: Wed, 11 Dec 2013 14:45:12 +0000
+Subject: [PATCH] Don't use rdrand engine as default unless explicitly
+ requested.
+Origin: upstream: http://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff_plain;h=8f68678989a198ead3ab59a698302ecb0f1c8fb1
+
+---
+ crypto/engine/eng_rdrand.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/crypto/engine/eng_rdrand.c b/crypto/engine/eng_rdrand.c
+index a9ba5ae..4e9e91d 100644
+--- a/crypto/engine/eng_rdrand.c
++++ b/crypto/engine/eng_rdrand.c
+@@ -104,6 +104,7 @@ static int bind_helper(ENGINE *e)
+ 	{
+ 	if (!ENGINE_set_id(e, engine_e_rdrand_id) ||
+ 	    !ENGINE_set_name(e, engine_e_rdrand_name) ||
++            !ENGINE_set_flags(e, ENGINE_FLAGS_NO_REGISTER_ALL) ||
+ 	    !ENGINE_set_init_function(e, rdrand_init) ||
+ 	    !ENGINE_set_RAND(e, &rdrand_meth) )
+ 		return 0;
+-- 
+1.8.5.1
+

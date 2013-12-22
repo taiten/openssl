@@ -20,7 +20,7 @@ DEB_HOST_ARCH = $(shell dpkg-architecture -qDEB_HOST_ARCH)
 DEB_HOST_MULTIARCH=$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 DEB_HOST_ARCH_CPU=$(shell dpkg-architecture -qDEB_HOST_ARCH_CPU)
 
-CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl --libdir=lib/$(DEB_HOST_MULTIARCH) no-idea no-mdc2 no-rc5 zlib  enable-tlsext no-ssl2
+CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl --libdir=lib/$(DEB_HOST_MULTIARCH) no-idea no-mdc2 no-rc5 no-zlib  enable-tlsext no-ssl2
 OPT_alpha = ev4 ev5
 OPT_i386  = i586 i686/cmov
 ARCHOPTS  = OPT_$(DEB_HOST_ARCH)

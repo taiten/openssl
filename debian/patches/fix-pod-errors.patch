@@ -7,9 +7,11 @@ Author: Peter Michael Green <plugwash@raspbian.org>
 Bug-Debian: http://bugs.debian.org/723954
 Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
 
---- openssl-1.0.1e.orig/doc/apps/smime.pod
-+++ openssl-1.0.1e/doc/apps/smime.pod
-@@ -308,28 +308,28 @@ remains DER.
+Index: openssl-1.0.1e/doc/apps/smime.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/apps/smime.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/apps/smime.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -308,28 +308,28 @@
  
  =over 4
  
@@ -44,9 +46,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  the message was verified correctly but an error occurred writing out
  the signers certificates.
---- openssl-1.0.1e.orig/doc/apps/cms.pod
-+++ openssl-1.0.1e/doc/apps/cms.pod
-@@ -450,28 +450,28 @@ remains DER.
+Index: openssl-1.0.1e/doc/apps/cms.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/apps/cms.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/apps/cms.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -450,28 +450,28 @@
  
  =over 4
  
@@ -81,9 +85,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  the message was verified correctly but an error occurred writing out
  the signers certificates.
---- openssl-1.0.1e.orig/doc/ssl/SSL_clear.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_clear.pod
-@@ -56,12 +56,12 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_clear.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_clear.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_clear.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -56,12 +56,12 @@
  
  =over 4
  
@@ -98,9 +104,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The SSL_clear() operation was successful.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_session_reused.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_session_reused.pod
-@@ -27,11 +27,11 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_session_reused.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_session_reused.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_session_reused.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -27,11 +27,11 @@
  
  =over 4
  
@@ -114,9 +122,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  A session was reused.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_set_session.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_set_session.pod
-@@ -37,11 +37,11 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_set_session.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_set_session.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_set_session.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -37,11 +37,11 @@
  
  =over 4
  
@@ -130,11 +140,13 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The operation succeeded.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_connect.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_connect.pod
-@@ -49,13 +49,13 @@ not clean. It can also occur of action i
- for non-blocking BIOs. Call SSL_get_error() with the return value B<ret>
- to find out the reason.
+Index: openssl-1.0.1e/doc/ssl/SSL_connect.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_connect.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_connect.pod	2013-12-22 17:22:42.956402467 +0100
+@@ -41,13 +41,13 @@
+ 
+ =over 4
  
 -=item 0
 +=item C<0>
@@ -148,18 +160,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The TLS/SSL handshake was successfully completed, a TLS/SSL connection has been
  established.
---- openssl-1.0.1e.orig/doc/ssl/SSL_shutdown.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_shutdown.pod
-@@ -92,7 +92,7 @@ The following return values can occur:
- 
- =over 4
- 
--=item 1
-+=item C<1>
- 
- The shutdown was successfully completed. The "close notify" alert was sent
- and the peer's "close notify" alert was received.
-@@ -101,7 +101,7 @@ and the peer's "close notify" alert was
+Index: openssl-1.0.1e/doc/ssl/SSL_shutdown.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_shutdown.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_shutdown.pod	2013-12-22 17:23:49.347031915 +0100
+@@ -92,14 +92,14 @@
  
  =over 4
  
@@ -168,18 +173,19 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The shutdown is not yet finished. Call SSL_shutdown() for a second time,
  if a bidirectional shutdown shall be performed.
---- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_set_client_CA_list.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_CTX_set_client_CA_list.pod
-@@ -66,7 +66,7 @@ values:
- 
- =over 4
+ The output of L<SSL_get_error(3)|SSL_get_error(3)> may be misleading, as an
+ erroneous SSL_ERROR_SYSCALL may be flagged even though no error occurred.
  
 -=item 1
 +=item C<1>
  
- The operation succeeded.
- 
-@@ -74,7 +74,7 @@ The operation succeeded.
+ The shutdown was successfully completed. The "close notify" alert was sent
+ and the peer's "close notify" alert was received.
+Index: openssl-1.0.1e/doc/ssl/SSL_CTX_set_client_CA_list.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_set_client_CA_list.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_CTX_set_client_CA_list.pod	2013-12-22 17:24:41.985942861 +0100
+@@ -66,13 +66,13 @@
  
  =over 4
  
@@ -188,18 +194,18 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  A failure while manipulating the STACK_OF(X509_NAME) object occurred or
  the X509_NAME could not be extracted from B<cacert>. Check the error stack
---- openssl-1.0.1e.orig/doc/ssl/SSL_accept.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_accept.pod
-@@ -44,7 +44,7 @@ The following return values can occur:
- 
- =over 4
+ to find out the reason.
  
 -=item 1
 +=item C<1>
  
- The TLS/SSL handshake was successfully completed, a TLS/SSL connection has been
- established.
-@@ -53,7 +53,7 @@ established.
+ The operation succeeded.
+ 
+Index: openssl-1.0.1e/doc/ssl/SSL_accept.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_accept.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_accept.pod	2013-12-22 17:24:17.466450402 +0100
+@@ -44,13 +44,13 @@
  
  =over 4
  
@@ -208,9 +214,18 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The TLS/SSL handshake was not successful but was shut down controlled and
  by the specifications of the TLS/SSL protocol. Call SSL_get_error() with the
---- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_set_session_id_context.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_CTX_set_session_id_context.pod
-@@ -64,13 +64,13 @@ return the following values:
+ return value B<ret> to find out the reason.
+ 
+-=item 1
++=item C<1>
+ 
+ The TLS/SSL handshake was successfully completed, a TLS/SSL connection has been
+ established.
+Index: openssl-1.0.1e/doc/ssl/SSL_CTX_set_session_id_context.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_set_session_id_context.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_CTX_set_session_id_context.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -64,13 +64,13 @@
  
  =over 4
  
@@ -226,9 +241,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The operation succeeded.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_write.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_write.pod
-@@ -79,7 +79,7 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_write.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_write.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_write.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -79,7 +79,7 @@
  The write operation was successful, the return value is the number of
  bytes actually written to the TLS/SSL connection.
  
@@ -237,9 +254,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The write operation was not successful. Probably the underlying connection
  was closed. Call SSL_get_error() with the return value B<ret> to find out,
---- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_load_verify_locations.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_CTX_load_verify_locations.pod
-@@ -100,13 +100,13 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_CTX_load_verify_locations.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_load_verify_locations.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_CTX_load_verify_locations.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -100,13 +100,13 @@
  
  =over 4
  
@@ -255,9 +274,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The operation succeeded.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_set_fd.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_set_fd.pod
-@@ -35,11 +35,11 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_set_fd.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_set_fd.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_set_fd.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -35,11 +35,11 @@
  
  =over 4
  
@@ -271,20 +292,24 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The operation succeeded.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_use_psk_identity_hint.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_CTX_use_psk_identity_hint.pod
-@@ -100,7 +100,7 @@ completely.
- 
- =over 4
+Index: openssl-1.0.1e/doc/ssl/SSL_CTX_use_psk_identity_hint.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_use_psk_identity_hint.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_CTX_use_psk_identity_hint.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -96,7 +96,7 @@
+ connection will fail with decryption_error before it will be finished
+ completely.
  
 -=item 0
 +=item C<0>
  
  PSK identity was not found. An "unknown_psk_identity" alert message
  will be sent and the connection setup fails.
---- openssl-1.0.1e.orig/doc/ssl/SSL_read.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_read.pod
-@@ -86,7 +86,7 @@ The following return values can occur:
+Index: openssl-1.0.1e/doc/ssl/SSL_read.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_read.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_read.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -86,7 +86,7 @@
  The read operation was successful; the return value is the number of
  bytes actually read from the TLS/SSL connection.
  
@@ -293,9 +318,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The read operation was not successful. The reason may either be a clean
  shutdown due to a "close notify" alert sent by the peer (in which case
---- openssl-1.0.1e.orig/doc/ssl/SSL_set_shutdown.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_set_shutdown.pod
-@@ -24,7 +24,7 @@ The shutdown state of an ssl connection
+Index: openssl-1.0.1e/doc/ssl/SSL_set_shutdown.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_set_shutdown.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_set_shutdown.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -24,7 +24,7 @@
  
  =over 4
  
@@ -304,9 +331,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  No shutdown setting, yet.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_add_session.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_CTX_add_session.pod
-@@ -52,13 +52,13 @@ The following values are returned by all
+Index: openssl-1.0.1e/doc/ssl/SSL_CTX_add_session.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_add_session.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_CTX_add_session.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -52,13 +52,13 @@
  
  =over 4
  
@@ -322,18 +351,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
   
   The operation succeeded.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_do_handshake.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_do_handshake.pod
-@@ -45,7 +45,7 @@ The following return values can occur:
- 
- =over 4
- 
--=item 1
-+=item C<1>
- 
- The TLS/SSL handshake was successfully completed, a TLS/SSL connection has been
- established.
-@@ -54,7 +54,7 @@ established.
+Index: openssl-1.0.1e/doc/ssl/SSL_do_handshake.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_do_handshake.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_do_handshake.pod	2013-12-22 17:23:09.503854843 +0100
+@@ -45,13 +45,13 @@
  
  =over 4
  
@@ -342,9 +364,18 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The TLS/SSL handshake was not successful but was shut down controlled and
  by the specifications of the TLS/SSL protocol. Call SSL_get_error() with the
---- openssl-1.0.1e.orig/doc/ssl/SSL_COMP_add_compression_method.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_COMP_add_compression_method.pod
-@@ -53,11 +53,11 @@ SSL_COMP_add_compression_method() may re
+ return value B<ret> to find out the reason.
+ 
+-=item 1
++=item C<1>
+ 
+ The TLS/SSL handshake was successfully completed, a TLS/SSL connection has been
+ established.
+Index: openssl-1.0.1e/doc/ssl/SSL_COMP_add_compression_method.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_COMP_add_compression_method.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_COMP_add_compression_method.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -53,11 +53,11 @@
  
  =over 4
  
@@ -358,9 +389,11 @@ Bug: http://rt.openssl.org/Ticket/Display.html?id=3146&user=guest&pass=guest
  
  The operation failed. Check the error queue to find out the reason.
  
---- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_set_ssl_version.pod
-+++ openssl-1.0.1e/doc/ssl/SSL_CTX_set_ssl_version.pod
-@@ -42,11 +42,11 @@ and SSL_set_ssl_method():
+Index: openssl-1.0.1e/doc/ssl/SSL_CTX_set_ssl_version.pod
+===================================================================
+--- openssl-1.0.1e.orig/doc/ssl/SSL_CTX_set_ssl_version.pod	2013-12-22 17:21:52.913435572 +0100
++++ openssl-1.0.1e/doc/ssl/SSL_CTX_set_ssl_version.pod	2013-12-22 17:21:52.909435656 +0100
+@@ -42,11 +42,11 @@
  
  =over 4
  
