@@ -88,7 +88,7 @@ static int eckey_param2type(int *pptype, void **ppval, EC_KEY *ec_key)
 		if (!pstr)
 			return 0;
 		pstr->length = i2d_ECParameters(ec_key, &pstr->data);
-		if (pstr->length < 0)
+		if (pstr->length <= 0)
 			{
 			ASN1_STRING_free(pstr);
 			ECerr(EC_F_ECKEY_PARAM2TYPE, ERR_R_EC_LIB);
@@ -615,7 +615,7 @@ static int ec_pkey_ctrl(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 #endif
 
 		case ASN1_PKEY_CTRL_DEFAULT_MD_NID:
-		*(int *)arg2 = NID_sha1;
+		*(int *)arg2 = NID_sha256;
 		return 2;
 
 		default:

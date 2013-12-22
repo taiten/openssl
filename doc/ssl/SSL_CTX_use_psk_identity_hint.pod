@@ -96,10 +96,6 @@ data to B<psk> and return the length of the random data, so the
 connection will fail with decryption_error before it will be finished
 completely.
 
-=back
-
-=over 4
-
 =item C<0>
 
 PSK identity was not found. An "unknown_psk_identity" alert message

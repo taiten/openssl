@@ -2,7 +2,6 @@ ca.patch
 config-hurd.patch
 debian-targets.patch
 engines-path.patch
-make-targets.patch
 man-dir.patch
 man-section.patch
 no-rpath.patch
@@ -28,13 +27,9 @@ pkcs12-doc.patch
 dgst_hmac.patch
 block_diginotar.patch
 block_digicert_malaysia.patch
-c_rehash-multi.patch
 #padlock_conf.patch
-default_bits.patch
-ssltest_no_sslv2.patch
-cpuid.patch
-aesni-mac.patch
-dtls_version.patch
-get_certificate.patch
+2013-12-21.patch
+defaults.patch
 openssl_fix_for_x32.patch
 fix-pod-errors.patch
+req_bits.patch

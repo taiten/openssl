@@ -1,3 +1,26 @@
+openssl (1.0.1e-5) unstable; urgency=low
+
+  * Change default digest to SHA256 instead of SHA1.  (Closes: #694738)
+  * Drop support for multiple certificates in 1 file.  It never worked
+    properly in the first place, and the only one shipping in
+    ca-certificates has been split.
+  * Fix libdoc-manpgs-pod-spell.patch to only fix spalling errors
+  * Remove make-targets.patch.  It prevented the test dir from being cleaned.
+  * Update to a git snapshot of the OpenSSL_1_0_1-stable branch. 
+    - Fixes CVE-2013-6449 (Closes: #732754)
+    - Fixes CVE-2013-6450
+    - Drop patches ssltest_no_sslv2.patch cpuid.patch aesni-mac.patch
+      dtls_version.patch get_certificate.patch, since they where all
+      already commited upstream.
+    - adjust fix-pod-errors.patch for the reordering of items in the
+      documentation they've done trying to fix those pod errors.
+    - disable rdrand engine by default (Closes: #732710)
+  * disable zlib support.  Fixes CVE-2012-4929 (Closes: #728055)
+  * Add arm64 support (Closes: #732348)
+  * Properly use the default number of bits in req when none are given
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 22 Dec 2013 19:25:35 +0100
+
 openssl (1.0.1e-4) unstable; urgency=low
 
   [ Peter Michael Green ]
