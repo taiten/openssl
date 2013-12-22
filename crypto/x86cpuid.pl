@@ -69,6 +69,7 @@ push(@out, ".hidden OPENSSL_ia32cap_P\n");
 	&inc	("esi");		# number of cores
 
 	&mov	("eax",1);
+	&xor	("ecx","ecx");
 	&cpuid	();
 	&bt	("edx",28);
 	&jnc	(&label("generic"));
@@ -93,6 +94,7 @@ push(@out, ".hidden OPENSSL_ia32cap_P\n");
 
 &set_label("nocacheinfo");
 	&mov	("eax",1);
+	&xor	("ecx","ecx");
 	&cpuid	();
 	&and	("edx",0xbfefffff);	# force reserved bits #20, #30 to 0
 	&cmp	("ebp",0);
