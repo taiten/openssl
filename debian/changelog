@@ -1,3 +1,11 @@
+openssl (1.0.1e-6) unstable; urgency=medium
+
+  * Add Breaks: openssh-client (<< 1:6.4p1-1.1), openssh-server (<<
+    1:6.4p1-1.1).  This is to prevent people running into #732940.
+    This Breaks can be removed again when we stop using a git snapshot.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 23 Dec 2013 15:19:17 +0100
+
 openssl (1.0.1e-5) unstable; urgency=low
 
   * Change default digest to SHA256 instead of SHA1.  (Closes: #694738)
