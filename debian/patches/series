@@ -28,7 +28,6 @@ dgst_hmac.patch
 block_diginotar.patch
 block_digicert_malaysia.patch
 #padlock_conf.patch
-2013-12-21.patch
 defaults.patch
 openssl_fix_for_x32.patch
 fix-pod-errors.patch
