@@ -2,7 +2,12 @@
  OpenSSL CHANGES
  _______________
 
- Changes between 1.0.1e and 1.0.1f [xx XXX xxxx]
+ Changes between 1.0.1e and 1.0.1f [6 Jan 2014]
+
+  *) Fix for TLS record tampering bug. A carefully crafted invalid 
+     handshake could crash OpenSSL with a NULL pointer exception.
+     Thanks to Anton Johansson for reporting this issues.
+     (CVE-2013-4353)
 
   *) Keep original DTLS digest and encryption contexts in retransmission
      structures so we can use the previous session parameters if they need

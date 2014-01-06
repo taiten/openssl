@@ -1,3 +1,13 @@
+openssl (1.0.1f-1) unstable; urgency=high
+
+  * New upstream version
+    - Fix for TLS record tampering bug CVE-2013-4353
+    - Drop the snapshot patch
+  * update watch file to check for upstream signature and add upstream pgp key.
+  * Drop conflicts against openssh since we now on a released version again.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 06 Jan 2014 18:50:54 +0100
+
 openssl (1.0.1e-6) unstable; urgency=medium
 
   * Add Breaks: openssh-client (<< 1:6.4p1-1.1), openssh-server (<<
