@@ -1,3 +1,22 @@
+openssl (1.0.2~beta1-1) experimental; urgency=medium
+
+  * New upstream beta version
+    - Update list of symbols that should be exported and adjust the symbols
+      file.  This also removes a bunch of duplicate symbols in the linker
+      file.
+    - Fix additional pod errors
+    - Following patches have been applied upstream and are removed:
+      libssl-misspell.patch, pod_req_misspell2.patch,
+      pod_pksc12.misspell.patch, pod_s_server.misspell.patch,
+      pod_x509setflags.misspell.patch, pod_ec.misspell.patch,
+      pkcs12-doc.patch, req_bits.patch
+    - Following patches have been partially applied upstream:
+      libdoc-manpgs-pod-spell.patch, openssl-pod-misspell.patch
+    - Remove openssl_fix_for_x32.patch, different patch applied upstream.
+  * Add support for cross compiling (Closes: #465248)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 25 Feb 2014 00:36:51 +0100
+
 openssl (1.0.1f-1) unstable; urgency=high
 
   * New upstream version

@@ -8,10 +8,10 @@ apply to the Debian package as well. I'm open for better wor-
 ding though, especially considering the FIPS option, which I
 found as undocumented too.
 
-Index: openssl-1.0.0d/doc/apps/dgst.pod
+Index: openssl-1.0.2~beta1/doc/apps/dgst.pod
 ===================================================================
---- openssl-1.0.0d.orig/doc/apps/dgst.pod	2009-04-10 16:42:27.000000000 +0000
-+++ openssl-1.0.0d/doc/apps/dgst.pod	2011-06-13 11:00:04.000000000 +0000
+--- openssl-1.0.2~beta1.orig/doc/apps/dgst.pod	2014-02-25 00:15:34.364841692 +0100
++++ openssl-1.0.2~beta1/doc/apps/dgst.pod	2014-02-25 00:15:34.360841777 +0100
 @@ -12,6 +12,8 @@
  [B<-d>]
  [B<-hex>]
@@ -36,11 +36,11 @@ Index: openssl-1.0.0d/doc/apps/dgst.pod
  =item B<-out filename>
  
  filename to output to, or standard output by default.
-Index: openssl-1.0.0d/apps/dgst.c
+Index: openssl-1.0.2~beta1/apps/dgst.c
 ===================================================================
---- openssl-1.0.0d.orig/apps/dgst.c	2010-02-12 17:07:24.000000000 +0000
-+++ openssl-1.0.0d/apps/dgst.c	2011-06-13 11:00:04.000000000 +0000
-@@ -268,6 +268,8 @@
+--- openssl-1.0.2~beta1.orig/apps/dgst.c	2014-02-25 00:15:34.364841692 +0100
++++ openssl-1.0.2~beta1/apps/dgst.c	2014-02-25 00:15:34.360841777 +0100
+@@ -276,6 +276,8 @@
  		BIO_printf(bio_err,"-d              to output debug info\n");
  		BIO_printf(bio_err,"-hex            output as hex dump\n");
  		BIO_printf(bio_err,"-binary         output in binary form\n");
