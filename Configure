@@ -1879,7 +1879,7 @@ while (<IN>)
 		}
 	elsif	(/^#define\s+ENGINESDIR/)
 		{
-		my $foo = "$prefix/$libdir/engines";
+		my $foo = "$prefix/$libdir/openssl-1.0.0/engines";
 		$foo =~ s/\\/\\\\/g;
 		print OUT "#define ENGINESDIR \"$foo\"\n";
 		}
