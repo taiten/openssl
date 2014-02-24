@@ -20,6 +20,12 @@ DEB_HOST_ARCH = $(shell dpkg-architecture -qDEB_HOST_ARCH)
 DEB_HOST_MULTIARCH=$(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 DEB_HOST_ARCH_CPU=$(shell dpkg-architecture -qDEB_HOST_ARCH_CPU)
 
+DEB_HOST_GNU_TYPE=$(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE=$(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+ifneq ($(DEB_HOST_GNU_TYPE),$(DEB_BUILD_GNU_TYPE))
+	export CROSS_COMPILE ?= $(DEB_HOST_GNU_TYPE)-
+endif
+
 CONFARGS  = --prefix=/usr --openssldir=/usr/lib/ssl --libdir=lib/$(DEB_HOST_MULTIARCH) no-idea no-mdc2 no-rc5 no-zlib  enable-tlsext no-ssl2
 OPT_alpha = ev4 ev5
 OPT_i386  = i586 i686/cmov

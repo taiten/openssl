@@ -115,6 +115,8 @@ my @known_algorithms = ( "RC2", "RC4", "RC5", "IDEA", "DES", "BF",
 			 "DEPRECATED",
 			 # Hide SSL internals
 			 "SSL_INTERN",
+			 # SSL TRACE
+		 	 "SSL_TRACE",
 			 # SCTP
 			 "SCTP");
 
@@ -136,7 +138,7 @@ my $no_ec; my $no_ecdsa; my $no_ecdh; my $no_engine; my $no_hw;
 my $no_fp_api; my $no_static_engine=1; my $no_gmp; my $no_deprecated;
 my $no_rfc3779; my $no_psk; my $no_tlsext; my $no_cms; my $no_capieng;
 my $no_jpake; my $no_srp; my $no_ssl2; my $no_ec2m; my $no_nistp_gcc; 
-my $no_nextprotoneg; my $no_sctp;
+my $no_nextprotoneg; my $no_sctp; my $no_ssl_trace;
 
 my $fips;
 
@@ -231,6 +233,7 @@ foreach (@ARGV, split(/ /, $options))
 	elsif (/^no-ec_nistp_64_gcc_128$/)	{ $no_nistp_gcc=1; }
 	elsif (/^no-nextprotoneg$/)	{ $no_nextprotoneg=1; }
 	elsif (/^no-ssl2$/)	{ $no_ssl2=1; }
+	elsif (/^no-ssl-trace$/) { $no_ssl_trace=1; }
 	elsif (/^no-capieng$/)	{ $no_capieng=1; }
 	elsif (/^no-jpake$/)	{ $no_jpake=1; }
 	elsif (/^no-srp$/)	{ $no_srp=1; }
@@ -832,6 +835,7 @@ sub do_defs
 					$def .= "int PEM_write_bio_$1(void);";
 					next;
 				} elsif (/^DECLARE_PEM_write\s*\(\s*(\w*)\s*,/ ||
+					/^DECLARE_PEM_write_const\s*\(\s*(\w*)\s*,/ ||
 					 /^DECLARE_PEM_write_cb\s*\(\s*(\w*)\s*,/ ) {
 					# Things not in Win16
 					$def .=
@@ -1201,6 +1205,7 @@ sub is_valid
 			if ($keyword eq "EC_NISTP_64_GCC_128" && $no_nistp_gcc)
 					{ return 0; }
 			if ($keyword eq "SSL2" && $no_ssl2) { return 0; }
+			if ($keyword eq "SSL_TRACE" && $no_ssl_trace) { return 0; }
 			if ($keyword eq "CAPIENG" && $no_capieng) { return 0; }
 			if ($keyword eq "JPAKE" && $no_jpake) { return 0; }
 			if ($keyword eq "SRP" && $no_srp) { return 0; }

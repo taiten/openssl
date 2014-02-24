@@ -5,6 +5,9 @@
 #ifndef OPENSSL_DOING_MAKEDEPEND
 
 
+#ifndef OPENSSL_NO_DANE
+# define OPENSSL_NO_DANE
+#endif
 #ifndef OPENSSL_NO_EC_NISTP_64_GCC_128
 # define OPENSSL_NO_EC_NISTP_64_GCC_128
 #endif
@@ -17,8 +20,14 @@
 #ifndef OPENSSL_NO_KRB5
 # define OPENSSL_NO_KRB5
 #endif
+#ifndef OPENSSL_NO_LIBUNBOUND
+# define OPENSSL_NO_LIBUNBOUND
+#endif
 #ifndef OPENSSL_NO_MD2
 # define OPENSSL_NO_MD2
+#endif
+#ifndef OPENSSL_NO_MULTIBLOCK
+# define OPENSSL_NO_MULTIBLOCK
 #endif
 #ifndef OPENSSL_NO_RC5
 # define OPENSSL_NO_RC5
@@ -28,6 +37,9 @@
 #endif
 #ifndef OPENSSL_NO_SCTP
 # define OPENSSL_NO_SCTP
+#endif
+#ifndef OPENSSL_NO_SSL_TRACE
+# define OPENSSL_NO_SSL_TRACE
 #endif
 #ifndef OPENSSL_NO_STORE
 # define OPENSSL_NO_STORE
@@ -44,6 +56,9 @@
    who haven't had the time to do the appropriate changes in their
    applications.  */
 #ifdef OPENSSL_ALGORITHM_DEFINES
+# if defined(OPENSSL_NO_DANE) && !defined(NO_DANE)
+#  define NO_DANE
+# endif
 # if defined(OPENSSL_NO_EC_NISTP_64_GCC_128) && !defined(NO_EC_NISTP_64_GCC_128)
 #  define NO_EC_NISTP_64_GCC_128
 # endif
@@ -56,8 +71,14 @@
 # if defined(OPENSSL_NO_KRB5) && !defined(NO_KRB5)
 #  define NO_KRB5
 # endif
+# if defined(OPENSSL_NO_LIBUNBOUND) && !defined(NO_LIBUNBOUND)
+#  define NO_LIBUNBOUND
+# endif
 # if defined(OPENSSL_NO_MD2) && !defined(NO_MD2)
 #  define NO_MD2
+# endif
+# if defined(OPENSSL_NO_MULTIBLOCK) && !defined(NO_MULTIBLOCK)
+#  define NO_MULTIBLOCK
 # endif
 # if defined(OPENSSL_NO_RC5) && !defined(NO_RC5)
 #  define NO_RC5
@@ -67,6 +88,9 @@
 # endif
 # if defined(OPENSSL_NO_SCTP) && !defined(NO_SCTP)
 #  define NO_SCTP
+# endif
+# if defined(OPENSSL_NO_SSL_TRACE) && !defined(NO_SSL_TRACE)
+#  define NO_SSL_TRACE
 # endif
 # if defined(OPENSSL_NO_STORE) && !defined(NO_STORE)
 #  define NO_STORE

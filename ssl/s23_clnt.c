@@ -273,23 +273,22 @@ static int ssl23_no_ssl2_ciphers(SSL *s)
  * on failure, 1 on success. */
 int ssl_fill_hello_random(SSL *s, int server, unsigned char *result, int len)
 	{
-	int send_time = 0;
-
-	if (len < 4)
-		return 0;
-	if (server)
-		send_time = (s->mode & SSL_MODE_SEND_SERVERHELLO_TIME) != 0;
-	else
-		send_time = (s->mode & SSL_MODE_SEND_CLIENTHELLO_TIME) != 0;
-	if (send_time)
-		{
-		unsigned long Time = time(NULL);
-		unsigned char *p = result;
-		l2n(Time, p);
-		return RAND_pseudo_bytes(p, len-4);
-		}
-	else
-		return RAND_pseudo_bytes(result, len);
+		int send_time = 0;
+		if (len < 4)
+			return 0;
+		if (server)
+			send_time = (s->mode & SSL_MODE_SEND_SERVERHELLO_TIME) != 0;
+		else
+			send_time = (s->mode & SSL_MODE_SEND_CLIENTHELLO_TIME) != 0;
+		if (send_time)
+			{
+			unsigned long Time = (unsigned long)time(NULL);
+			unsigned char *p = result;
+			l2n(Time, p);
+			return RAND_pseudo_bytes(p, len-4);
+			}
+		else
+			return RAND_pseudo_bytes(result, len);
 	}
 
 static int ssl23_client_hello(SSL *s)
@@ -300,6 +299,7 @@ static int ssl23_client_hello(SSL *s)
 	unsigned long l;
 	int ssl2_compat;
 	int version = 0, version_major, version_minor;
+	int al = 0;
 #ifndef OPENSSL_NO_COMP
 	int j;
 	SSL_COMP *comp;
@@ -363,6 +363,10 @@ static int ssl23_client_hello(SSL *s)
 		if (s->ctx->tlsext_opaque_prf_input_callback != 0 || s->tlsext_opaque_prf_input != NULL)
 			ssl2_compat = 0;
 #endif
+		if (s->ctx->custom_cli_ext_records_count != 0)
+			ssl2_compat = 0;
+		if (s->ctx->cli_supp_data_records_count != 0)
+			ssl2_compat = 0;
 		}
 #endif
 
@@ -385,6 +389,12 @@ static int ssl23_client_hello(SSL *s)
 			{
 			version_major = TLS1_2_VERSION_MAJOR;
 			version_minor = TLS1_2_VERSION_MINOR;
+			}
+		else if (tls1_suiteb(s))
+			{
+			SSLerr(SSL_F_SSL23_CLIENT_HELLO,
+					SSL_R_ONLY_TLS_1_2_ALLOWED_IN_SUITEB_MODE);
+			return -1;
 			}
 		else if (version == TLS1_1_VERSION)
 			{
@@ -544,8 +554,9 @@ static int ssl23_client_hello(SSL *s)
 				SSLerr(SSL_F_SSL23_CLIENT_HELLO,SSL_R_CLIENTHELLO_TLSEXT);
 				return -1;
 				}
-			if ((p = ssl_add_clienthello_tlsext(s, p, buf+SSL3_RT_MAX_PLAIN_LENGTH)) == NULL)
+			if ((p = ssl_add_clienthello_tlsext(s, p, buf+SSL3_RT_MAX_PLAIN_LENGTH, &al)) == NULL)
 				{
+				ssl3_send_alert(s,SSL3_AL_FATAL,al);
 				SSLerr(SSL_F_SSL23_CLIENT_HELLO,ERR_R_INTERNAL_ERROR);
 				return -1;
 				}
@@ -600,7 +611,10 @@ static int ssl23_client_hello(SSL *s)
 		if (ssl2_compat)
 			s->msg_callback(1, SSL2_VERSION, 0, s->init_buf->data+2, ret-2, s, s->msg_callback_arg);
 		else
+			{
+			s->msg_callback(1, version, SSL3_RT_HEADER, s->init_buf->data, 5, s, s->msg_callback_arg);
 			s->msg_callback(1, version, SSL3_RT_HANDSHAKE, s->init_buf->data+5, ret-5, s, s->msg_callback_arg);
+			}
 		}
 
 	return ret;
@@ -756,7 +770,10 @@ static int ssl23_get_server_hello(SSL *s)
 				}
 			
 			if (s->msg_callback)
+				{
+				s->msg_callback(0, s->version, SSL3_RT_HEADER, p, 5, s, s->msg_callback_arg);
 				s->msg_callback(0, s->version, SSL3_RT_ALERT, p+5, 2, s, s->msg_callback_arg);
+				}
 
 			s->rwstate=SSL_NOTHING;
 			SSLerr(SSL_F_SSL23_GET_SERVER_HELLO,SSL_AD_REASON_OFFSET+p[6]);
