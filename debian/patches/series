@@ -22,4 +22,3 @@ block_diginotar.patch
 block_digicert_malaysia.patch
 #padlock_conf.patch
 defaults.patch
-fix-pod-errors.patch

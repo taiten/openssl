@@ -56,12 +56,12 @@ The following return values can occur:
 
 =over 4
 
-=item C<0>
+=item Z<>0
 
 The SSL_clear() operation could not be performed. Check the error stack to
 find out the reason.
 
-=item C<1>
+=item Z<>1
 
 The SSL_clear() operation was successful.
 

@@ -1,7 +1,7 @@
-Index: openssl-1.0.2~beta1/apps/ca.c
+Index: openssl-1.0.2~beta2/apps/ca.c
 ===================================================================
---- openssl-1.0.2~beta1.orig/apps/ca.c	2014-02-25 00:04:16.731281175 +0100
-+++ openssl-1.0.2~beta1/apps/ca.c	2014-02-25 00:04:16.731281175 +0100
+--- openssl-1.0.2~beta2.orig/apps/ca.c
++++ openssl-1.0.2~beta2/apps/ca.c
 @@ -148,7 +148,7 @@
  static const char *ca_usage[]={
  "usage: ca args\n",
@@ -11,11 +11,11 @@ Index: openssl-1.0.2~beta1/apps/ca.c
  " -config file    - A config file\n",
  " -name arg       - The particular CA definition to use\n",
  " -gencrl         - Generate a new CRL\n",
-Index: openssl-1.0.2~beta1/crypto/evp/encode.c
+Index: openssl-1.0.2~beta2/crypto/evp/encode.c
 ===================================================================
---- openssl-1.0.2~beta1.orig/crypto/evp/encode.c	2014-02-25 00:04:16.731281175 +0100
-+++ openssl-1.0.2~beta1/crypto/evp/encode.c	2014-02-25 00:04:16.731281175 +0100
-@@ -250,7 +250,7 @@
+--- openssl-1.0.2~beta2.orig/crypto/evp/encode.c
++++ openssl-1.0.2~beta2/crypto/evp/encode.c
+@@ -250,7 +250,7 @@ int EVP_DecodeUpdate(EVP_ENCODE_CTX *ctx
  	/* We parse the input data */
  	for (i=0; i<inl; i++)
  		{
@@ -24,11 +24,11 @@ Index: openssl-1.0.2~beta1/crypto/evp/encode.c
  		if (ln >= 80) { rv= -1; goto end; }
  
  		/* Get char and put it into the buffer */
-Index: openssl-1.0.2~beta1/doc/apps/req.pod
+Index: openssl-1.0.2~beta2/doc/apps/req.pod
 ===================================================================
---- openssl-1.0.2~beta1.orig/doc/apps/req.pod	2014-02-25 00:04:16.731281175 +0100
-+++ openssl-1.0.2~beta1/doc/apps/req.pod	2014-02-25 00:04:16.731281175 +0100
-@@ -159,7 +159,7 @@
+--- openssl-1.0.2~beta2.orig/doc/apps/req.pod
++++ openssl-1.0.2~beta2/doc/apps/req.pod
+@@ -159,7 +159,7 @@ B<param:file> generates a key using the
  the algorithm is determined by the parameters. B<algname:file> use algorithm
  B<algname> and parameter file B<file>: the two algorithms must match or an
  error occurs. B<algname> just uses algorithm B<algname>, and parameters,
@@ -37,16 +37,3 @@ Index: openssl-1.0.2~beta1/doc/apps/req.pod
  
  B<dsa:filename> generates a DSA key using the parameters
  in the file B<filename>. B<ec:filename> generates EC key (usable both with
-Index: openssl-1.0.2~beta1/doc/apps/x509v3_config.pod
-===================================================================
---- openssl-1.0.2~beta1.orig/doc/apps/x509v3_config.pod	2014-02-25 00:04:16.731281175 +0100
-+++ openssl-1.0.2~beta1/doc/apps/x509v3_config.pod	2014-02-25 00:04:16.731281175 +0100
-@@ -174,7 +174,7 @@
- 
- The value of B<dirName> should point to a section containing the distinguished
- name to use as a set of name value pairs. Multi values AVAs can be formed by
--preceeding the name with a B<+> character.
-+preceding the name with a B<+> character.
- 
- otherName can include arbitrary data associated with an OID: the value
- should be the OID followed by a semicolon and the content in standard

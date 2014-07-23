@@ -1,26 +1,13 @@
-Index: openssl-1.0.2~beta1/doc/crypto/ASN1_generate_nconf.pod
+Index: openssl-1.0.2~beta2/doc/crypto/EVP_PKEY_cmp.pod
 ===================================================================
---- openssl-1.0.2~beta1.orig/doc/crypto/ASN1_generate_nconf.pod	2014-02-24 23:58:25.834727363 +0100
-+++ openssl-1.0.2~beta1/doc/crypto/ASN1_generate_nconf.pod	2014-02-24 23:58:25.834727363 +0100
-@@ -61,7 +61,7 @@
- =item B<INTEGER>, B<INT>
- 
- Encodes an ASN1 B<INTEGER> type. The B<value> string represents
--the value of the integer, it can be preceeded by a minus sign and
-+the value of the integer, it can be preceded by a minus sign and
- is normally interpreted as a decimal value unless the prefix B<0x>
- is included.
- 
-Index: openssl-1.0.2~beta1/doc/crypto/EVP_PKEY_cmp.pod
-===================================================================
---- openssl-1.0.2~beta1.orig/doc/crypto/EVP_PKEY_cmp.pod	2014-02-24 23:58:25.834727363 +0100
-+++ openssl-1.0.2~beta1/doc/crypto/EVP_PKEY_cmp.pod	2014-02-24 23:58:25.834727363 +0100
-@@ -26,7 +26,7 @@
- The funcion EVP_PKEY_cmp_parameters() compares the parameters of keys
+--- openssl-1.0.2~beta2.orig/doc/crypto/EVP_PKEY_cmp.pod
++++ openssl-1.0.2~beta2/doc/crypto/EVP_PKEY_cmp.pod
+@@ -26,7 +26,7 @@ B<from> to key B<to>.
+ The function EVP_PKEY_cmp_parameters() compares the parameters of keys
  B<a> and B<b>.
  
--The funcion EVP_PKEY_cmp() compares the public key components and paramters
-+The funcion EVP_PKEY_cmp() compares the public key components and parameters
+-The function EVP_PKEY_cmp() compares the public key components and paramters
++The function EVP_PKEY_cmp() compares the public key components and parameters
  (if present) of keys B<a> and B<b>.
  
  =head1 NOTES
