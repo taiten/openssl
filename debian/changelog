@@ -1,3 +1,24 @@
+openssl (1.0.2~beta2-1) experimental; urgency=medium
+
+  * New usptream beta version
+    - Fix CVE-2014-0224
+    - Fix CVE-2014-0221
+    - Fix CVE-2014-0195
+    - Fix CVE-2014-3470
+    - Fix CVE-2014-0198
+    - Fix CVE-2010-5298
+    - Fix CVE-2014-0160
+    - Fix CVE-2014-0076
+  * Merge changes between 1.0.1f-1 and 1.0.1h-3:
+    - postinst: Updated check for restarting services
+  * libdoc-manpgs-pod-spell.patch and openssl-pod-misspell.patch
+    partially applied upstream
+  * Drop fix-pod-errors.patch, applied upstream.
+  * Add support for ppc64le (Closes: #745657)
+  * Add support for OpenRISC (Closes: #736772)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Wed, 23 Jul 2014 19:54:09 +0200
+
 openssl (1.0.2~beta1-1) experimental; urgency=medium
 
   * New upstream beta version
