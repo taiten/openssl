@@ -52,6 +52,7 @@ my %mf_import = (
         ENGINES_ASM_OBJ=> \$mf_engines_asm,
 	BASEADDR       => \$baseaddr,
 	FIPSDIR        => \$fipsdir,
+	EC_ASM	       => \$mf_ec_asm,
 );
 
 open(IN,"<Makefile") || die "unable to open Makefile!\n";
@@ -730,18 +731,13 @@ if ($orig_platform eq 'copy') {
 	$lib_obj{CRYPTO} .= fix_asm($mf_engines_asm, 'engines');
 	$lib_obj{CRYPTO} .= fix_asm($mf_rc4_asm, 'crypto/rc4');
 	$lib_obj{CRYPTO} .= fix_asm($mf_modes_asm, 'crypto/modes');
+	$lib_obj{CRYPTO} .= fix_asm($mf_ec_asm, 'crypto/ec');
 }
 
 foreach (values %lib_nam)
 	{
 	$lib_obj=$lib_obj{$_};
 	local($slib)=$shlib;
-
-	if (($_ eq "SSL") && $no_ssl2 && $no_ssl3)
-		{
-		$rules.="\$(O_SSL):\n\n"; 
-		next;
-		}
 
 	$defs.=&do_defs(${_}."OBJ",$lib_obj,"\$(OBJ_D)",$obj);
 	$lib=($slib)?" \$(SHLIB_CFLAGS)".$shlib_ex_cflags{$_}:" \$(LIB_CFLAGS)";
@@ -1226,6 +1222,7 @@ sub read_options
 		"dll" => \$shlib,
 		"shared" => 0,
 		"no-sctp" => 0,
+		"no-srtp" => 0,
 		"no-gmp" => 0,
 		"no-rfc3779" => 0,
 		"no-montasm" => 0,
