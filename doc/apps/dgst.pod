@@ -12,6 +12,8 @@ B<openssl> B<dgst>
 [B<-d>]
 [B<-hex>]
 [B<-binary>]
+[B<-hmac arg>]
+[B<-non-fips-allow>]
 [B<-r>]
 [B<-out filename>]
 [B<-sign filename>]
@@ -61,6 +63,14 @@ output the digest or signature in binary form.
 =item B<-r>
 
 output the digest in the "coreutils" format used by programs like B<sha1sum>.
+
+=item B<-hmac arg>
+
+set the HMAC key to "arg".
+
+=item B<-non-fips-allow>
+
+allow use of non FIPS digest.
 
 =item B<-out filename>
 
