@@ -1,3 +1,29 @@
+openssl (1.0.2~beta3-1) experimental; urgency=low
+
+  * New usptream beta version
+  * Add git snapshot
+  * Merge changes between 1.0.1h-3 and 1.0.1j-1:
+    - Disables SSLv3 because of CVE-2014-3566
+  * Drop patch rehash-crt.patch: partially applied upstream.
+    c_rehash now doesn't support files in DER format anymore.
+  * Drop patch rehash_pod.patch: applied upstream
+  * Update c_rehash-compat.patch to apply to new upstream version.  This
+    undoes upstream's "-old" option and creates both the new and old again.
+    It now also does it for CRLs.
+  * Drop defaults.patch, applied upstream
+  * dgst_hmac.patch updated to apply to upstream version.
+  * engines-path.patch updated to apply to upstream version.
+  * Update list of exported symbols
+  * Update symbols files to require beta3
+  * Enable unit tests
+  * Add patch to add support for the no-ssl3-method option that completly
+    disable SSLv3 and pass the option.  This drops the following functions
+    from the library: SSLv3_method, SSLv3_server_method and
+    SSLv3_client_method
+  * Build using OPENSSL_NO_BUF_FREELISTS
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Fri, 07 Nov 2014 00:20:10 +0100
+
 openssl (1.0.2~beta2-1) experimental; urgency=medium
 
   * New usptream beta version

@@ -1,0 +1,112 @@
+diff --git a/Configure b/Configure
+index 2eda5e6..c35ebe3 100755
+--- a/Configure
++++ b/Configure
+@@ -852,6 +852,11 @@ PROCESS_ARGS:
+ 					{
+ 					$disabled{"tls1"} = "option(tls)"
+ 					}
++				elsif ($1 eq "ssl3-method")
++					{
++					$disabled{"ssl3-method"} = "option(ssl)";
++					$disabled{"ssl3"} = "option(ssl)";
++					}
+ 				else
+ 					{
+ 					$disabled{$1} = "option";
+diff --git a/ssl/s3_clnt.c b/ssl/s3_clnt.c
+index 68c00c5..c84c662 100644
+--- a/ssl/s3_clnt.c
++++ b/ssl/s3_clnt.c
+@@ -167,9 +167,9 @@
+ #include <openssl/engine.h>
+ #endif
+ 
+-static const SSL_METHOD *ssl3_get_client_method(int ver);
+ static int ca_dn_cmp(const X509_NAME * const *a,const X509_NAME * const *b);
+ 
++#ifndef OPENSSL_NO_SSL3_METHOD
+ static const SSL_METHOD *ssl3_get_client_method(int ver)
+ 	{
+ 	if (ver == SSL3_VERSION)
+@@ -182,6 +182,7 @@ IMPLEMENT_ssl3_meth_func(SSLv3_client_method,
+ 			ssl_undefined_function,
+ 			ssl3_connect,
+ 			ssl3_get_client_method)
++#endif
+ 
+ int ssl3_connect(SSL *s)
+ 	{
+diff --git a/ssl/s3_meth.c b/ssl/s3_meth.c
+index cdddb17..16a01e2 100644
+--- a/ssl/s3_meth.c
++++ b/ssl/s3_meth.c
+@@ -60,6 +60,8 @@
+ #include <openssl/objects.h>
+ #include "ssl_locl.h"
+ 
++#ifndef OPENSSL_NO_SSL3_METHOD
++
+ static const SSL_METHOD *ssl3_get_method(int ver);
+ static const SSL_METHOD *ssl3_get_method(int ver)
+ 	{
+@@ -74,4 +76,4 @@ IMPLEMENT_ssl3_meth_func(SSLv3_method,
+ 			 ssl3_connect,
+ 			 ssl3_get_method)
+ 
+-
++#endif
+diff --git a/ssl/s3_srvr.c b/ssl/s3_srvr.c
+index bef055a..4f86969 100644
+--- a/ssl/s3_srvr.c
++++ b/ssl/s3_srvr.c
+@@ -170,6 +170,7 @@
+ #endif
+ #include <openssl/md5.h>
+ 
++#ifndef OPENSSL_NO_SSL3_METHOD
+ static const SSL_METHOD *ssl3_get_server_method(int ver);
+ 
+ static const SSL_METHOD *ssl3_get_server_method(int ver)
+@@ -180,6 +181,12 @@ static const SSL_METHOD *ssl3_get_server_method(int ver)
+ 		return(NULL);
+ 	}
+ 
++IMPLEMENT_ssl3_meth_func(SSLv3_server_method,
++			ssl3_accept,
++			ssl_undefined_function,
++			ssl3_get_server_method)
++#endif
++
+ #ifndef OPENSSL_NO_SRP
+ static int ssl_check_srp_ext_ClientHello(SSL *s, int *al)
+ 	{
+@@ -206,11 +213,6 @@ static int ssl_check_srp_ext_ClientHello(SSL *s, int *al)
+ 	}
+ #endif
+ 
+-IMPLEMENT_ssl3_meth_func(SSLv3_server_method,
+-			ssl3_accept,
+-			ssl_undefined_function,
+-			ssl3_get_server_method)
+-
+ int ssl3_accept(SSL *s)
+ 	{
+ 	BUF_MEM *buf;
+diff --git a/ssl/ssl.h b/ssl/ssl.h
+index 343247c..152daa7 100644
+--- a/ssl/ssl.h
++++ b/ssl/ssl.h
+@@ -2235,9 +2235,11 @@ const SSL_METHOD *SSLv2_server_method(void);	/* SSLv2 */
+ const SSL_METHOD *SSLv2_client_method(void);	/* SSLv2 */
+ #endif
+ 
++#ifndef OPENSSL_NO_SSL3_METHOD
+ const SSL_METHOD *SSLv3_method(void);		/* SSLv3 */
+ const SSL_METHOD *SSLv3_server_method(void);	/* SSLv3 */
+ const SSL_METHOD *SSLv3_client_method(void);	/* SSLv3 */
++#endif
+ 
+ const SSL_METHOD *SSLv23_method(void);	/* SSLv3 but can rollback to v2 */
+ const SSL_METHOD *SSLv23_server_method(void);	/* SSLv3 but can rollback to v2 */
+
