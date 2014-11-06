@@ -1,0 +1,1900 @@
+diff --git a/CHANGES b/CHANGES
+index 9d3e458..caee934 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -2,11 +2,57 @@
+  OpenSSL CHANGES
+  _______________
+ 
+- Changes between 1.0.1i and 1.0.2 [xx XXX xxxx]
++ Changes between 1.0.1j and 1.0.2 [xx XXX xxxx]
++
++  *) SRTP Memory Leak.
++
++     A flaw in the DTLS SRTP extension parsing code allows an attacker, who
++     sends a carefully crafted handshake message, to cause OpenSSL to fail
++     to free up to 64k of memory causing a memory leak. This could be
++     exploited in a Denial Of Service attack. This issue affects OpenSSL
++     1.0.1 server implementations for both SSL/TLS and DTLS regardless of
++     whether SRTP is used or configured. Implementations of OpenSSL that
++     have been compiled with OPENSSL_NO_SRTP defined are not affected.
++
++     The fix was developed by the OpenSSL team.
++     (CVE-2014-3513)
++     [OpenSSL team]
++
++  *) Session Ticket Memory Leak.
++
++     When an OpenSSL SSL/TLS/DTLS server receives a session ticket the
++     integrity of that ticket is first verified. In the event of a session
++     ticket integrity check failing, OpenSSL will fail to free memory
++     causing a memory leak. By sending a large number of invalid session
++     tickets an attacker could exploit this issue in a Denial Of Service
++     attack.
++     (CVE-2014-3567)
++     [Steve Henson]
++
++  *) Build option no-ssl3 is incomplete.
++
++     When OpenSSL is configured with "no-ssl3" as a build option, servers
++     could accept and complete a SSL 3.0 handshake, and clients could be
++     configured to send them.
++     (CVE-2014-3568)
++     [Akamai and the OpenSSL team]
++
++  *) Add support for TLS_FALLBACK_SCSV.
++     Client applications doing fallback retries should call
++     SSL_set_mode(s, SSL_MODE_SEND_FALLBACK_SCSV).
++     (CVE-2014-3566)
++     [Adam Langley, Bodo Moeller]
++
++   *) Tighten client-side session ticket handling during renegotiation:
++      ensure that the client only accepts a session ticket if the server sends
++      the extension anew in the ServerHello. Previously, a TLS client would
++      reuse the old extension state and thus accept a session ticket if one was
++      announced in the initial ServerHello.
++      [Emilia Käsper]
+ 
+   *) Accelerated NIST P-256 elliptic curve implementation for x86_64
+      (other platforms pending).
+-     [Shay Gueron (Intel Corp), Andy Polyakov]
++     [Shay Gueron & Vlad Krasnov (Intel Corp), Andy Polyakov]
+ 
+   *) Add support for the SignedCertificateTimestampList certificate and
+      OCSP response extensions from RFC6962.
+@@ -42,7 +88,7 @@
+ 
+   *) Accelerated modular exponentiation for Intel processors, a.k.a.
+      RSAZ.
+-     [Shay Gueron (Intel Corp)]
++     [Shay Gueron & Vlad Krasnov (Intel Corp)]
+ 
+   *) Support for new and upcoming Intel processors, including AVX2,
+      BMI and SHA ISA extensions. This includes additional "stitched"
+@@ -52,6 +98,11 @@
+      This work was sponsored by Intel Corp.
+      [Andy Polyakov]
+ 
++  *) Support for DTLS 1.2. This adds two sets of DTLS methods: DTLS_*_method()
++     supports both DTLS 1.2 and 1.0 and should use whatever version the peer
++     supports and DTLSv1_2_*_method() which supports DTLS 1.2 only.
++     [Steve Henson]
++
+   *) Use algorithm specific chains in SSL_CTX_use_certificate_chain_file():
+      this fixes a limiation in previous versions of OpenSSL.
+      [Steve Henson]
+@@ -319,6 +370,66 @@
+      X509_CINF_set_modified, X509_CINF_get_issuer, X509_CINF_get_extensions and
+      X509_CINF_get_signature were reverted post internal team review.
+ 
++ Changes between 1.0.1j and 1.0.1k [xx XXX xxxx]
++
++   *) Tighten client-side session ticket handling during renegotiation:
++      ensure that the client only accepts a session ticket if the server sends
++      the extension anew in the ServerHello. Previously, a TLS client would
++      reuse the old extension state and thus accept a session ticket if one was
++      announced in the initial ServerHello.
++      [Emilia Käsper]
++
++ Changes between 1.0.1i and 1.0.1j [15 Oct 2014]
++
++  *) SRTP Memory Leak.
++
++     A flaw in the DTLS SRTP extension parsing code allows an attacker, who
++     sends a carefully crafted handshake message, to cause OpenSSL to fail
++     to free up to 64k of memory causing a memory leak. This could be
++     exploited in a Denial Of Service attack. This issue affects OpenSSL
++     1.0.1 server implementations for both SSL/TLS and DTLS regardless of
++     whether SRTP is used or configured. Implementations of OpenSSL that
++     have been compiled with OPENSSL_NO_SRTP defined are not affected.
++
++     The fix was developed by the OpenSSL team.
++     (CVE-2014-3513)
++     [OpenSSL team]
++
++  *) Session Ticket Memory Leak.
++
++     When an OpenSSL SSL/TLS/DTLS server receives a session ticket the
++     integrity of that ticket is first verified. In the event of a session
++     ticket integrity check failing, OpenSSL will fail to free memory
++     causing a memory leak. By sending a large number of invalid session
++     tickets an attacker could exploit this issue in a Denial Of Service
++     attack.
++     (CVE-2014-3567)
++     [Steve Henson]
++
++  *) Build option no-ssl3 is incomplete.
++
++     When OpenSSL is configured with "no-ssl3" as a build option, servers
++     could accept and complete a SSL 3.0 handshake, and clients could be
++     configured to send them.
++     (CVE-2014-3568)
++     [Akamai and the OpenSSL team]
++
++  *) Add support for TLS_FALLBACK_SCSV.
++     Client applications doing fallback retries should call
++     SSL_set_mode(s, SSL_MODE_SEND_FALLBACK_SCSV).
++     (CVE-2014-3566)
++     [Adam Langley, Bodo Moeller]
++
++  *) Add additional DigestInfo checks.
++ 
++     Reencode DigestInto in DER and check against the original when
++     verifying RSA signature: this will reject any improperly encoded
++     DigestInfo structures.
++
++     Note: this is a precautionary measure and no attacks are currently known.
++
++     [Steve Henson]
++
+  Changes between 1.0.1h and 1.0.1i [6 Aug 2014]
+ 
+   *) Fix SRP buffer overrun vulnerability. Invalid parameters passed to the
+@@ -405,6 +516,18 @@
+      bogus results, with non-infinity inputs mapped to infinity too.)
+      [Bodo Moeller]
+ 
++ Changes between 1.0.1i and 1.0.1j [xx XXX xxxx]
++
++  *) Add additional DigestInfo checks.
++ 
++     Reencode DigestInto in DER and check against the original when
++     verifying RSA signature: this will reject any improperly encoded
++     DigestInfo structures.
++
++     Note: this is a precautionary measure and no attacks are currently known.
++
++     [Steve Henson]
++
+  Changes between 1.0.1g and 1.0.1h [5 Jun 2014]
+ 
+   *) Fix for SSL/TLS MITM flaw. An attacker using a carefully crafted
+diff --git a/NEWS b/NEWS
+index ee7f35b..e9180ad 100644
+--- a/NEWS
++++ b/NEWS
+@@ -5,7 +5,7 @@
+   This file gives a brief overview of the major changes between each OpenSSL
+   release. For more details please read the CHANGES file.
+ 
+-  Major changes between OpenSSL 1.0.1i and OpenSSL 1.0.2 [in beta]:
++  Major changes between OpenSSL 1.0.1j and OpenSSL 1.0.2 [in beta]:
+ 
+       o Suite B support for TLS 1.2 and DTLS 1.2
+       o Support for DTLS 1.2
+@@ -16,6 +16,13 @@
+       o ALPN support.
+       o CMS support for RSA-PSS, RSA-OAEP, ECDH and X9.42 DH.
+ 
++  Major changes between OpenSSL 1.0.1i and OpenSSL 1.0.1j [15 Oct 2014]
++
++      o Fix for CVE-2014-3513
++      o Fix for CVE-2014-3567
++      o Mitigation for CVE-2014-3566 (SSL protocol vulnerability)
++      o Fix for CVE-2014-3568
++
+   Major changes between OpenSSL 1.0.1h and OpenSSL 1.0.1i [6 Aug 2014]
+ 
+       o Fix for CVE-2014-3512
+diff --git a/apps/s_client.c b/apps/s_client.c
+index ffd3a4b..151d9dc 100644
+--- a/apps/s_client.c
++++ b/apps/s_client.c
+@@ -343,6 +343,7 @@ static void sc_usage(void)
+ 	BIO_printf(bio_err," -tls1_1       - just use TLSv1.1\n");
+ 	BIO_printf(bio_err," -tls1         - just use TLSv1\n");
+ 	BIO_printf(bio_err," -dtls1        - just use DTLSv1\n");    
++	BIO_printf(bio_err," -fallback_scsv - send TLS_FALLBACK_SCSV\n");
+ 	BIO_printf(bio_err," -mtu          - set the link layer MTU\n");
+ 	BIO_printf(bio_err," -no_tls1_2/-no_tls1_1/-no_tls1/-no_ssl3/-no_ssl2 - turn off that protocol\n");
+ 	BIO_printf(bio_err," -bugs         - Switch on all SSL implementation bug workarounds\n");
+@@ -649,6 +650,7 @@ int MAIN(int argc, char **argv)
+ 	char *sess_out = NULL;
+ 	struct sockaddr peer;
+ 	int peerlen = sizeof(peer);
++	int fallback_scsv = 0;
+ 	int enable_timeouts = 0 ;
+ 	long socket_mtu = 0;
+ #ifndef OPENSSL_NO_JPAKE
+@@ -933,6 +935,10 @@ static char *jpake_secret = NULL;
+ 			socket_mtu = atol(*(++argv));
+ 			}
+ #endif
++		else if (strcmp(*argv,"-fallback_scsv") == 0)
++			{
++			fallback_scsv = 1;
++			}
+ 		else if	(strcmp(*argv,"-keyform") == 0)
+ 			{
+ 			if (--argc < 1) goto bad;
+@@ -1415,6 +1421,10 @@ bad:
+ 		SSL_set_session(con, sess);
+ 		SSL_SESSION_free(sess);
+ 		}
++
++	if (fallback_scsv)
++		SSL_set_mode(con, SSL_MODE_SEND_FALLBACK_SCSV);
++
+ #ifndef OPENSSL_NO_TLSEXT
+ 	if (servername != NULL)
+ 		{
+diff --git a/crypto/aes/asm/aesni-x86_64.pl b/crypto/aes/asm/aesni-x86_64.pl
+index 31c80ae..5f61746 100644
+--- a/crypto/aes/asm/aesni-x86_64.pl
++++ b/crypto/aes/asm/aesni-x86_64.pl
+@@ -584,6 +584,16 @@ $code.=<<___;
+ .type	aesni_ecb_encrypt,\@function,5
+ .align	16
+ aesni_ecb_encrypt:
++___
++$code.=<<___ if ($win64);
++	lea	-0x58(%rsp),%rsp
++	movaps	%xmm6,(%rsp)
++	movaps	%xmm7,0x10(%rsp)
++	movaps	%xmm8,0x20(%rsp)
++	movaps	%xmm9,0x30(%rsp)
++.Lecb_enc_body:
++___
++$code.=<<___;
+ 	and	\$-16,$len
+ 	jz	.Lecb_ret
+ 
+@@ -862,6 +872,16 @@ $code.=<<___;
+ 	movups	$inout5,0x50($out)
+ 
+ .Lecb_ret:
++___
++$code.=<<___ if ($win64);
++	movaps	(%rsp),%xmm6
++	movaps	0x10(%rsp),%xmm7
++	movaps	0x20(%rsp),%xmm8
++	movaps	0x30(%rsp),%xmm9
++	lea	0x58(%rsp),%rsp
++.Lecb_enc_ret:
++___
++$code.=<<___;
+ 	ret
+ .size	aesni_ecb_encrypt,.-aesni_ecb_encrypt
+ ___
+@@ -3225,28 +3245,9 @@ $code.=<<___;
+ .extern	__imp_RtlVirtualUnwind
+ ___
+ $code.=<<___ if ($PREFIX eq "aesni");
+-.type	ecb_se_handler,\@abi-omnipotent
+-.align	16
+-ecb_se_handler:
+-	push	%rsi
+-	push	%rdi
+-	push	%rbx
+-	push	%rbp
+-	push	%r12
+-	push	%r13
+-	push	%r14
+-	push	%r15
+-	pushfq
+-	sub	\$64,%rsp
+-
+-	mov	152($context),%rax	# pull context->Rsp
+-
+-	jmp	.Lcommon_seh_tail
+-.size	ecb_se_handler,.-ecb_se_handler
+-
+-.type	ccm64_se_handler,\@abi-omnipotent
++.type	ecb_ccm64_se_handler,\@abi-omnipotent
+ .align	16
+-ccm64_se_handler:
++ecb_ccm64_se_handler:
+ 	push	%rsi
+ 	push	%rdi
+ 	push	%rbx
+@@ -3283,7 +3284,7 @@ ccm64_se_handler:
+ 	lea	0x58(%rax),%rax		# adjust stack pointer
+ 
+ 	jmp	.Lcommon_seh_tail
+-.size	ccm64_se_handler,.-ccm64_se_handler
++.size	ecb_ccm64_se_handler,.-ecb_ccm64_se_handler
+ 
+ .type	ctr_xts_se_handler,\@abi-omnipotent
+ .align	16
+@@ -3457,14 +3458,15 @@ ___
+ $code.=<<___ if ($PREFIX eq "aesni");
+ .LSEH_info_ecb:
+ 	.byte	9,0,0,0
+-	.rva	ecb_se_handler
++	.rva	ecb_ccm64_se_handler
++	.rva	.Lecb_enc_body,.Lecb_enc_ret		# HandlerData[]
+ .LSEH_info_ccm64_enc:
+ 	.byte	9,0,0,0
+-	.rva	ccm64_se_handler
++	.rva	ecb_ccm64_se_handler
+ 	.rva	.Lccm64_enc_body,.Lccm64_enc_ret	# HandlerData[]
+ .LSEH_info_ccm64_dec:
+ 	.byte	9,0,0,0
+-	.rva	ccm64_se_handler
++	.rva	ecb_ccm64_se_handler
+ 	.rva	.Lccm64_dec_body,.Lccm64_dec_ret	# HandlerData[]
+ .LSEH_info_ctr32:
+ 	.byte	9,0,0,0
+diff --git a/crypto/constant_time_locl.h b/crypto/constant_time_locl.h
+index c048393..ccb6408 100644
+--- a/crypto/constant_time_locl.h
++++ b/crypto/constant_time_locl.h
+@@ -129,17 +129,12 @@ static inline int constant_time_select_int(unsigned int mask, int a, int b);
+ 
+ static inline unsigned int constant_time_msb(unsigned int a)
+ 	{
+-	return (unsigned int)((int)(a) >> (sizeof(int) * 8 - 1));
++	return -(a >> (sizeof(unsigned int) * 8 - 1));
+ 	}
+ 
+ static inline unsigned int constant_time_lt(unsigned int a, unsigned int b)
+ 	{
+-	unsigned int lt;
+-	/* Case 1: msb(a) == msb(b). a < b iff the MSB of a - b is set.*/
+-	lt = ~(a ^ b) & (a - b);
+-	/* Case 2: msb(a) != msb(b). a < b iff the MSB of b is set. */
+-	lt |= ~a & b;
+-	return constant_time_msb(lt);
++	return constant_time_msb(a^((a^b)|((a-b)^b)));
+ 	}
+ 
+ static inline unsigned char constant_time_lt_8(unsigned int a, unsigned int b)
+@@ -149,12 +144,7 @@ static inline unsigned char constant_time_lt_8(unsigned int a, unsigned int b)
+ 
+ static inline unsigned int constant_time_ge(unsigned int a, unsigned int b)
+ 	{
+-	unsigned int ge;
+-	/* Case 1: msb(a) == msb(b). a >= b iff the MSB of a - b is not set.*/
+-	ge = ~((a ^ b) | (a - b));
+-	/* Case 2: msb(a) != msb(b). a >= b iff the MSB of a is set. */
+-	ge |= a & ~b;
+-	return constant_time_msb(ge);
++	return ~constant_time_lt(a, b);
+ 	}
+ 
+ static inline unsigned char constant_time_ge_8(unsigned int a, unsigned int b)
+@@ -204,7 +194,7 @@ static inline unsigned char constant_time_select_8(unsigned char mask,
+ 	return (unsigned char)(constant_time_select(mask, a, b));
+ 	}
+ 
+-inline int constant_time_select_int(unsigned int mask, int a, int b)
++static inline int constant_time_select_int(unsigned int mask, int a, int b)
+ 	{
+ 	return (int)(constant_time_select(mask, (unsigned)(a), (unsigned)(b)));
+ 	}
+diff --git a/crypto/err/openssl.ec b/crypto/err/openssl.ec
+index 4cb24df..139afe3 100644
+--- a/crypto/err/openssl.ec
++++ b/crypto/err/openssl.ec
+@@ -72,6 +72,7 @@ R SSL_R_TLSV1_ALERT_EXPORT_RESTRICTION		1060
+ R SSL_R_TLSV1_ALERT_PROTOCOL_VERSION		1070
+ R SSL_R_TLSV1_ALERT_INSUFFICIENT_SECURITY	1071
+ R SSL_R_TLSV1_ALERT_INTERNAL_ERROR		1080
++R SSL_R_TLSV1_ALERT_INAPPROPRIATE_FALLBACK	1086
+ R SSL_R_TLSV1_ALERT_USER_CANCELLED		1090
+ R SSL_R_TLSV1_ALERT_NO_RENEGOTIATION		1100
+ R SSL_R_TLSV1_UNSUPPORTED_EXTENSION		1110
+diff --git a/crypto/pkcs7/pkcs7.h b/crypto/pkcs7/pkcs7.h
+index 04f6037..5d54c4a 100644
+--- a/crypto/pkcs7/pkcs7.h
++++ b/crypto/pkcs7/pkcs7.h
+@@ -233,10 +233,6 @@ DECLARE_PKCS12_STACK_OF(PKCS7)
+ 		(OBJ_obj2nid((a)->type) == NID_pkcs7_signedAndEnveloped)
+ #define PKCS7_type_is_data(a)   (OBJ_obj2nid((a)->type) == NID_pkcs7_data)
+ #define PKCS7_type_is_digest(a)   (OBJ_obj2nid((a)->type) == NID_pkcs7_digest)
+-#define PKCS7_type_is_encrypted(a) \
+-		(OBJ_obj2nid((a)->type) == NID_pkcs7_encrypted)
+-
+-#define PKCS7_type_is_digest(a)   (OBJ_obj2nid((a)->type) == NID_pkcs7_digest)
+ 
+ #define PKCS7_set_detached(p,v) \
+ 		PKCS7_ctrl(p,PKCS7_OP_SET_DETACHED_SIGNATURE,v,NULL)
+diff --git a/crypto/rsa/rsa_sign.c b/crypto/rsa/rsa_sign.c
+index b6f6037..225bcfe 100644
+--- a/crypto/rsa/rsa_sign.c
++++ b/crypto/rsa/rsa_sign.c
+@@ -151,6 +151,25 @@ int RSA_sign(int type, const unsigned char *m, unsigned int m_len,
+ 	return(ret);
+ 	}
+ 
++/*
++ * Check DigestInfo structure does not contain extraneous data by reencoding
++ * using DER and checking encoding against original. 
++ */
++static int rsa_check_digestinfo(X509_SIG *sig, const unsigned char *dinfo, int dinfolen)
++	{
++	unsigned char *der = NULL;
++	int derlen;
++	int ret = 0;
++	derlen = i2d_X509_SIG(sig, &der);
++	if (derlen <= 0)
++		return 0;
++	if (derlen == dinfolen && !memcmp(dinfo, der, derlen))
++		ret = 1;
++	OPENSSL_cleanse(der, derlen);
++	OPENSSL_free(der);
++	return ret;
++	}
++
+ int int_rsa_verify(int dtype, const unsigned char *m,
+ 			  unsigned int m_len,
+ 			  unsigned char *rm, size_t *prm_len,
+@@ -228,7 +247,7 @@ int int_rsa_verify(int dtype, const unsigned char *m,
+ 		if (sig == NULL) goto err;
+ 
+ 		/* Excess data can be used to create forgeries */
+-		if(p != s+i)
++		if(p != s+i || !rsa_check_digestinfo(sig, s, i))
+ 			{
+ 			RSAerr(RSA_F_INT_RSA_VERIFY,RSA_R_BAD_SIGNATURE);
+ 			goto err;
+diff --git a/doc/apps/s_client.pod b/doc/apps/s_client.pod
+index 85a17e6..aad59b1 100644
+--- a/doc/apps/s_client.pod
++++ b/doc/apps/s_client.pod
+@@ -37,6 +37,9 @@ B<openssl> B<s_client>
+ [B<-no_ssl2>]
+ [B<-no_ssl3>]
+ [B<-no_tls1>]
++[B<-no_tls1_1>]
++[B<-no_tls1_2>]
++[B<-fallback_scsv>]
+ [B<-bugs>]
+ [B<-cipher cipherlist>]
+ [B<-serverpref>]
+@@ -197,16 +200,19 @@ Use the PSK key B<key> when using a PSK cipher suite. The key is
+ given as a hexadecimal number without leading 0x, for example -psk
+ 1a2b3c4d.
+ 
+-=item B<-ssl2>, B<-ssl3>, B<-tls1>, B<-no_ssl2>, B<-no_ssl3>, B<-no_tls1>
++=item B<-ssl2>, B<-ssl3>, B<-tls1>, B<-no_ssl2>, B<-no_ssl3>, B<-no_tls1>, B<-no_tls1_1>, B<-no_tls1_2>
+ 
+ these options disable the use of certain SSL or TLS protocols. By default
+ the initial handshake uses a method which should be compatible with all
+ servers and permit them to use SSL v3, SSL v2 or TLS as appropriate.
+ 
+-Unfortunately there are a lot of ancient and broken servers in use which
++Unfortunately there are still ancient and broken servers in use which
+ cannot handle this technique and will fail to connect. Some servers only
+-work if TLS is turned off with the B<-no_tls> option others will only
+-support SSL v2 and may need the B<-ssl2> option.
++work if TLS is turned off.
++
++=item B<-fallback_scsv>
++
++Send TLS_FALLBACK_SCSV in the ClientHello.
+ 
+ =item B<-bugs>
+ 
+diff --git a/doc/crypto/EVP_BytesToKey.pod b/doc/crypto/EVP_BytesToKey.pod
+index cd09b68..5d60595 100644
+--- a/doc/crypto/EVP_BytesToKey.pod
++++ b/doc/crypto/EVP_BytesToKey.pod
+@@ -55,7 +55,10 @@ the IV.
+ 
+ =head1 RETURN VALUES
+ 
+-EVP_BytesToKey() returns the size of the derived key in bytes, or 0 on error.
++If B<data> is NULL, then EVP_BytesToKey() returns the number of bytes
++needed to store the derived key.
++Otherwise, EVP_BytesToKey() returns the size of the derived key in bytes,
++or 0 on error.
+ 
+ =head1 SEE ALSO
+ 
+diff --git a/doc/crypto/OPENSSL_VERSION_NUMBER.pod b/doc/crypto/OPENSSL_VERSION_NUMBER.pod
+index c39ac35..f7ca7cb 100644
+--- a/doc/crypto/OPENSSL_VERSION_NUMBER.pod
++++ b/doc/crypto/OPENSSL_VERSION_NUMBER.pod
+@@ -17,7 +17,7 @@ OPENSSL_VERSION_NUMBER, SSLeay, SSLeay_version - get OpenSSL version number
+ 
+ OPENSSL_VERSION_NUMBER is a numeric release version identifier:
+ 
+- MMNNFFPPS: major minor fix patch status
++ MNNFFPPS: major minor fix patch status
+ 
+ The status nibble has one of the values 0 for development, 1 to e for betas
+ 1 to 14, and f for release.
+diff --git a/doc/ssl/SSL_CTX_set_mode.pod b/doc/ssl/SSL_CTX_set_mode.pod
+index 8cb669d..2a5aaa5 100644
+--- a/doc/ssl/SSL_CTX_set_mode.pod
++++ b/doc/ssl/SSL_CTX_set_mode.pod
+@@ -71,6 +71,16 @@ SSL_CTX->freelist_max_len, which defaults to 32.  Using this flag can
+ save around 34k per idle SSL connection.
+ This flag has no effect on SSL v2 connections, or on DTLS connections.
+ 
++=item SSL_MODE_SEND_FALLBACK_SCSV
++
++Send TLS_FALLBACK_SCSV in the ClientHello.
++To be set only by applications that reconnect with a downgraded protocol
++version; see draft-ietf-tls-downgrade-scsv-00 for details.
++
++DO NOT ENABLE THIS if your application attempts a normal handshake.
++Only use this in explicit fallback retries, following the guidance
++in draft-ietf-tls-downgrade-scsv-00.
++
+ =back
+ 
+ =head1 RETURN VALUES
+diff --git a/e_os.h b/e_os.h
+index 200df42..13694c4 100644
+--- a/e_os.h
++++ b/e_os.h
+@@ -293,7 +293,7 @@ extern "C" {
+ #    ifdef _WIN64
+ #      define strlen(s) _strlen31(s)
+ /* cut strings to 2GB */
+-static unsigned int _strlen31(const char *str)
++static __inline unsigned int _strlen31(const char *str)
+ 	{
+ 	unsigned int len=0;
+ 	while (*str && len<0x80000000U) str++, len++;
+@@ -742,8 +742,8 @@ struct servent *getservbyname(const char *name, const char *proto);
+ #if !defined(inline) && !defined(__cplusplus)
+ # if defined(__STDC_VERSION__) && __STDC_VERSION__>=199901L
+    /* do nothing, inline works */
+-# elif defined(__GNUC__) && __GNUC__>=3 && !defined(__NO_INLINE__)
+-   /* do nothing, inline works */
++# elif defined(__GNUC__) && __GNUC__>=2
++#  define inline __inline__
+ # elif defined(_MSC_VER)
+   /*
+    * Visual Studio: inline is available in C++ only, however
+diff --git a/ssl/d1_lib.c b/ssl/d1_lib.c
+index 7d9d91f..25c58a8 100644
+--- a/ssl/d1_lib.c
++++ b/ssl/d1_lib.c
+@@ -294,6 +294,25 @@ long dtls1_ctrl(SSL *s, int cmd, long larg, void *parg)
+ 	case DTLS_CTRL_LISTEN:
+ 		ret = dtls1_listen(s, parg);
+ 		break;
++	case SSL_CTRL_CHECK_PROTO_VERSION:
++		/* For library-internal use; checks that the current protocol
++		 * is the highest enabled version (according to s->ctx->method,
++		 * as version negotiation may have changed s->method). */
++		if (s->version == s->ctx->method->version)
++			return 1;
++		/* Apparently we're using a version-flexible SSL_METHOD
++		 * (not at its highest protocol version). */
++		if (s->ctx->method->version == DTLS_method()->version)
++			{
++#if DTLS_MAX_VERSION != DTLS1_2_VERSION
++#  error Code needs update for DTLS_method() support beyond DTLS1_2_VERSION.
++#endif
++			if (!(s->options & SSL_OP_NO_DTLSv1_2))
++				return s->version == DTLS1_2_VERSION;
++			if (!(s->options & SSL_OP_NO_DTLSv1))
++				return s->version == DTLS1_VERSION;
++			}
++		return 0; /* Unexpected state; fail closed. */
+ 
+ 	default:
+ 		ret = ssl3_ctrl(s, cmd, larg, parg);
+diff --git a/ssl/d1_srtp.c b/ssl/d1_srtp.c
+index 928935b..ac1bef0 100644
+--- a/ssl/d1_srtp.c
++++ b/ssl/d1_srtp.c
+@@ -167,25 +167,6 @@ static int find_profile_by_name(char *profile_name,
+ 	return 1;
+ 	}
+ 
+-static int find_profile_by_num(unsigned profile_num,
+-			       SRTP_PROTECTION_PROFILE **pptr)
+-	{
+-	SRTP_PROTECTION_PROFILE *p;
+-
+-	p=srtp_known_profiles;
+-	while(p->name)
+-		{
+-		if(p->id == profile_num)
+-			{
+-			*pptr=p;
+-			return 0;
+-			}
+-		p++;
+-		}
+-
+-	return 1;
+-	}
+-
+ static int ssl_ctx_make_profiles(const char *profiles_string,STACK_OF(SRTP_PROTECTION_PROFILE) **out)
+ 	{
+ 	STACK_OF(SRTP_PROTECTION_PROFILE) *profiles;
+@@ -208,11 +189,19 @@ static int ssl_ctx_make_profiles(const char *profiles_string,STACK_OF(SRTP_PROTE
+ 		if(!find_profile_by_name(ptr,&p,
+ 					 col ? col-ptr : (int)strlen(ptr)))
+ 			{
++			if (sk_SRTP_PROTECTION_PROFILE_find(profiles,p) >= 0)
++				{
++				SSLerr(SSL_F_SSL_CTX_MAKE_PROFILES,SSL_R_BAD_SRTP_PROTECTION_PROFILE_LIST);
++				sk_SRTP_PROTECTION_PROFILE_free(profiles);
++				return 1;
++				}
++
+ 			sk_SRTP_PROTECTION_PROFILE_push(profiles,p);
+ 			}
+ 		else
+ 			{
+ 			SSLerr(SSL_F_SSL_CTX_MAKE_PROFILES,SSL_R_SRTP_UNKNOWN_PROTECTION_PROFILE);
++			sk_SRTP_PROTECTION_PROFILE_free(profiles);
+ 			return 1;
+ 			}
+ 
+@@ -304,13 +293,12 @@ int ssl_add_clienthello_use_srtp_ext(SSL *s, unsigned char *p, int *len, int max
+ 
+ int ssl_parse_clienthello_use_srtp_ext(SSL *s, unsigned char *d, int len,int *al)
+ 	{
+-	SRTP_PROTECTION_PROFILE *cprof,*sprof;
+-	STACK_OF(SRTP_PROTECTION_PROFILE) *clnt=0,*srvr;
++	SRTP_PROTECTION_PROFILE *sprof;
++	STACK_OF(SRTP_PROTECTION_PROFILE) *srvr;
+         int ct;
+         int mki_len;
+-	int i,j;
+-	int id;
+-	int ret;
++	int i, srtp_pref;
++	unsigned int id;
+ 
+          /* Length value + the MKI length */
+         if(len < 3)
+@@ -340,22 +328,32 @@ int ssl_parse_clienthello_use_srtp_ext(SSL *s, unsigned char *d, int len,int *al
+ 		return 1;
+ 		}
+ 
++	srvr=SSL_get_srtp_profiles(s);
++	s->srtp_profile = NULL;
++	/* Search all profiles for a match initially */
++	srtp_pref = sk_SRTP_PROTECTION_PROFILE_num(srvr);
+         
+-	clnt=sk_SRTP_PROTECTION_PROFILE_new_null();
+-
+ 	while(ct)
+ 		{
+ 		n2s(d,id);
+ 		ct-=2;
+                 len-=2;
+ 
+-		if(!find_profile_by_num(id,&cprof))
++		/*
++		 * Only look for match in profiles of higher preference than
++		 * current match.
++		 * If no profiles have been have been configured then this
++		 * does nothing.
++		 */
++		for (i = 0; i < srtp_pref; i++)
+ 			{
+-			sk_SRTP_PROTECTION_PROFILE_push(clnt,cprof);
+-			}
+-		else
+-			{
+-			; /* Ignore */
++			sprof = sk_SRTP_PROTECTION_PROFILE_value(srvr, i);
++			if (sprof->id == id)
++				{
++				s->srtp_profile = sprof;
++				srtp_pref = i;
++				break;
++				}
+ 			}
+ 		}
+ 
+@@ -370,36 +368,7 @@ int ssl_parse_clienthello_use_srtp_ext(SSL *s, unsigned char *d, int len,int *al
+ 		return 1;
+ 		}
+ 
+-	srvr=SSL_get_srtp_profiles(s);
+-
+-	/* Pick our most preferred profile. If no profiles have been
+-	 configured then the outer loop doesn't run 
+-	 (sk_SRTP_PROTECTION_PROFILE_num() = -1)
+-	 and so we just return without doing anything */
+-	for(i=0;i<sk_SRTP_PROTECTION_PROFILE_num(srvr);i++)
+-		{
+-		sprof=sk_SRTP_PROTECTION_PROFILE_value(srvr,i);
+-
+-		for(j=0;j<sk_SRTP_PROTECTION_PROFILE_num(clnt);j++)
+-			{
+-			cprof=sk_SRTP_PROTECTION_PROFILE_value(clnt,j);
+-            
+-			if(cprof->id==sprof->id)
+-				{
+-				s->srtp_profile=sprof;
+-				*al=0;
+-				ret=0;
+-				goto done;
+-				}
+-			}
+-		}
+-
+-	ret=0;
+-    
+-done:
+-	if(clnt) sk_SRTP_PROTECTION_PROFILE_free(clnt);
+-
+-	return ret;
++	return 0;
+ 	}
+ 
+ int ssl_add_serverhello_use_srtp_ext(SSL *s, unsigned char *p, int *len, int maxlen)
+diff --git a/ssl/dtls1.h b/ssl/dtls1.h
+index c6edbe3..5cb79f1 100644
+--- a/ssl/dtls1.h
++++ b/ssl/dtls1.h
+@@ -84,8 +84,11 @@ extern "C" {
+ #endif
+ 
+ #define DTLS1_VERSION			0xFEFF
+-#define DTLS1_BAD_VER			0x0100
+ #define DTLS1_2_VERSION			0xFEFD
++#define DTLS_MAX_VERSION		DTLS1_2_VERSION
++
++#define DTLS1_BAD_VER			0x0100
++
+ /* Special value for method supporting multiple versions */
+ #define DTLS_ANY_VERSION		0x1FFFF
+ 
+@@ -287,4 +290,3 @@ typedef struct dtls1_record_data_st
+ }
+ #endif
+ #endif
+-
+diff --git a/ssl/s23_clnt.c b/ssl/s23_clnt.c
+index 5177f06..56705c3 100644
+--- a/ssl/s23_clnt.c
++++ b/ssl/s23_clnt.c
+@@ -125,9 +125,11 @@ static const SSL_METHOD *ssl23_get_client_method(int ver)
+ 	if (ver == SSL2_VERSION)
+ 		return(SSLv2_client_method());
+ #endif
++#ifndef OPENSSL_NO_SSL3
+ 	if (ver == SSL3_VERSION)
+ 		return(SSLv3_client_method());
+-	else if (ver == TLS1_VERSION)
++#endif
++	if (ver == TLS1_VERSION)
+ 		return(TLSv1_client_method());
+ 	else if (ver == TLS1_1_VERSION)
+ 		return(TLSv1_1_client_method());
+@@ -710,6 +712,7 @@ static int ssl23_get_server_hello(SSL *s)
+ 		{
+ 		/* we have sslv3 or tls1 (server hello or alert) */
+ 
++#ifndef OPENSSL_NO_SSL3
+ 		if ((p[2] == SSL3_VERSION_MINOR) &&
+ 			!(s->options & SSL_OP_NO_SSLv3))
+ 			{
+@@ -724,7 +727,9 @@ static int ssl23_get_server_hello(SSL *s)
+ 			s->version=SSL3_VERSION;
+ 			s->method=SSLv3_client_method();
+ 			}
+-		else if ((p[2] == TLS1_VERSION_MINOR) &&
++		else
++#endif
++		if ((p[2] == TLS1_VERSION_MINOR) &&
+ 			!(s->options & SSL_OP_NO_TLSv1))
+ 			{
+ 			s->version=TLS1_VERSION;
+@@ -748,6 +753,9 @@ static int ssl23_get_server_hello(SSL *s)
+ 			goto err;
+ 			}
+ 
++		/* ensure that TLS_MAX_VERSION is up-to-date */
++		OPENSSL_assert(s->version <= TLS_MAX_VERSION);
++
+ 		if (p[0] == SSL3_RT_ALERT && p[5] != SSL3_AL_WARNING)
+ 			{
+ 			/* fatal alert */
+diff --git a/ssl/s23_srvr.c b/ssl/s23_srvr.c
+index 75d8142..e656ac2 100644
+--- a/ssl/s23_srvr.c
++++ b/ssl/s23_srvr.c
+@@ -127,9 +127,11 @@ static const SSL_METHOD *ssl23_get_server_method(int ver)
+ 	if (ver == SSL2_VERSION)
+ 		return(SSLv2_server_method());
+ #endif
++#ifndef OPENSSL_NO_SSL3
+ 	if (ver == SSL3_VERSION)
+ 		return(SSLv3_server_method());
+-	else if (ver == TLS1_VERSION)
++#endif
++	if (ver == TLS1_VERSION)
+ 		return(TLSv1_server_method());
+ 	else if (ver == TLS1_1_VERSION)
+ 		return(TLSv1_1_server_method());
+@@ -421,6 +423,9 @@ int ssl23_get_client_hello(SSL *s)
+ 			}
+ 		}
+ 
++	/* ensure that TLS_MAX_VERSION is up-to-date */
++	OPENSSL_assert(s->version <= TLS_MAX_VERSION);
++
+ 	if (s->version < TLS1_2_VERSION && tls1_suiteb(s))
+ 		{
+ 		SSLerr(SSL_F_SSL23_GET_CLIENT_HELLO,
+@@ -604,6 +609,14 @@ int ssl23_get_client_hello(SSL *s)
+ 	if ((type == 2) || (type == 3))
+ 		{
+ 		/* we have SSLv3/TLSv1 (type 2: SSL2 style, type 3: SSL3/TLS style) */
++		const SSL_METHOD *new_method;
++		new_method = ssl23_get_server_method(s->version);
++		if (new_method == NULL)
++			{
++			SSLerr(SSL_F_SSL23_GET_CLIENT_HELLO,SSL_R_UNSUPPORTED_PROTOCOL);
++			goto err;
++			}
++		s->method = new_method;
+ 
+ 		if (!ssl_init_wbio_buffer(s,1)) goto err;
+ 
+@@ -631,14 +644,6 @@ int ssl23_get_client_hello(SSL *s)
+ 			s->s3->rbuf.left=0;
+ 			s->s3->rbuf.offset=0;
+ 			}
+-		if (s->version == TLS1_2_VERSION)
+-			s->method = TLSv1_2_server_method();
+-		else if (s->version == TLS1_1_VERSION)
+-			s->method = TLSv1_1_server_method();
+-		else if (s->version == TLS1_VERSION)
+-			s->method = TLSv1_server_method();
+-		else
+-			s->method = SSLv3_server_method();
+ #if 0 /* ssl3_get_client_hello does this */
+ 		s->client_version=(v[0]<<8)|v[1];
+ #endif
+diff --git a/ssl/s2_lib.c b/ssl/s2_lib.c
+index 41ae4e8..41818dc 100644
+--- a/ssl/s2_lib.c
++++ b/ssl/s2_lib.c
+@@ -391,6 +391,8 @@ long ssl2_ctrl(SSL *s, int cmd, long larg, void *parg)
+ 	case SSL_CTRL_GET_SESSION_REUSED:
+ 		ret=s->hit;
+ 		break;
++	case SSL_CTRL_CHECK_PROTO_VERSION:
++		return ssl3_ctrl(s, SSL_CTRL_CHECK_PROTO_VERSION, larg, parg);
+ 	default:
+ 		break;
+ 		}
+@@ -434,7 +436,7 @@ int ssl2_put_cipher_by_char(const SSL_CIPHER *c, unsigned char *p)
+ 	if (p != NULL)
+ 		{
+ 		l=c->id;
+-		if ((l & 0xff000000) != 0x02000000) return(0);
++		if ((l & 0xff000000) != 0x02000000 && l != SSL3_CK_FALLBACK_SCSV) return(0);
+ 		p[0]=((unsigned char)(l>>16L))&0xFF;
+ 		p[1]=((unsigned char)(l>> 8L))&0xFF;
+ 		p[2]=((unsigned char)(l     ))&0xFF;
+diff --git a/ssl/s3_clnt.c b/ssl/s3_clnt.c
+index 3e89e52..7d7af4b 100644
+--- a/ssl/s3_clnt.c
++++ b/ssl/s3_clnt.c
+@@ -225,6 +225,14 @@ int ssl3_connect(SSL *s)
+ 			s->renegotiate=1;
+ 			s->state=SSL_ST_CONNECT;
+ 			s->ctx->stats.sess_connect_renegotiate++;
++#ifndef OPENSSL_NO_TLSEXT
++			/*
++			 * If renegotiating, the server may choose to not issue
++			 * a new ticket, so reset the flag. It will be set to
++			 * the right value when parsing ServerHello extensions.
++			 */
++			s->tlsext_ticket_expected = 0;
++#endif
+ 			/* break */
+ 		case SSL_ST_BEFORE:
+ 		case SSL_ST_CONNECT:
+@@ -2168,12 +2176,18 @@ int ssl3_get_certificate_request(SSL *s)
+ 			s->cert->pkeys[i].digest = NULL;
+ 			s->cert->pkeys[i].valid_flags = 0;
+ 			}
+-		if ((llen & 1) || !tls1_process_sigalgs(s, p, llen))
++		if ((llen & 1) || !tls1_save_sigalgs(s, p, llen))
+ 			{
+ 			ssl3_send_alert(s,SSL3_AL_FATAL,SSL_AD_DECODE_ERROR);
+ 			SSLerr(SSL_F_SSL3_GET_CERTIFICATE_REQUEST,SSL_R_SIGNATURE_ALGORITHMS_ERROR);
+ 			goto err;
+ 			}
++		if (!tls1_process_sigalgs(s))
++			{
++			ssl3_send_alert(s,SSL3_AL_FATAL, SSL_AD_INTERNAL_ERROR);
++			SSLerr(SSL_F_SSL3_GET_CERTIFICATE_REQUEST, ERR_R_MALLOC_FAILURE);
++			goto err;
++			}
+ 		p += llen;
+ 		}
+ 
+@@ -2322,7 +2336,7 @@ int ssl3_get_new_session_ticket(SSL *s)
+ 		}
+ 	memcpy(s->session->tlsext_tick, p, ticklen);
+ 	s->session->tlsext_ticklen = ticklen;
+-	/* There are two ways to detect a resumed ticket sesion.
++	/* There are two ways to detect a resumed ticket session.
+ 	 * One is to set an appropriate session ID and then the server
+ 	 * must return a match in ServerHello. This allows the normal
+ 	 * client session ID matching to work and we know much 
+diff --git a/ssl/s3_enc.c b/ssl/s3_enc.c
+index 86f06d0..73f3e17 100644
+--- a/ssl/s3_enc.c
++++ b/ssl/s3_enc.c
+@@ -941,7 +941,7 @@ int ssl3_alert_code(int code)
+ 	case SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE: return(SSL3_AD_HANDSHAKE_FAILURE);
+ 	case SSL_AD_BAD_CERTIFICATE_HASH_VALUE: return(SSL3_AD_HANDSHAKE_FAILURE);
+ 	case SSL_AD_UNKNOWN_PSK_IDENTITY:return(TLS1_AD_UNKNOWN_PSK_IDENTITY);
++	case SSL_AD_INAPPROPRIATE_FALLBACK:return(TLS1_AD_INAPPROPRIATE_FALLBACK);
+ 	default:			return(-1);
+ 		}
+ 	}
+-
+diff --git a/ssl/s3_lib.c b/ssl/s3_lib.c
+index a15625b..361f295 100644
+--- a/ssl/s3_lib.c
++++ b/ssl/s3_lib.c
+@@ -3598,6 +3598,33 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
+ 		return (int)sess->tlsext_ecpointformatlist_length;
+ 		}
+ #endif
++
++	case SSL_CTRL_CHECK_PROTO_VERSION:
++		/* For library-internal use; checks that the current protocol
++		 * is the highest enabled version (according to s->ctx->method,
++		 * as version negotiation may have changed s->method). */
++		if (s->version == s->ctx->method->version)
++			return 1;
++		/* Apparently we're using a version-flexible SSL_METHOD
++		 * (not at its highest protocol version). */
++		if (s->ctx->method->version == SSLv23_method()->version)
++			{
++#if TLS_MAX_VERSION != TLS1_2_VERSION
++#  error Code needs update for SSLv23_method() support beyond TLS1_2_VERSION.
++#endif
++			if (!(s->options & SSL_OP_NO_TLSv1_2))
++				return s->version == TLS1_2_VERSION;
++			if (!(s->options & SSL_OP_NO_TLSv1_1))
++				return s->version == TLS1_1_VERSION;
++			if (!(s->options & SSL_OP_NO_TLSv1))
++				return s->version == TLS1_VERSION;
++			if (!(s->options & SSL_OP_NO_SSLv3))
++				return s->version == SSL3_VERSION;
++			if (!(s->options & SSL_OP_NO_SSLv2))
++				return s->version == SSL2_VERSION;
++			}
++		return 0; /* Unexpected state; fail closed. */
++
+ 	default:
+ 		break;
+ 		}
+@@ -4519,4 +4546,3 @@ long ssl_get_algorithm2(SSL *s)
+ 		return SSL_HANDSHAKE_MAC_SHA256 | TLS1_PRF_SHA256;
+ 	return alg2;
+ 	}
+-
+diff --git a/ssl/srtp.h b/ssl/srtp.h
+index ae364d0..dfdab0e 100644
+--- a/ssl/srtp.h
++++ b/ssl/srtp.h
+@@ -130,12 +130,16 @@ extern "C" {
+ #define SRTP_NULL_SHA1_80      0x0005
+ #define SRTP_NULL_SHA1_32      0x0006
+ 
++#ifndef OPENSSL_NO_SRTP
++
+ int SSL_CTX_set_tlsext_use_srtp(SSL_CTX *ctx, const char *profiles);
+ int SSL_set_tlsext_use_srtp(SSL *ctx, const char *profiles);
+ 
+ STACK_OF(SRTP_PROTECTION_PROFILE) *SSL_get_srtp_profiles(SSL *ssl);
+ SRTP_PROTECTION_PROFILE *SSL_get_selected_srtp_profile(SSL *s);
+ 
++#endif
++
+ #ifdef  __cplusplus
+ }
+ #endif
+diff --git a/ssl/ssl.h b/ssl/ssl.h
+index dc034d5..bbf3180 100644
+--- a/ssl/ssl.h
++++ b/ssl/ssl.h
+@@ -681,6 +681,15 @@ struct ssl_session_st
+  */
+ #define SSL_MODE_SEND_CLIENTHELLO_TIME 0x00000020L
+ #define SSL_MODE_SEND_SERVERHELLO_TIME 0x00000040L
++/* Send TLS_FALLBACK_SCSV in the ClientHello.
++ * To be set only by applications that reconnect with a downgraded protocol
++ * version; see draft-ietf-tls-downgrade-scsv-00 for details.
++ *
++ * DO NOT ENABLE THIS if your application attempts a normal handshake.
++ * Only use this in explicit fallback retries, following the guidance
++ * in draft-ietf-tls-downgrade-scsv-00.
++ */
++#define SSL_MODE_SEND_FALLBACK_SCSV 0x00000080L
+ 
+ /* Cert related flags */
+ /* Many implementations ignore some aspects of the TLS standards such as
+@@ -1683,6 +1692,7 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
+ #define SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE TLS1_AD_BAD_CERTIFICATE_STATUS_RESPONSE
+ #define SSL_AD_BAD_CERTIFICATE_HASH_VALUE TLS1_AD_BAD_CERTIFICATE_HASH_VALUE
+ #define SSL_AD_UNKNOWN_PSK_IDENTITY     TLS1_AD_UNKNOWN_PSK_IDENTITY /* fatal */
++#define SSL_AD_INAPPROPRIATE_FALLBACK	TLS1_AD_INAPPROPRIATE_FALLBACK /* fatal */
+ 
+ #define SSL_ERROR_NONE			0
+ #define SSL_ERROR_SSL			1
+@@ -1821,6 +1831,9 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
+ #define SSL_CTRL_SELECT_CURRENT_CERT		116
+ #define SSL_CTRL_SET_CURRENT_CERT		117
+ 
++#define SSL_CTRL_CHECK_PROTO_VERSION		119
++
++
+ #define SSL_CERT_SET_FIRST			1
+ #define SSL_CERT_SET_NEXT			2
+ #define SSL_CERT_SET_SERVER			3
+@@ -2569,6 +2582,7 @@ void ERR_load_SSL_strings(void);
+ #define SSL_F_SSL_CERT_INST				 222
+ #define SSL_F_SSL_CERT_INSTANTIATE			 214
+ #define SSL_F_SSL_CERT_NEW				 162
++#define SSL_F_SSL_CHECK_CLIENTHELLO_TLSEXT_LATE		 335
+ #define SSL_F_SSL_CHECK_PRIVATE_KEY			 163
+ #define SSL_F_SSL_CHECK_SERVERHELLO_TLSEXT		 280
+ #define SSL_F_SSL_CHECK_SRVR_ECC_CERT_AND_ALG		 279
+@@ -2765,6 +2779,7 @@ void ERR_load_SSL_strings(void);
+ #define SSL_R_HTTP_REQUEST				 156
+ #define SSL_R_ILLEGAL_PADDING				 283
+ #define SSL_R_ILLEGAL_SUITEB_DIGEST			 380
++#define SSL_R_INAPPROPRIATE_FALLBACK			 373
+ #define SSL_R_INCONSISTENT_COMPRESSION			 340
+ #define SSL_R_INVALID_CHALLENGE_LENGTH			 158
+ #define SSL_R_INVALID_COMMAND				 280
+@@ -2921,6 +2936,7 @@ void ERR_load_SSL_strings(void);
+ #define SSL_R_TLSV1_ALERT_DECRYPTION_FAILED		 1021
+ #define SSL_R_TLSV1_ALERT_DECRYPT_ERROR			 1051
+ #define SSL_R_TLSV1_ALERT_EXPORT_RESTRICTION		 1060
++#define SSL_R_TLSV1_ALERT_INAPPROPRIATE_FALLBACK	 1086
+ #define SSL_R_TLSV1_ALERT_INSUFFICIENT_SECURITY		 1071
+ #define SSL_R_TLSV1_ALERT_INTERNAL_ERROR		 1080
+ #define SSL_R_TLSV1_ALERT_NO_RENEGOTIATION		 1100
+diff --git a/ssl/ssl3.h b/ssl/ssl3.h
+index 7ba8f4c..a4823d3 100644
+--- a/ssl/ssl3.h
++++ b/ssl/ssl3.h
+@@ -128,9 +128,14 @@
+ extern "C" {
+ #endif
+ 
+-/* Signalling cipher suite value: from draft-ietf-tls-renegotiation-03.txt */
++/* Signalling cipher suite value from RFC 5746
++ * (TLS_EMPTY_RENEGOTIATION_INFO_SCSV) */
+ #define SSL3_CK_SCSV				0x030000FF
+ 
++/* Signalling cipher suite value from draft-ietf-tls-downgrade-scsv-00
++ * (TLS_FALLBACK_SCSV) */
++#define SSL3_CK_FALLBACK_SCSV			0x03005600
++
+ #define SSL3_CK_RSA_NULL_MD5			0x03000001
+ #define SSL3_CK_RSA_NULL_SHA			0x03000002
+ #define SSL3_CK_RSA_RC4_40_MD5 			0x03000003
+diff --git a/ssl/ssl_err.c b/ssl/ssl_err.c
+index 1eca037..bcd124e 100644
+--- a/ssl/ssl_err.c
++++ b/ssl/ssl_err.c
+@@ -199,6 +199,7 @@ static ERR_STRING_DATA SSL_str_functs[]=
+ {ERR_FUNC(SSL_F_SSL_CERT_INST),	"ssl_cert_inst"},
+ {ERR_FUNC(SSL_F_SSL_CERT_INSTANTIATE),	"SSL_CERT_INSTANTIATE"},
+ {ERR_FUNC(SSL_F_SSL_CERT_NEW),	"ssl_cert_new"},
++{ERR_FUNC(SSL_F_SSL_CHECK_CLIENTHELLO_TLSEXT_LATE),	"ssl_check_clienthello_tlsext_late"},
+ {ERR_FUNC(SSL_F_SSL_CHECK_PRIVATE_KEY),	"SSL_check_private_key"},
+ {ERR_FUNC(SSL_F_SSL_CHECK_SERVERHELLO_TLSEXT),	"SSL_CHECK_SERVERHELLO_TLSEXT"},
+ {ERR_FUNC(SSL_F_SSL_CHECK_SRVR_ECC_CERT_AND_ALG),	"ssl_check_srvr_ecc_cert_and_alg"},
+@@ -398,6 +399,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
+ {ERR_REASON(SSL_R_HTTP_REQUEST)          ,"http request"},
+ {ERR_REASON(SSL_R_ILLEGAL_PADDING)       ,"illegal padding"},
+ {ERR_REASON(SSL_R_ILLEGAL_SUITEB_DIGEST) ,"illegal Suite B digest"},
++{ERR_REASON(SSL_R_INAPPROPRIATE_FALLBACK),"inappropriate fallback"},
+ {ERR_REASON(SSL_R_INCONSISTENT_COMPRESSION),"inconsistent compression"},
+ {ERR_REASON(SSL_R_INVALID_CHALLENGE_LENGTH),"invalid challenge length"},
+ {ERR_REASON(SSL_R_INVALID_COMMAND)       ,"invalid command"},
+@@ -554,6 +556,7 @@ static ERR_STRING_DATA SSL_str_reasons[]=
+ {ERR_REASON(SSL_R_TLSV1_ALERT_DECRYPTION_FAILED),"tlsv1 alert decryption failed"},
+ {ERR_REASON(SSL_R_TLSV1_ALERT_DECRYPT_ERROR),"tlsv1 alert decrypt error"},
+ {ERR_REASON(SSL_R_TLSV1_ALERT_EXPORT_RESTRICTION),"tlsv1 alert export restriction"},
++{ERR_REASON(SSL_R_TLSV1_ALERT_INAPPROPRIATE_FALLBACK),"tlsv1 alert inappropriate fallback"},
+ {ERR_REASON(SSL_R_TLSV1_ALERT_INSUFFICIENT_SECURITY),"tlsv1 alert insufficient security"},
+ {ERR_REASON(SSL_R_TLSV1_ALERT_INTERNAL_ERROR),"tlsv1 alert internal error"},
+ {ERR_REASON(SSL_R_TLSV1_ALERT_NO_RENEGOTIATION),"tlsv1 alert no renegotiation"},
+diff --git a/ssl/ssl_lib.c b/ssl/ssl_lib.c
+index f779ce6..22a210e 100644
+--- a/ssl/ssl_lib.c
++++ b/ssl/ssl_lib.c
+@@ -1464,12 +1464,14 @@ int ssl_cipher_list_to_bytes(SSL *s,STACK_OF(SSL_CIPHER) *sk,unsigned char *p,
+ 	SSL_CIPHER *c;
+ 	CERT *ct = s->cert;
+ 	unsigned char *q;
+-	int no_scsv = s->renegotiate;
++	int empty_reneg_info_scsv = !s->renegotiate;
+ 	/* Set disabled masks for this session */
+ 	ssl_set_client_disabled(s);
+ 
+ 	if (sk == NULL) return(0);
+ 	q=p;
++	if (put_cb == NULL)
++		put_cb = s->method->put_cipher_by_char;
+ 
+ 	for (i=0; i<sk_SSL_CIPHER_num(sk); i++)
+ 		{
+@@ -1482,29 +1484,40 @@ int ssl_cipher_list_to_bytes(SSL *s,STACK_OF(SSL_CIPHER) *sk,unsigned char *p,
+ #ifdef OPENSSL_SSL_DEBUG_BROKEN_PROTOCOL
+ 		if (c->id == SSL3_CK_SCSV)
+ 			{
+-			if (no_scsv)
++			if (!empty_reneg_info_scsv)
+ 				continue;
+ 			else
+-				no_scsv = 1;
++				empty_reneg_info_scsv = 0;
+ 			}
+ #endif
+-		j = put_cb ? put_cb(c,p) : ssl_put_cipher_by_char(s,c,p);
++		j = put_cb(c,p);
+ 		p+=j;
+ 		}
+-	/* If p == q, no ciphers and caller indicates an error. Otherwise
+-	 * add SCSV if not renegotiating.
+-	 */
+-	if (p != q && !no_scsv)
++	/* If p == q, no ciphers; caller indicates an error.
++	 * Otherwise, add applicable SCSVs. */
++	if (p != q)
+ 		{
+-		static SSL_CIPHER scsv =
++		if (empty_reneg_info_scsv)
+ 			{
+-			0, NULL, SSL3_CK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
+-			};
+-		j = put_cb ? put_cb(&scsv,p) : ssl_put_cipher_by_char(s,&scsv,p);
+-		p+=j;
++			static SSL_CIPHER scsv =
++				{
++				0, NULL, SSL3_CK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
++				};
++			j = put_cb(&scsv,p);
++			p+=j;
+ #ifdef OPENSSL_RI_DEBUG
+-		fprintf(stderr, "SCSV sent by client\n");
++			fprintf(stderr, "TLS_EMPTY_RENEGOTIATION_INFO_SCSV sent by client\n");
+ #endif
++			}
++		if (s->mode & SSL_MODE_SEND_FALLBACK_SCSV)
++			{
++			static SSL_CIPHER scsv =
++				{
++				0, NULL, SSL3_CK_FALLBACK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
++				};
++			j = put_cb(&scsv,p);
++			p+=j;
++			}
+ 		}
+ 
+ 	return(p-q);
+@@ -1516,11 +1529,12 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
+ 	const SSL_CIPHER *c;
+ 	STACK_OF(SSL_CIPHER) *sk;
+ 	int i,n;
++
+ 	if (s->s3)
+ 		s->s3->send_connection_binding = 0;
+ 
+ 	n=ssl_put_cipher_by_char(s,NULL,NULL);
+-	if ((num%n) != 0)
++	if (n == 0 || (num%n) != 0)
+ 		{
+ 		SSLerr(SSL_F_SSL_BYTES_TO_CIPHER_LIST,SSL_R_ERROR_IN_RECEIVED_CIPHER_LIST);
+ 		return(NULL);
+@@ -1545,7 +1559,7 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
+ 
+ 	for (i=0; i<num; i+=n)
+ 		{
+-		/* Check for SCSV */
++		/* Check for TLS_EMPTY_RENEGOTIATION_INFO_SCSV */
+ 		if (s->s3 && (n != 3 || !p[0]) &&
+ 			(p[n-2] == ((SSL3_CK_SCSV >> 8) & 0xff)) &&
+ 			(p[n-1] == (SSL3_CK_SCSV & 0xff)))
+@@ -1565,6 +1579,24 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
+ 			continue;
+ 			}
+ 
++		/* Check for TLS_FALLBACK_SCSV */
++		if ((n != 3 || !p[0]) &&
++			(p[n-2] == ((SSL3_CK_FALLBACK_SCSV >> 8) & 0xff)) &&
++			(p[n-1] == (SSL3_CK_FALLBACK_SCSV & 0xff)))
++			{
++			/* The SCSV indicates that the client previously tried a higher version.
++			 * Fail if the current version is an unexpected downgrade. */
++			if (!SSL_ctrl(s, SSL_CTRL_CHECK_PROTO_VERSION, 0, NULL))
++				{
++				SSLerr(SSL_F_SSL_BYTES_TO_CIPHER_LIST,SSL_R_INAPPROPRIATE_FALLBACK);
++				if (s->s3)
++					ssl3_send_alert(s,SSL3_AL_FATAL,SSL_AD_INAPPROPRIATE_FALLBACK);
++				goto err;
++				}
++			p += n;
++			continue;
++			}
++
+ 		c=ssl_get_cipher_by_char(s,p);
+ 		p+=n;
+ 		if (c != NULL)
+@@ -3152,15 +3184,28 @@ SSL_CTX *SSL_get_SSL_CTX(const SSL *ssl)
+ 
+ SSL_CTX *SSL_set_SSL_CTX(SSL *ssl, SSL_CTX* ctx)
+ 	{
++	CERT *ocert = ssl->cert;
+ 	if (ssl->ctx == ctx)
+ 		return ssl->ctx;
+ #ifndef OPENSSL_NO_TLSEXT
+ 	if (ctx == NULL)
+ 		ctx = ssl->initial_ctx;
+ #endif
+-	if (ssl->cert != NULL)
+-		ssl_cert_free(ssl->cert);
+ 	ssl->cert = ssl_cert_dup(ctx->cert);
++	if (ocert)
++		{
++		/* Preserve any already negotiated parameters */
++		if (ssl->server)
++			{
++			ssl->cert->peer_sigalgs = ocert->peer_sigalgs;
++			ssl->cert->peer_sigalgslen = ocert->peer_sigalgslen;
++			ocert->peer_sigalgs = NULL;
++			ssl->cert->ciphers_raw = ocert->ciphers_raw;
++			ssl->cert->ciphers_rawlen = ocert->ciphers_rawlen;
++			ocert->ciphers_raw = NULL;
++			}
++		ssl_cert_free(ocert);
++		}
+ 	CRYPTO_add(&ctx->references,1,CRYPTO_LOCK_SSL_CTX);
+ 	if (ssl->ctx != NULL)
+ 		SSL_CTX_free(ssl->ctx); /* decrement reference count */
+diff --git a/ssl/ssl_locl.h b/ssl/ssl_locl.h
+index ce5856a..6d8047c 100644
+--- a/ssl/ssl_locl.h
++++ b/ssl/ssl_locl.h
+@@ -1353,7 +1353,8 @@ int ssl_add_clienthello_renegotiate_ext(SSL *s, unsigned char *p, int *len,
+ int ssl_parse_clienthello_renegotiate_ext(SSL *s, unsigned char *d, int len,
+ 					  int *al);
+ long ssl_get_algorithm2(SSL *s);
+-int tls1_process_sigalgs(SSL *s, const unsigned char *data, int dsize);
++int tls1_save_sigalgs(SSL *s, const unsigned char *data, int dsize);
++int tls1_process_sigalgs(SSL *s);
+ size_t tls12_get_psigalgs(SSL *s, const unsigned char **psigs);
+ int tls12_check_peer_sigalg(const EVP_MD **pmd, SSL *s,
+ 				const unsigned char *sig, EVP_PKEY *pkey);
+diff --git a/ssl/ssl_sess.c b/ssl/ssl_sess.c
+index 73d87fd..3f9bad1 100644
+--- a/ssl/ssl_sess.c
++++ b/ssl/ssl_sess.c
+@@ -340,7 +340,21 @@ int ssl_get_new_session(SSL *s, int session)
+ 			return(0);
+ 			}
+ #ifndef OPENSSL_NO_TLSEXT
+-		/* If RFC4507 ticket use empty session ID */
++		/*
++		 * If RFC5077 ticket, use empty session ID (as server).
++		 * Note that:
++		 * (a) ssl_get_prev_session() does lookahead into the
++		 *     ClientHello extensions to find the session ticket.
++		 *     When ssl_get_prev_session() fails, s3_srvr.c calls
++		 *     ssl_get_new_session() in ssl3_get_client_hello().
++		 *     At that point, it has not yet parsed the extensions,
++		 *     however, because of the lookahead, it already knows
++		 *     whether a ticket is expected or not.
++		 *
++		 * (b) s3_clnt.c calls ssl_get_new_session() before parsing
++		 *     ServerHello extensions, and before recording the session
++		 *     ID received from the server, so this block is a noop.
++		 */
+ 		if (s->tlsext_ticket_expected)
+ 			{
+ 			ss->session_id_length = 0;
+diff --git a/ssl/ssltest.c b/ssl/ssltest.c
+index 7dffb94..406a801 100644
+--- a/ssl/ssltest.c
++++ b/ssl/ssltest.c
+@@ -724,7 +724,9 @@ static void sv_usage(void)
+ 	               "                 Use \"openssl ecparam -list_curves\" for all names\n"  \
+ 	               "                 (default is sect163r2).\n");
+ #endif
+-	fprintf(stderr," -test_cipherlist - verifies the order of the ssl cipher lists\n");
++	fprintf(stderr," -test_cipherlist - Verifies the order of the ssl cipher lists.\n"
++		       "                    When this option is requested, the cipherlist\n"
++		       "                    tests are run instead of handshake tests.\n");
+ 	fprintf(stderr," -serverinfo_file file - have server use this file\n");
+ 	fprintf(stderr," -serverinfo_sct  - have client offer and expect SCT\n");
+ 	fprintf(stderr," -serverinfo_tack - have client offer and expect TACK\n");
+@@ -912,6 +914,7 @@ int main(int argc, char *argv[])
+ #ifdef OPENSSL_FIPS
+ 	int fips_mode=0;
+ #endif
++        int no_protocol = 0;
+ 
+ 	verbose = 0;
+ 	debug = 0;
+@@ -1021,11 +1024,26 @@ int main(int argc, char *argv[])
+ 			}
+ #endif
+ 		else if	(strcmp(*argv,"-ssl2") == 0)
+-			ssl2=1;
++			{
++#ifdef OPENSSL_NO_SSL2
++			no_protocol = 1;
++#endif
++			ssl2 = 1;
++			}
+ 		else if	(strcmp(*argv,"-tls1") == 0)
+-			tls1=1;
++			{
++#ifdef OPENSSL_NO_TLS1
++			no_protocol = 1;
++#endif
++			tls1 = 1;
++			}
+ 		else if	(strcmp(*argv,"-ssl3") == 0)
+-			ssl3=1;
++			{
++#ifdef OPENSSL_NO_SSL3
++			no_protocol = 1;
++#endif
++			ssl3 = 1;
++			}
+ 		else if	(strncmp(*argv,"-num",4) == 0)
+ 			{
+ 			if (--argc < 1) goto bad;
+@@ -1178,15 +1196,41 @@ bad:
+ 		goto end;
+ 		}
+ 
++	/*
++	 * test_cipherlist prevails over protocol switch: we test the cipherlist
++	 * for all enabled protocols.
++	 */
+ 	if (test_cipherlist == 1)
+ 		{
+ 		/* ensure that the cipher list are correctly sorted and exit */
++		fprintf(stdout, "Testing cipherlist order only. Ignoring all "
++			"other options.\n");
+ 		if (do_test_cipherlist() == 0)
+ 			EXIT(1);
+ 		ret = 0;
+ 		goto end;
+ 		}
+ 
++	if (ssl2 + ssl3 + tls1 > 1)
++		{
++		fprintf(stderr, "At most one of -ssl2, -ssl3, or -tls1 should "
++			"be requested.\n");
++		EXIT(1);
++		}
++
++	/*
++	 * Testing was requested for a compiled-out protocol (e.g. SSLv2).
++         * Ideally, we would error out, but the generic test wrapper can't know
++	 * when to expect failure. So we do nothing and return success.
++	 */
++	if (no_protocol)
++		{
++		fprintf(stderr, "Testing was requested for a disabled protocol. "
++			"Skipping tests.\n");
++		ret = 0;
++		goto end;
++		}
++
+ 	if (!ssl2 && !ssl3 && !tls1 && number > 1 && !reuse && !force)
+ 		{
+ 		fprintf(stderr, "This case cannot work.  Use -f to perform "
+@@ -1265,30 +1309,25 @@ bad:
+ 	}
+ #endif
+ 
+-#if !defined(OPENSSL_NO_SSL2) && !defined(OPENSSL_NO_SSL3)
++/* At this point, ssl2/ssl3/tls1 is only set if the protocol is available.
++ * (Otherwise we exit early.)
++ * However the compiler doesn't know this, so we ifdef. */
++#ifndef OPENSSL_NO_SSL2
+ 	if (ssl2)
+ 		meth=SSLv2_method();
+-	else 
+-	if (tls1)
+-		meth=TLSv1_method();
+ 	else
++#endif
++#ifndef OPENSSL_NO_SSL3
+ 	if (ssl3)
+ 		meth=SSLv3_method();
+ 	else
+-		meth=SSLv23_method();
+-#else
+-#ifdef OPENSSL_NO_SSL2
++#endif
++#ifndef OPENSSL_NO_TLS1
+ 	if (tls1)
+ 		meth=TLSv1_method();
+ 	else
+-	if (ssl3)
+-		meth=SSLv3_method();
+-	else
+-		meth=SSLv23_method();
+-#else
+-	meth=SSLv2_method();
+-#endif
+ #endif
++	meth=SSLv23_method();
+ 
+ 	c_ctx=SSL_CTX_new(meth);
+ 	s_ctx=SSL_CTX_new(meth);
+diff --git a/ssl/t1_enc.c b/ssl/t1_enc.c
+index 10fc795..7974762 100644
+--- a/ssl/t1_enc.c
++++ b/ssl/t1_enc.c
+@@ -1286,6 +1286,7 @@ int tls1_alert_code(int code)
+ 	case SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE: return(TLS1_AD_BAD_CERTIFICATE_STATUS_RESPONSE);
+ 	case SSL_AD_BAD_CERTIFICATE_HASH_VALUE: return(TLS1_AD_BAD_CERTIFICATE_HASH_VALUE);
+ 	case SSL_AD_UNKNOWN_PSK_IDENTITY:return(TLS1_AD_UNKNOWN_PSK_IDENTITY);
++	case SSL_AD_INAPPROPRIATE_FALLBACK:return(TLS1_AD_INAPPROPRIATE_FALLBACK);
+ #if 0 /* not appropriate for TLS, not used for DTLS */
+ 	case DTLS1_AD_MISSING_HANDSHAKE_MESSAGE: return 
+ 					  (DTLS1_AD_MISSING_HANDSHAKE_MESSAGE);
+diff --git a/ssl/t1_lib.c b/ssl/t1_lib.c
+index 5fed446..23aee07 100644
+--- a/ssl/t1_lib.c
++++ b/ssl/t1_lib.c
+@@ -1474,7 +1474,7 @@ unsigned char *ssl_add_clienthello_tlsext(SSL *s, unsigned char *buf, unsigned c
+ 		ret += s->alpn_client_proto_list_len;
+ 		}
+ 
+-        if(SSL_get_srtp_profiles(s))
++        if(SSL_IS_DTLS(s) && SSL_get_srtp_profiles(s))
+                 {
+                 int el;
+ 
+@@ -1648,7 +1648,7 @@ unsigned char *ssl_add_serverhello_tlsext(SSL *s, unsigned char *buf, unsigned c
+ 		}
+ #endif
+ 
+-        if(s->srtp_profile)
++        if(SSL_IS_DTLS(s) && s->srtp_profile)
+                 {
+                 int el;
+ 
+@@ -1908,7 +1908,6 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char
+ 	unsigned short len;
+ 	unsigned char *data = *p;
+ 	int renegotiate_seen = 0;
+-	size_t i;
+ 
+ 	s->servername_done = 0;
+ 	s->tlsext_status_type = -1;
+@@ -1938,18 +1937,6 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char
+ 		OPENSSL_free(s->cert->peer_sigalgs);
+ 		s->cert->peer_sigalgs = NULL;
+ 		}
+-	/* Clear any shared sigtnature algorithms */
+-	if (s->cert->shared_sigalgs)
+-		{
+-		OPENSSL_free(s->cert->shared_sigalgs);
+-		s->cert->shared_sigalgs = NULL;
+-		}
+-	/* Clear certificate digests and validity flags */
+-	for (i = 0; i < SSL_PKEY_NUM; i++)
+-		{
+-		s->cert->pkeys[i].digest = NULL;
+-		s->cert->pkeys[i].valid_flags = 0;
+-		}
+ 
+ 	if (data >= (d+n-2))
+ 		goto ri_check;
+@@ -2236,21 +2223,11 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char
+ 				*al = SSL_AD_DECODE_ERROR;
+ 				return 0;
+ 				}
+-			if (!tls1_process_sigalgs(s, data, dsize))
++			if (!tls1_save_sigalgs(s, data, dsize))
+ 				{
+ 				*al = SSL_AD_DECODE_ERROR;
+ 				return 0;
+ 				}
+-			/* If sigalgs received and no shared algorithms fatal
+-			 * error.
+-			 */
+-			if (s->cert->peer_sigalgs && !s->cert->shared_sigalgs)
+-				{
+-				SSLerr(SSL_F_SSL_SCAN_CLIENTHELLO_TLSEXT,
+-					SSL_R_NO_SHARED_SIGATURE_ALGORITHMS);
+-				*al = SSL_AD_ILLEGAL_PARAMETER;
+-				return 0;
+-				}
+ 			}
+ 		else if (type == TLSEXT_TYPE_status_request)
+ 			{
+@@ -2417,23 +2394,13 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char
+ 			}
+ 
+ 		/* session ticket processed earlier */
+-		else if (type == TLSEXT_TYPE_use_srtp)
++		else if (SSL_IS_DTLS(s) && SSL_get_srtp_profiles(s)
++				&& type == TLSEXT_TYPE_use_srtp)
+                         {
+ 			if(ssl_parse_clienthello_use_srtp_ext(s, data, size,
+ 							      al))
+ 				return 0;
+                         }
+-		/* If this ClientHello extension was unhandled and this is 
+-		 * a nonresumed connection, check whether the extension is a 
+-		 * custom TLS Extension (has a custom_srv_ext_record), and if
+-		 * so call the callback and record the extension number so that
+-		 * an appropriate ServerHello may be later returned.
+-		 */
+-		else if (!s->hit)
+-			{
+-			if (custom_ext_parse(s, 1, type, data, size, al) <= 0)
+-				return 0;
+-			}
+ 
+ 		data+=size;
+ 		}
+@@ -2452,9 +2419,41 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char
+ 				SSL_R_UNSAFE_LEGACY_RENEGOTIATION_DISABLED);
+ 		return 0;
+ 		}
+-	/* If no signature algorithms extension set default values */
+-	if (!s->cert->peer_sigalgs)
+-		ssl_cert_set_default_md(s->cert);
++
++	return 1;
++	}
++
++/*
++ * Parse any custom extensions found.  "data" is the start of the extension data
++ * and "limit" is the end of the record. TODO: add strict syntax checking.
++ */
++
++static int ssl_scan_clienthello_custom_tlsext(SSL *s, const unsigned char *data, const unsigned char *limit, int *al) 
++	{	
++	unsigned short type, size, len;
++	/* If resumed session or no custom extensions nothing to do */
++	if (s->hit || s->cert->srv_ext.meths_count == 0)
++		return 1;
++
++	if (data >= limit - 2)
++		return 1;
++	n2s(data, len);
++
++	if (data > limit - len) 
++		return 1;
++
++	while (data <= limit - 4)
++		{
++		n2s(data, type);
++		n2s(data, size);
++
++		if (data+size > limit)
++	   		return 1;
++		if (custom_ext_parse(s, 1 /* server */, type, data, size, al) <= 0)
++			return 0;
++
++		data+=size;
++		}
+ 
+ 	return 1;
+ 	}
+@@ -2462,7 +2461,13 @@ static int ssl_scan_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char
+ int ssl_parse_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char *d, int n) 
+ 	{
+ 	int al = -1;
+-	custom_ext_init(&s->cert->srv_ext);
++	unsigned char *ptmp = *p;
++	/*
++	 * Internally supported extensions are parsed first so SNI can be handled
++	 * before custom extensions. An application processing SNI will typically
++	 * switch the parent context using SSL_set_SSL_CTX and custom extensions
++	 * need to be handled by the new SSL_CTX structure.
++	 */
+ 	if (ssl_scan_clienthello_tlsext(s, p, d, n, &al) <= 0) 
+ 		{
+ 		ssl3_send_alert(s,SSL3_AL_FATAL,al); 
+@@ -2474,6 +2479,14 @@ int ssl_parse_clienthello_tlsext(SSL *s, unsigned char **p, unsigned char *d, in
+ 		SSLerr(SSL_F_SSL_PARSE_CLIENTHELLO_TLSEXT,SSL_R_CLIENTHELLO_TLSEXT);
+ 		return 0;
+ 		}
++
++	custom_ext_init(&s->cert->srv_ext);
++	if (ssl_scan_clienthello_custom_tlsext(s, ptmp, d + n, &al) <= 0) 
++		{
++		ssl3_send_alert(s,SSL3_AL_FATAL,al); 
++		return 0;
++		}
++
+ 	return 1;
+ }
+ 
+@@ -2750,7 +2763,7 @@ static int ssl_scan_serverhello_tlsext(SSL *s, unsigned char **p, unsigned char
+ 				}
+ 			}
+ #endif
+-		else if (type == TLSEXT_TYPE_use_srtp)
++		else if (SSL_IS_DTLS(s) && type == TLSEXT_TYPE_use_srtp)
+                         {
+                         if(ssl_parse_serverhello_use_srtp_ext(s, data, size,
+ 							      al))
+@@ -2961,6 +2974,7 @@ int ssl_check_clienthello_tlsext_late(SSL *s)
+ 	{
+ 	int ret = SSL_TLSEXT_ERR_OK;
+ 	int al;
++	size_t i;
+ 
+ 	/* If status request then ask callback what to do.
+  	 * Note: this must be called after servername callbacks in case
+@@ -3006,6 +3020,43 @@ int ssl_check_clienthello_tlsext_late(SSL *s)
+ 	else
+ 		s->tlsext_status_expected = 0;
+ 
++	/* Clear any shared sigtnature algorithms */
++	if (s->cert->shared_sigalgs)
++		{
++		OPENSSL_free(s->cert->shared_sigalgs);
++		s->cert->shared_sigalgs = NULL;
++		}
++	/* Clear certificate digests and validity flags */
++	for (i = 0; i < SSL_PKEY_NUM; i++)
++		{
++		s->cert->pkeys[i].digest = NULL;
++		s->cert->pkeys[i].valid_flags = 0;
++		}
++
++	/* If sigalgs received process it. */
++	if (s->cert->peer_sigalgs)
++		{
++		if (!tls1_process_sigalgs(s))
++			{
++			SSLerr(SSL_F_SSL_CHECK_CLIENTHELLO_TLSEXT_LATE,
++					ERR_R_MALLOC_FAILURE);
++			ret = SSL_TLSEXT_ERR_ALERT_FATAL;
++			al = SSL_AD_INTERNAL_ERROR;
++			goto err;
++			}
++		/* Fatal error is no shared signature algorithms */
++		if (!s->cert->shared_sigalgs)
++			{
++			SSLerr(SSL_F_SSL_CHECK_CLIENTHELLO_TLSEXT_LATE,
++					SSL_R_NO_SHARED_SIGATURE_ALGORITHMS);
++			ret = SSL_TLSEXT_ERR_ALERT_FATAL;
++			al = SSL_AD_ILLEGAL_PARAMETER;
++			goto err;
++			}
++		}
++	else
++		ssl_cert_set_default_md(s->cert);
++
+  err:
+ 	switch (ret)
+ 		{
+@@ -3343,7 +3394,10 @@ static int tls_decrypt_ticket(SSL *s, const unsigned char *etick, int eticklen,
+ 	HMAC_Final(&hctx, tick_hmac, NULL);
+ 	HMAC_CTX_cleanup(&hctx);
+ 	if (CRYPTO_memcmp(tick_hmac, etick + eticklen, mlen))
++		{
++		EVP_CIPHER_CTX_cleanup(&ctx);
+ 		return 2;
++		}
+ 	/* Attempt to decrypt session data */
+ 	/* Move p after IV to start of encrypted ticket, update length */
+ 	p = etick + 16 + EVP_CIPHER_CTX_iv_length(&ctx);
+@@ -3635,13 +3689,9 @@ static int tls1_set_shared_sigalgs(SSL *s)
+ 
+ /* Set preferred digest for each key type */
+ 
+-int tls1_process_sigalgs(SSL *s, const unsigned char *data, int dsize)
++int tls1_save_sigalgs(SSL *s, const unsigned char *data, int dsize)
+ 	{
+-	int idx;
+-	size_t i;
+-	const EVP_MD *md;
+ 	CERT *c = s->cert;
+-	TLS_SIGALGS *sigptr;
+ 	/* Extension ignored for inappropriate versions */
+ 	if (!SSL_USE_SIGALGS(s))
+ 		return 1;
+@@ -3656,8 +3706,18 @@ int tls1_process_sigalgs(SSL *s, const unsigned char *data, int dsize)
+ 		return 0;
+ 	c->peer_sigalgslen = dsize;
+ 	memcpy(c->peer_sigalgs, data, dsize);
++	return 1;
++	}
+ 
+-	tls1_set_shared_sigalgs(s);
++int tls1_process_sigalgs(SSL *s)
++	{
++	int idx;
++	size_t i;
++	const EVP_MD *md;
++	CERT *c = s->cert;
++	TLS_SIGALGS *sigptr;
++	if (!tls1_set_shared_sigalgs(s))
++		return 0;
+ 
+ #ifdef OPENSSL_SSL_DEBUG_BROKEN_PROTOCOL
+ 	if (s->cert->cert_flags & SSL_CERT_FLAG_BROKEN_PROTOCOL)
+diff --git a/ssl/tls1.h b/ssl/tls1.h
+index 09d1763..3c8de73 100644
+--- a/ssl/tls1.h
++++ b/ssl/tls1.h
+@@ -159,17 +159,19 @@ extern "C" {
+ 
+ #define TLS1_ALLOW_EXPERIMENTAL_CIPHERSUITES	0
+ 
++#define TLS1_VERSION			0x0301
++#define TLS1_1_VERSION			0x0302
+ #define TLS1_2_VERSION			0x0303
+-#define TLS1_2_VERSION_MAJOR		0x03
+-#define TLS1_2_VERSION_MINOR		0x03
++#define TLS_MAX_VERSION			TLS1_2_VERSION
++
++#define TLS1_VERSION_MAJOR		0x03
++#define TLS1_VERSION_MINOR		0x01
+ 
+-#define TLS1_1_VERSION			0x0302
+ #define TLS1_1_VERSION_MAJOR		0x03
+ #define TLS1_1_VERSION_MINOR		0x02
+ 
+-#define TLS1_VERSION			0x0301
+-#define TLS1_VERSION_MAJOR		0x03
+-#define TLS1_VERSION_MINOR		0x01
++#define TLS1_2_VERSION_MAJOR		0x03
++#define TLS1_2_VERSION_MINOR		0x03
+ 
+ #define TLS1_get_version(s) \
+ 		((s->version >> 8) == TLS1_VERSION_MAJOR ? s->version : 0)
+@@ -187,6 +189,7 @@ extern "C" {
+ #define TLS1_AD_PROTOCOL_VERSION	70	/* fatal */
+ #define TLS1_AD_INSUFFICIENT_SECURITY	71	/* fatal */
+ #define TLS1_AD_INTERNAL_ERROR		80	/* fatal */
++#define TLS1_AD_INAPPROPRIATE_FALLBACK	86	/* fatal */
+ #define TLS1_AD_USER_CANCELLED		90
+ #define TLS1_AD_NO_RENEGOTIATION	100
+ /* codes 110-114 are from RFC3546 */
+diff --git a/util/mk1mf.pl b/util/mk1mf.pl
+index 24302e1..28fd921 100755
+--- a/util/mk1mf.pl
++++ b/util/mk1mf.pl
+@@ -52,6 +52,7 @@ my %mf_import = (
+         ENGINES_ASM_OBJ=> \$mf_engines_asm,
+ 	BASEADDR       => \$baseaddr,
+ 	FIPSDIR        => \$fipsdir,
++	EC_ASM	       => \$mf_ec_asm,
+ );
+ 
+ open(IN,"<Makefile") || die "unable to open Makefile!\n";
+@@ -730,6 +731,7 @@ if ($orig_platform eq 'copy') {
+ 	$lib_obj{CRYPTO} .= fix_asm($mf_engines_asm, 'engines');
+ 	$lib_obj{CRYPTO} .= fix_asm($mf_rc4_asm, 'crypto/rc4');
+ 	$lib_obj{CRYPTO} .= fix_asm($mf_modes_asm, 'crypto/modes');
++	$lib_obj{CRYPTO} .= fix_asm($mf_ec_asm, 'crypto/ec');
+ }
+ 
+ foreach (values %lib_nam)
+@@ -737,12 +739,6 @@ foreach (values %lib_nam)
+ 	$lib_obj=$lib_obj{$_};
+ 	local($slib)=$shlib;
+ 
+-	if (($_ eq "SSL") && $no_ssl2 && $no_ssl3)
+-		{
+-		$rules.="\$(O_SSL):\n\n"; 
+-		next;
+-		}
+-
+ 	$defs.=&do_defs(${_}."OBJ",$lib_obj,"\$(OBJ_D)",$obj);
+ 	$lib=($slib)?" \$(SHLIB_CFLAGS)".$shlib_ex_cflags{$_}:" \$(LIB_CFLAGS)";
+ 	$rules.=&do_compile_rule("\$(OBJ_D)",$lib_obj{$_},$lib);
+@@ -1226,6 +1222,7 @@ sub read_options
+ 		"dll" => \$shlib,
+ 		"shared" => 0,
+ 		"no-sctp" => 0,
++		"no-srtp" => 0,
+ 		"no-gmp" => 0,
+ 		"no-rfc3779" => 0,
+ 		"no-montasm" => 0,
+diff --git a/util/mkdef.pl b/util/mkdef.pl
+index 05c5689..a39a56c 100755
+--- a/util/mkdef.pl
++++ b/util/mkdef.pl
+@@ -115,10 +115,12 @@ my @known_algorithms = ( "RC2", "RC4", "RC5", "IDEA", "DES", "BF",
+ 			 "DEPRECATED",
+ 			 # Hide SSL internals
+ 			 "SSL_INTERN",
++			 # SCTP
++		 	 "SCTP",
++			 # SRTP
++			 "SRTP",
+ 			 # SSL TRACE
+ 		 	 "SSL_TRACE",
+-			 # SCTP
+-			 "SCTP",
+ 			 # Unit testing
+ 			 "UNIT_TEST");
+ 
+@@ -140,7 +142,7 @@ my $no_ec; my $no_ecdsa; my $no_ecdh; my $no_engine; my $no_hw;
+ my $no_fp_api; my $no_static_engine=1; my $no_gmp; my $no_deprecated;
+ my $no_rfc3779; my $no_psk; my $no_tlsext; my $no_cms; my $no_capieng;
+ my $no_jpake; my $no_srp; my $no_ssl2; my $no_ec2m; my $no_nistp_gcc; 
+-my $no_nextprotoneg; my $no_sctp; my $no_ssl_trace;
++my $no_nextprotoneg; my $no_sctp; my $no_srtp; my $no_ssl_trace;
+ my $no_unit_test;
+ 
+ my $fips;
+@@ -241,6 +243,7 @@ foreach (@ARGV, split(/ /, $options))
+ 	elsif (/^no-jpake$/)	{ $no_jpake=1; }
+ 	elsif (/^no-srp$/)	{ $no_srp=1; }
+ 	elsif (/^no-sctp$/)	{ $no_sctp=1; }
++	elsif (/^no-srtp$/)	{ $no_srtp=1; }
+ 	elsif (/^no-unit-test$/){ $no_unit_test=1; }
+ 	}
+ 
+@@ -1214,6 +1217,7 @@ sub is_valid
+ 			if ($keyword eq "JPAKE" && $no_jpake) { return 0; }
+ 			if ($keyword eq "SRP" && $no_srp) { return 0; }
+ 			if ($keyword eq "SCTP" && $no_sctp) { return 0; }
++			if ($keyword eq "SRTP" && $no_srtp) { return 0; }
+ 			if ($keyword eq "UNIT_TEST" && $no_unit_test) { return 0; }
+ 			if ($keyword eq "DEPRECATED" && $no_deprecated) { return 0; }
+ 
+diff --git a/util/pl/unix.pl b/util/pl/unix.pl
+index 7b6162e..82f1aa7 100644
+--- a/util/pl/unix.pl
++++ b/util/pl/unix.pl
+@@ -77,6 +77,7 @@ $bf_enc_src="";
+ 	  'aesni-mb-x86_64' => 'crypto/aes',
+ 	  'sha1-mb-x86_64' => 'crypto/sha',
+ 	  'sha256-mb-x86_64' => 'crypto/sha',
++	  'ecp_nistz256-x86_64' => 'crypto/ec',
+          );
+ 
+ # If I were feeling more clever, these could probably be extracted
+diff --git a/util/ssleay.num b/util/ssleay.num
+index ac98f90..7eb4f17 100755
+--- a/util/ssleay.num
++++ b/util/ssleay.num
+@@ -310,14 +310,14 @@ TLSv1_2_method                          350	EXIST::FUNCTION:
+ SSL_SESSION_get_id_len                  351	NOEXIST::FUNCTION:
+ kssl_ctx_get0_client_princ              352	EXIST::FUNCTION:KRB5
+ SSL_export_keying_material              353	EXIST::FUNCTION:TLSEXT
+-SSL_set_tlsext_use_srtp                 354	EXIST::FUNCTION:
++SSL_set_tlsext_use_srtp                 354	EXIST::FUNCTION:SRTP
+ SSL_CTX_set_next_protos_advertised_cb   355	EXIST:!VMS:FUNCTION:NEXTPROTONEG
+ SSL_CTX_set_next_protos_adv_cb          355	EXIST:VMS:FUNCTION:NEXTPROTONEG
+ SSL_get0_next_proto_negotiated          356	EXIST::FUNCTION:NEXTPROTONEG
+-SSL_get_selected_srtp_profile           357	EXIST::FUNCTION:
+-SSL_CTX_set_tlsext_use_srtp             358	EXIST::FUNCTION:
++SSL_get_selected_srtp_profile           357	EXIST::FUNCTION:SRTP
++SSL_CTX_set_tlsext_use_srtp             358	EXIST::FUNCTION:SRTP
+ SSL_select_next_proto                   359	EXIST::FUNCTION:TLSEXT
+-SSL_get_srtp_profiles                   360	EXIST::FUNCTION:
++SSL_get_srtp_profiles                   360	EXIST::FUNCTION:SRTP
+ SSL_CTX_set_next_proto_select_cb        361	EXIST:!VMS:FUNCTION:NEXTPROTONEG
+ SSL_CTX_set_next_proto_sel_cb           361	EXIST:VMS:FUNCTION:NEXTPROTONEG
+ SSL_SESSION_get_compress_id             362	EXIST::FUNCTION:

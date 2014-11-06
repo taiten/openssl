@@ -4499,6 +4499,7 @@ OPENSSL_1.0.2 {
 		SSL_CTX_get0_certificate;
 		SSL_CTX_get0_privatekey;
 		SSL_COMP_set0_compression_methods;
+		SSL_COMP_free_compression_methods;
 		SSL_CIPHER_find;
 		SSL_is_server;
 		SSL_CONF_CTX_new;
@@ -4542,6 +4543,8 @@ OPENSSL_1.0.2 {
 		ECDH_KDF_X9_62;
 		ECDSA_METHOD_new;
 		ECDSA_METHOD_free;
+		ECDSA_METHOD_set_app_data;
+		ECDSA_METHOD_get_app_data;
 		ECDSA_METHOD_set_sign;
 		ECDSA_METHOD_set_sign_setup;
 		ECDSA_METHOD_set_verify;
@@ -4574,6 +4577,7 @@ OPENSSL_1.0.2 {
 		X509_http_nbio;
 		X509_CRL_http_nbio;
 		X509_REVOKED_dup;
+		i2d_re_X509_tbs;
 		X509_get0_signature;
 		X509_get_signature_nid;
 		X509_CRL_diff;
@@ -4586,6 +4590,9 @@ OPENSSL_1.0.2 {
 		X509_STORE_set_lookup_crls_cb;
 		X509_STORE_CTX_get0_store;
 		X509_VERIFY_PARAM_set1_host;
+		X509_VERIFY_PARAM_add1_host;
+		X509_VERIFY_PARAM_set_hostflags;
+		X509_VERIFY_PARAM_get0_peername;
 		X509_VERIFY_PARAM_set1_email;
 		X509_VERIFY_PARAM_set1_ip;
 		X509_VERIFY_PARAM_set1_ip_asc;
@@ -4593,9 +4600,16 @@ OPENSSL_1.0.2 {
 		X509_VERIFY_PARAM_get_count;
 		X509_VERIFY_PARAM_get0;
 		X509V3_EXT_free;
+		EC_GROUP_get_mont_data;
 		EC_curve_nid2nist;
 		EC_curve_nist2nid;
 		PEM_write_bio_DHxparams;
 		PEM_write_DHxparams;
+		SSL_CTX_add_client_custom_ext;
+		SSL_CTX_add_server_custom_ext;
+		SSL_extension_supported;
+		BUF_strnlen;
+		sk_deep_copy;
+		SSL_test_functions;
 } OPENSSL_1.0.1d;
 

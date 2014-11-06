@@ -3028,10 +3028,6 @@ void ssl3_free(SSL *s)
 #ifndef OPENSSL_NO_SRP
 	SSL_SRP_CTX_free(s);
 #endif
-#ifndef OPENSSL_NO_TLSEXT
-	if (s->s3->serverinfo_client_tlsext_custom_types != NULL)
-		OPENSSL_free(s->s3->serverinfo_client_tlsext_custom_types);
-#endif
 	OPENSSL_cleanse(s->s3,sizeof *s->s3);
 	OPENSSL_free(s->s3);
 	s->s3=NULL;
@@ -3076,12 +3072,6 @@ void ssl3_clear(SSL *s)
 		}
 #endif
 #ifndef OPENSSL_NO_TLSEXT
-	if (s->s3->serverinfo_client_tlsext_custom_types != NULL)
-		{
-		OPENSSL_free(s->s3->serverinfo_client_tlsext_custom_types);
-		s->s3->serverinfo_client_tlsext_custom_types = NULL;
-		}
-	s->s3->serverinfo_client_tlsext_custom_types_count = 0;
 #ifndef OPENSSL_NO_EC
 	s->s3->is_probably_safari = 0;
 #endif /* !OPENSSL_NO_EC */
@@ -3441,8 +3431,10 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
 			cipher = s->s3->tmp.new_cipher;
 			if (!cipher)
 				return 0;
-			/* No certificate for unauthenticated ciphersuites */
-			if (cipher->algorithm_auth & SSL_aNULL)
+			/* No certificate for unauthenticated ciphersuites
+			 * or using SRP authentication
+			 */
+			if (cipher->algorithm_auth & (SSL_aNULL|SSL_aSRP))
 				return 2;
 			cpk = ssl_get_server_send_pkey(s);
 			if (!cpk)
@@ -3606,6 +3598,33 @@ long ssl3_ctrl(SSL *s, int cmd, long larg, void *parg)
 		return (int)sess->tlsext_ecpointformatlist_length;
 		}
 #endif
+
+	case SSL_CTRL_CHECK_PROTO_VERSION:
+		/* For library-internal use; checks that the current protocol
+		 * is the highest enabled version (according to s->ctx->method,
+		 * as version negotiation may have changed s->method). */
+		if (s->version == s->ctx->method->version)
+			return 1;
+		/* Apparently we're using a version-flexible SSL_METHOD
+		 * (not at its highest protocol version). */
+		if (s->ctx->method->version == SSLv23_method()->version)
+			{
+#if TLS_MAX_VERSION != TLS1_2_VERSION
+#  error Code needs update for SSLv23_method() support beyond TLS1_2_VERSION.
+#endif
+			if (!(s->options & SSL_OP_NO_TLSv1_2))
+				return s->version == TLS1_2_VERSION;
+			if (!(s->options & SSL_OP_NO_TLSv1_1))
+				return s->version == TLS1_1_VERSION;
+			if (!(s->options & SSL_OP_NO_TLSv1))
+				return s->version == TLS1_VERSION;
+			if (!(s->options & SSL_OP_NO_SSLv3))
+				return s->version == SSL3_VERSION;
+			if (!(s->options & SSL_OP_NO_SSLv2))
+				return s->version == SSL2_VERSION;
+			}
+		return 0; /* Unexpected state; fail closed. */
+
 	default:
 		break;
 		}
@@ -4133,8 +4152,13 @@ SSL_CIPHER *ssl3_choose_cipher(SSL *s, STACK_OF(SSL_CIPHER) *clnt,
 		emask_k = cert->export_mask_k;
 		emask_a = cert->export_mask_a;
 #ifndef OPENSSL_NO_SRP
-		mask_k=cert->mask_k | s->srp_ctx.srp_Mask;
-		emask_k=cert->export_mask_k | s->srp_ctx.srp_Mask;
+		if (s->srp_ctx.srp_Mask & SSL_kSRP)
+			{
+			mask_k |= SSL_kSRP;
+			emask_k |= SSL_kSRP;
+			mask_a |= SSL_aSRP;
+			emask_a |= SSL_aSRP;
+			}
 #endif
 			
 #ifdef KSSL_DEBUG
@@ -4522,4 +4546,3 @@ long ssl_get_algorithm2(SSL *s)
 		return SSL_HANDSHAKE_MAC_SHA256 | TLS1_PRF_SHA256;
 	return alg2;
 	}
-

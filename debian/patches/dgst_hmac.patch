@@ -8,22 +8,22 @@ apply to the Debian package as well. I'm open for better wor-
 ding though, especially considering the FIPS option, which I
 found as undocumented too.
 
-Index: openssl-1.0.2~beta1/doc/apps/dgst.pod
+Index: openssl-1.0.1j/doc/apps/dgst.pod
 ===================================================================
---- openssl-1.0.2~beta1.orig/doc/apps/dgst.pod	2014-02-25 00:15:34.364841692 +0100
-+++ openssl-1.0.2~beta1/doc/apps/dgst.pod	2014-02-25 00:15:34.360841777 +0100
-@@ -12,6 +12,8 @@
+--- openssl-1.0.1j.orig/doc/apps/dgst.pod
++++ openssl-1.0.1j/doc/apps/dgst.pod
+@@ -12,6 +12,8 @@ B<openssl> B<dgst>
  [B<-d>]
  [B<-hex>]
  [B<-binary>]
 +[B<-hmac arg>]
 +[B<-non-fips-allow>]
+ [B<-r>]
  [B<-out filename>]
  [B<-sign filename>]
- [B<-keyform arg>]
-@@ -54,6 +56,14 @@
+@@ -62,6 +64,14 @@ output the digest or signature in binary
  
- output the digest or signature in binary form.
+ output the digest in the "coreutils" format used by programs like B<sha1sum>.
  
 +=item B<-hmac arg>
 +
@@ -36,11 +36,11 @@ Index: openssl-1.0.2~beta1/doc/apps/dgst.pod
  =item B<-out filename>
  
  filename to output to, or standard output by default.
-Index: openssl-1.0.2~beta1/apps/dgst.c
+Index: openssl-1.0.1j/apps/dgst.c
 ===================================================================
---- openssl-1.0.2~beta1.orig/apps/dgst.c	2014-02-25 00:15:34.364841692 +0100
-+++ openssl-1.0.2~beta1/apps/dgst.c	2014-02-25 00:15:34.360841777 +0100
-@@ -276,6 +276,8 @@
+--- openssl-1.0.1j.orig/apps/dgst.c
++++ openssl-1.0.1j/apps/dgst.c
+@@ -273,6 +273,8 @@ int MAIN(int argc, char **argv)
  		BIO_printf(bio_err,"-d              to output debug info\n");
  		BIO_printf(bio_err,"-hex            output as hex dump\n");
  		BIO_printf(bio_err,"-binary         output in binary form\n");

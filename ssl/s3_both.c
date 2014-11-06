@@ -596,6 +596,7 @@ int ssl_verify_alarm_type(long type)
 	return(al);
 	}
 
+#define OPENSSL_NO_BUF_FREELISTS
 #ifndef OPENSSL_NO_BUF_FREELISTS
 /* On some platforms, malloc() performance is bad enough that you can't just
  * free() and malloc() buffers all the time, so we need to use freelists from

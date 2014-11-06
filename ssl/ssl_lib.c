@@ -162,6 +162,8 @@
 
 const char *SSL_version_str=OPENSSL_VERSION_TEXT;
 
+#define OPENSSL_NO_BUF_FREELISTS
+
 SSL3_ENC_METHOD ssl3_undef_enc_method={
 	/* evil casts, but these functions are only called if there's a library bug */
 	(int (*)(SSL *,int))ssl_undefined_function,
@@ -1464,12 +1466,14 @@ int ssl_cipher_list_to_bytes(SSL *s,STACK_OF(SSL_CIPHER) *sk,unsigned char *p,
 	SSL_CIPHER *c;
 	CERT *ct = s->cert;
 	unsigned char *q;
-	int no_scsv = s->renegotiate;
+	int empty_reneg_info_scsv = !s->renegotiate;
 	/* Set disabled masks for this session */
 	ssl_set_client_disabled(s);
 
 	if (sk == NULL) return(0);
 	q=p;
+	if (put_cb == NULL)
+		put_cb = s->method->put_cipher_by_char;
 
 	for (i=0; i<sk_SSL_CIPHER_num(sk); i++)
 		{
@@ -1482,29 +1486,40 @@ int ssl_cipher_list_to_bytes(SSL *s,STACK_OF(SSL_CIPHER) *sk,unsigned char *p,
 #ifdef OPENSSL_SSL_DEBUG_BROKEN_PROTOCOL
 		if (c->id == SSL3_CK_SCSV)
 			{
-			if (no_scsv)
+			if (!empty_reneg_info_scsv)
 				continue;
 			else
-				no_scsv = 1;
+				empty_reneg_info_scsv = 0;
 			}
 #endif
-		j = put_cb ? put_cb(c,p) : ssl_put_cipher_by_char(s,c,p);
+		j = put_cb(c,p);
 		p+=j;
 		}
-	/* If p == q, no ciphers and caller indicates an error. Otherwise
-	 * add SCSV if not renegotiating.
-	 */
-	if (p != q && !no_scsv)
+	/* If p == q, no ciphers; caller indicates an error.
+	 * Otherwise, add applicable SCSVs. */
+	if (p != q)
 		{
-		static SSL_CIPHER scsv =
+		if (empty_reneg_info_scsv)
 			{
-			0, NULL, SSL3_CK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
-			};
-		j = put_cb ? put_cb(&scsv,p) : ssl_put_cipher_by_char(s,&scsv,p);
-		p+=j;
+			static SSL_CIPHER scsv =
+				{
+				0, NULL, SSL3_CK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
+				};
+			j = put_cb(&scsv,p);
+			p+=j;
 #ifdef OPENSSL_RI_DEBUG
-		fprintf(stderr, "SCSV sent by client\n");
+			fprintf(stderr, "TLS_EMPTY_RENEGOTIATION_INFO_SCSV sent by client\n");
 #endif
+			}
+		if (s->mode & SSL_MODE_SEND_FALLBACK_SCSV)
+			{
+			static SSL_CIPHER scsv =
+				{
+				0, NULL, SSL3_CK_FALLBACK_SCSV, 0, 0, 0, 0, 0, 0, 0, 0, 0
+				};
+			j = put_cb(&scsv,p);
+			p+=j;
+			}
 		}
 
 	return(p-q);
@@ -1516,11 +1531,12 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
 	const SSL_CIPHER *c;
 	STACK_OF(SSL_CIPHER) *sk;
 	int i,n;
+
 	if (s->s3)
 		s->s3->send_connection_binding = 0;
 
 	n=ssl_put_cipher_by_char(s,NULL,NULL);
-	if ((num%n) != 0)
+	if (n == 0 || (num%n) != 0)
 		{
 		SSLerr(SSL_F_SSL_BYTES_TO_CIPHER_LIST,SSL_R_ERROR_IN_RECEIVED_CIPHER_LIST);
 		return(NULL);
@@ -1545,7 +1561,7 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
 
 	for (i=0; i<num; i+=n)
 		{
-		/* Check for SCSV */
+		/* Check for TLS_EMPTY_RENEGOTIATION_INFO_SCSV */
 		if (s->s3 && (n != 3 || !p[0]) &&
 			(p[n-2] == ((SSL3_CK_SCSV >> 8) & 0xff)) &&
 			(p[n-1] == (SSL3_CK_SCSV & 0xff)))
@@ -1562,6 +1578,24 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
 #ifdef OPENSSL_RI_DEBUG
 			fprintf(stderr, "SCSV received by server\n");
 #endif
+			continue;
+			}
+
+		/* Check for TLS_FALLBACK_SCSV */
+		if ((n != 3 || !p[0]) &&
+			(p[n-2] == ((SSL3_CK_FALLBACK_SCSV >> 8) & 0xff)) &&
+			(p[n-1] == (SSL3_CK_FALLBACK_SCSV & 0xff)))
+			{
+			/* The SCSV indicates that the client previously tried a higher version.
+			 * Fail if the current version is an unexpected downgrade. */
+			if (!SSL_ctrl(s, SSL_CTRL_CHECK_PROTO_VERSION, 0, NULL))
+				{
+				SSLerr(SSL_F_SSL_BYTES_TO_CIPHER_LIST,SSL_R_INAPPROPRIATE_FALLBACK);
+				if (s->s3)
+					ssl3_send_alert(s,SSL3_AL_FATAL,SSL_AD_INAPPROPRIATE_FALLBACK);
+				goto err;
+				}
+			p += n;
 			continue;
 			}
 
@@ -1725,62 +1759,6 @@ void SSL_CTX_set_next_proto_select_cb(SSL_CTX *ctx, int (*cb) (SSL *s, unsigned 
 	ctx->next_proto_select_cb_arg = arg;
 	}
 # endif
-
-int SSL_CTX_set_custom_cli_ext(SSL_CTX *ctx, unsigned short ext_type,
-			       custom_cli_ext_first_cb_fn fn1, 
-			       custom_cli_ext_second_cb_fn fn2, void* arg)
-	{
-	size_t i;
-	custom_cli_ext_record* record;
-
-	/* Check for duplicates */
-	for (i=0; i < ctx->custom_cli_ext_records_count; i++)
-		if (ext_type == ctx->custom_cli_ext_records[i].ext_type)
-			return 0;
-
-	ctx->custom_cli_ext_records = OPENSSL_realloc(ctx->custom_cli_ext_records,
-						      (ctx->custom_cli_ext_records_count + 1) * 
-						      sizeof(custom_cli_ext_record));
-	if (!ctx->custom_cli_ext_records) {
-		ctx->custom_cli_ext_records_count = 0;
-		return 0;
-	}
-	ctx->custom_cli_ext_records_count++;
-	record = &ctx->custom_cli_ext_records[ctx->custom_cli_ext_records_count - 1];
-	record->ext_type = ext_type;
-	record->fn1 = fn1;
-	record->fn2 = fn2;
-	record->arg = arg;
-	return 1;
-	}
-
-int SSL_CTX_set_custom_srv_ext(SSL_CTX *ctx, unsigned short ext_type,
-			       custom_srv_ext_first_cb_fn fn1, 
-			       custom_srv_ext_second_cb_fn fn2, void* arg)
-	{
-	size_t i;
-	custom_srv_ext_record* record;
-
-	/* Check for duplicates */	
-	for (i=0; i < ctx->custom_srv_ext_records_count; i++)
-		if (ext_type == ctx->custom_srv_ext_records[i].ext_type)
-			return 0;
-
-	ctx->custom_srv_ext_records = OPENSSL_realloc(ctx->custom_srv_ext_records,
-						      (ctx->custom_srv_ext_records_count + 1) * 
-						      sizeof(custom_srv_ext_record));
-	if (!ctx->custom_srv_ext_records) {
-		ctx->custom_srv_ext_records_count = 0;
-		return 0;
-	}
-	ctx->custom_srv_ext_records_count++;
-	record = &ctx->custom_srv_ext_records[ctx->custom_srv_ext_records_count - 1];
-	record->ext_type = ext_type;
-	record->fn1 = fn1;
-	record->fn2 = fn2;
-	record->arg = arg;
-	return 1;
-	}
 
 /* SSL_CTX_set_alpn_protos sets the ALPN protocol list on |ctx| to |protos|.
  * |protos| must be in wire-format (i.e. a series of non-empty, 8-bit
@@ -2053,10 +2031,6 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
 #ifndef OPENSSL_NO_SRP
 	SSL_CTX_SRP_CTX_init(ret);
 #endif
-	ret->custom_cli_ext_records = NULL;
-	ret->custom_cli_ext_records_count = 0;
-	ret->custom_srv_ext_records = NULL;
-	ret->custom_srv_ext_records_count = 0;
 #ifndef OPENSSL_NO_BUF_FREELISTS
 	ret->freelist_max_len = SSL_MAX_BUF_FREELIST_LEN_DEFAULT;
 	ret->rbuf_freelist = OPENSSL_malloc(sizeof(SSL3_BUF_FREELIST));
@@ -2194,10 +2168,6 @@ void SSL_CTX_free(SSL_CTX *a)
 #endif
 #ifndef OPENSSL_NO_SRP
 	SSL_CTX_SRP_CTX_free(a);
-#endif
-#ifndef OPENSSL_NO_TLSEXT
-	OPENSSL_free(a->custom_cli_ext_records);
-	OPENSSL_free(a->custom_srv_ext_records);
 #endif
 #ifndef OPENSSL_NO_ENGINE
 	if (a->client_cert_engine)
@@ -3216,15 +3186,28 @@ SSL_CTX *SSL_get_SSL_CTX(const SSL *ssl)
 
 SSL_CTX *SSL_set_SSL_CTX(SSL *ssl, SSL_CTX* ctx)
 	{
+	CERT *ocert = ssl->cert;
 	if (ssl->ctx == ctx)
 		return ssl->ctx;
 #ifndef OPENSSL_NO_TLSEXT
 	if (ctx == NULL)
 		ctx = ssl->initial_ctx;
 #endif
-	if (ssl->cert != NULL)
-		ssl_cert_free(ssl->cert);
 	ssl->cert = ssl_cert_dup(ctx->cert);
+	if (ocert)
+		{
+		/* Preserve any already negotiated parameters */
+		if (ssl->server)
+			{
+			ssl->cert->peer_sigalgs = ocert->peer_sigalgs;
+			ssl->cert->peer_sigalgslen = ocert->peer_sigalgslen;
+			ocert->peer_sigalgs = NULL;
+			ssl->cert->ciphers_raw = ocert->ciphers_raw;
+			ssl->cert->ciphers_rawlen = ocert->ciphers_rawlen;
+			ocert->ciphers_raw = NULL;
+			}
+		ssl_cert_free(ocert);
+		}
 	CRYPTO_add(&ctx->references,1,CRYPTO_LOCK_SSL_CTX);
 	if (ssl->ctx != NULL)
 		SSL_CTX_free(ssl->ctx); /* decrement reference count */

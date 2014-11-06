@@ -343,6 +343,7 @@ static void sc_usage(void)
 	BIO_printf(bio_err," -tls1_1       - just use TLSv1.1\n");
 	BIO_printf(bio_err," -tls1         - just use TLSv1\n");
 	BIO_printf(bio_err," -dtls1        - just use DTLSv1\n");    
+	BIO_printf(bio_err," -fallback_scsv - send TLS_FALLBACK_SCSV\n");
 	BIO_printf(bio_err," -mtu          - set the link layer MTU\n");
 	BIO_printf(bio_err," -no_tls1_2/-no_tls1_1/-no_tls1/-no_ssl3/-no_ssl2 - turn off that protocol\n");
 	BIO_printf(bio_err," -bugs         - Switch on all SSL implementation bug workarounds\n");
@@ -548,9 +549,9 @@ static int next_proto_cb(SSL *s, unsigned char **out, unsigned char *outlen, con
 	}
 # endif  /* ndef OPENSSL_NO_NEXTPROTONEG */
 
-static int serverinfo_cli_cb(SSL* s, unsigned short ext_type,
-			     const unsigned char* in, unsigned short inlen, 
-			     int* al, void* arg)
+static int serverinfo_cli_parse_cb(SSL* s, unsigned int ext_type,
+				   const unsigned char* in, size_t inlen, 
+				   int* al, void* arg)
 	{
 	char pem_name[100];
 	unsigned char ext_buf[4 + 65536];
@@ -649,6 +650,7 @@ int MAIN(int argc, char **argv)
 	char *sess_out = NULL;
 	struct sockaddr peer;
 	int peerlen = sizeof(peer);
+	int fallback_scsv = 0;
 	int enable_timeouts = 0 ;
 	long socket_mtu = 0;
 #ifndef OPENSSL_NO_JPAKE
@@ -933,6 +935,10 @@ static char *jpake_secret = NULL;
 			socket_mtu = atol(*(++argv));
 			}
 #endif
+		else if (strcmp(*argv,"-fallback_scsv") == 0)
+			{
+			fallback_scsv = 1;
+			}
 		else if	(strcmp(*argv,"-keyform") == 0)
 			{
 			if (--argc < 1) goto bad;
@@ -1334,16 +1340,13 @@ bad:
 		}
 #endif
 #ifndef OPENSSL_NO_TLSEXT
-		if (serverinfo_types_count)
+		for (i = 0; i < serverinfo_types_count; i++)
 			{
-			for (i = 0; i < serverinfo_types_count; i++)
-				{
-				SSL_CTX_set_custom_cli_ext(ctx,
-							   serverinfo_types[i],
-							   NULL, 
-							   serverinfo_cli_cb,
-							   NULL);
-				}
+			SSL_CTX_add_client_custom_ext(ctx,
+						      serverinfo_types[i],
+						      NULL, NULL, NULL,
+						      serverinfo_cli_parse_cb,
+						      NULL);
 			}
 #endif
 
@@ -1418,6 +1421,10 @@ bad:
 		SSL_set_session(con, sess);
 		SSL_SESSION_free(sess);
 		}
+
+	if (fallback_scsv)
+		SSL_set_mode(con, SSL_MODE_SEND_FALLBACK_SCSV);
+
 #ifndef OPENSSL_NO_TLSEXT
 	if (servername != NULL)
 		{

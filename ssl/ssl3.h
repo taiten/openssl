@@ -128,8 +128,13 @@
 extern "C" {
 #endif
 
-/* Signalling cipher suite value: from draft-ietf-tls-renegotiation-03.txt */
+/* Signalling cipher suite value from RFC 5746
+ * (TLS_EMPTY_RENEGOTIATION_INFO_SCSV) */
 #define SSL3_CK_SCSV				0x030000FF
+
+/* Signalling cipher suite value from draft-ietf-tls-downgrade-scsv-00
+ * (TLS_FALLBACK_SCSV) */
+#define SSL3_CK_FALLBACK_SCSV			0x03005600
 
 #define SSL3_CK_RSA_NULL_MD5			0x03000001
 #define SSL3_CK_RSA_NULL_SHA			0x03000002
@@ -567,13 +572,6 @@ typedef struct ssl3_state_st
 	 * on 10.8 .. 10.8.3 has broken ECDHE-ECDSA support. */
 	char is_probably_safari;
 #endif /* !OPENSSL_NO_EC */
-
-        /* serverinfo_client_tlsext_custom_types contains an array of TLS Extension types which
-         * were advertised by the client in its ClientHello and leveraged by ServerInfo TLS extension callbacks.
-	 * The array does not contain any duplicates, and is in the same order
-	 * as the types were received in the client hello. */
-        unsigned short *serverinfo_client_tlsext_custom_types;
-        size_t serverinfo_client_tlsext_custom_types_count; /* how many serverinfo_client_tlsext_custom_types */
 
 	/* ALPN information
 	 * (we are in the process of transitioning from NPN to ALPN.) */
