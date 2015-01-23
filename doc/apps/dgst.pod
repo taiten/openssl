@@ -12,9 +12,9 @@ B<openssl> B<dgst>
 [B<-d>]
 [B<-hex>]
 [B<-binary>]
+[B<-r>]
 [B<-hmac arg>]
 [B<-non-fips-allow>]
-[B<-r>]
 [B<-out filename>]
 [B<-sign filename>]
 [B<-keyform arg>]
@@ -70,7 +70,8 @@ set the HMAC key to "arg".
 
 =item B<-non-fips-allow>
 
-allow use of non FIPS digest.
+Allow use of non FIPS digest when in FIPS mode.  This has no effect when not in
+FIPS mode.
 
 =item B<-out filename>
 
