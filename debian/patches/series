@@ -9,16 +9,11 @@ no-symbolic.patch
 pic.patch
 valgrind.patch
 shared-lib-ext.patch
-stddef.patch
 version-script.patch
-gnu_source.patch
 c_rehash-compat.patch
 libdoc-manpgs-pod-spell.patch
 openssl-pod-misspell.patch
-dgst_hmac.patch
 block_diginotar.patch
 block_digicert_malaysia.patch
 #padlock_conf.patch
-git_snapshot.patch
-no_ssl3_method.patch
 disable_freelist.patch

@@ -1,3 +1,21 @@
+openssl (1.0.2-1) experimental; urgency=medium
+
+  * New upstream release
+    - Fixes CVE-2014-3571
+    - Fixes CVE-2015-0206
+    - Fixes CVE-2014-3569
+    - Fixes CVE-2014-3572
+    - Fixes CVE-2015-0204
+    - Fixes CVE-2015-0205
+    - Fixes CVE-2014-8275
+    - Fixes CVE-2014-3570
+    - Drop git_snapshot.patch
+  * Drop gnu_source.patch, dgst_hmac.patch, stddef.patch,
+    no_ssl3_method.patch: applied upstream
+  * Update patches to apply
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Fri, 23 Jan 2015 18:54:13 +0100
+
 openssl (1.0.2~beta3-1) experimental; urgency=low
 
   * New usptream beta version
