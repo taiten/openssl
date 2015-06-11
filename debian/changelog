@@ -1,3 +1,17 @@
+openssl (1.0.2b-1) unstable; urgency=high
+
+  * New upstream version
+    - Fix CVE-2015-4000
+    - Fix CVE-2015-1788
+    - Fix CVE-2015-1789
+    - Fix CVE-2015-1790
+    - Fix CVE-2015-1792
+    - Fix CVE-2015-1791
+  * Update c_rehash-compat.patch to make it apply to the new version.
+  * Remove openssl-pod-misspell.patch applied upstream
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 11 Jun 2015 18:20:38 +0200
+
 openssl (1.0.2a-1) unstable; urgency=medium
 
   * New upstrema version

@@ -11,8 +11,6 @@ valgrind.patch
 shared-lib-ext.patch
 version-script.patch
 c_rehash-compat.patch
-libdoc-manpgs-pod-spell.patch
-openssl-pod-misspell.patch
 block_diginotar.patch
 block_digicert_malaysia.patch
 #padlock_conf.patch
