@@ -1,3 +1,10 @@
+openssl (1.0.2d-1) unstable; urgency=high
+
+  * New upstream version
+    - Fixes CVE-2015-1793
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 09 Jul 2015 18:22:26 +0200
+
 openssl (1.0.2c-1) unstable; urgency=medium
 
   * New upstream version
