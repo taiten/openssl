@@ -1,4 +1,4 @@
-OPENSSL_1.0.0 {
+OPENSSL_1.0.2d {
 	global:
 		BIO_f_ssl;
 		BIO_new_buffer_ssl_connect;
@@ -4296,14 +4296,6 @@ OPENSSL_1.0.0 {
 		CRYPTO_cbc128_decrypt;
 		CRYPTO_cfb128_encrypt;
 		CRYPTO_cfb128_8_encrypt;
-
-	local:
-		*;
-};
-
-
-OPENSSL_1.0.1 {
-	global:
 		SSL_renegotiate_abbreviated;
 		TLSv1_1_method;
 		TLSv1_1_client_method;
@@ -4465,15 +4457,7 @@ OPENSSL_1.0.1 {
 		BIO_s_datagram_sctp;
 		BIO_dgram_is_sctp;
 		BIO_dgram_sctp_notification_cb;
-} OPENSSL_1.0.0;
-
-OPENSSL_1.0.1d {
-	global:
 		CRYPTO_memcmp;
-} OPENSSL_1.0.1;
-
-OPENSSL_1.0.2 {
-	global:
 		SSL_CTX_set_alpn_protos;
 		SSL_set_alpn_protos;
 		SSL_CTX_set_alpn_select_cb;
@@ -4611,5 +4595,8 @@ OPENSSL_1.0.2 {
 		BUF_strnlen;
 		sk_deep_copy;
 		SSL_test_functions;
-} OPENSSL_1.0.1d;
+
+	local:
+		*;
+};
 

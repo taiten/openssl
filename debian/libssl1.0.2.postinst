@@ -150,11 +150,11 @@ then
 		db_go || true
 		db_get libraries/restart-without-asking
 		if [ "x$RET" != xtrue ]; then
-			db_reset libssl1.0.0/restart-services
-			db_set libssl1.0.0/restart-services "$services"
-			db_input critical libssl1.0.0/restart-services || true
+			db_reset libssl1.0.2/restart-services
+			db_set libssl1.0.2/restart-services "$services"
+			db_input critical libssl1.0.2/restart-services || true
 			db_go || true
-			db_get libssl1.0.0/restart-services
+			db_get libssl1.0.2/restart-services
 
 			if [ "x$RET" != "x" ]
 			then
@@ -186,8 +186,8 @@ then
 		    done
 		    echo
 		    if [ -n "$failed" ]; then
-			db_subst libssl1.0.0/restart-failed services "$failed"
-			db_input critical libssl1.0.0/restart-failed || true
+			db_subst libssl1.0.2/restart-failed services "$failed"
+			db_input critical libssl1.0.2/restart-failed || true
 			db_go || true
 		    else
 			echo "Services restarted successfully."

@@ -15,3 +15,5 @@ block_diginotar.patch
 block_digicert_malaysia.patch
 #padlock_conf.patch
 disable_freelist.patch
+soname.patch
+disable_sslv3_test.patch

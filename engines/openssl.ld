@@ -1,4 +1,4 @@
-OPENSSL_1.0.0 {
+OPENSSL_1.0.2 {
 	global:
 		bind_engine;
 		v_check;

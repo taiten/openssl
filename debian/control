@@ -27,7 +27,7 @@ Description: Secure Sockets Layer toolkit - cryptographic utility
   * testing SSL/TLS clients and servers;
   * handling S/MIME signed or encrypted mail.
 
-Package: libssl1.0.0
+Package: libssl1.0.2
 Section: libs
 Priority: important
 Architecture: any
@@ -41,7 +41,7 @@ Description: Secure Sockets Layer toolkit - shared libraries
  .
  It provides the libssl and libcrypto shared libraries.
 
-Package: libcrypto1.0.0-udeb
+Package: libcrypto1.0.2-udeb
 XC-Package-Type: udeb
 Section: debian-installer
 Priority: optional
@@ -61,7 +61,7 @@ Priority: optional
 Architecture: any
 Multi-Arch: same
 Recommends: libssl-doc
-Depends: libssl1.0.0 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
+Depends: libssl1.0.2 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
 Description: Secure Sockets Layer toolkit - development files
  This package is part of the OpenSSL project's implementation of the SSL
  and TLS cryptographic protocols for secure communication over the
@@ -84,12 +84,12 @@ Description: Secure Sockets Layer toolkit - development documentation
  .
  It contains manpages and demo files for libssl and libcrypto.
 
-Package: libssl1.0.0-dbg
+Package: libssl1.0.2-dbg
 Section: debug
 Priority: extra
 Architecture: any
 Multi-Arch: same
-Depends: libssl1.0.0 (= ${binary:Version}), ${misc:Depends}
+Depends: libssl1.0.2 (= ${binary:Version}), ${misc:Depends}
 Description: Secure Sockets Layer toolkit - debug information
  This package is part of the OpenSSL project's implementation of the SSL
  and TLS cryptographic protocols for secure communication over the
