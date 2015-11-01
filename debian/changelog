@@ -1,3 +1,9 @@
+openssl (1.0.2d-3) unstable; urgency=medium
+
+  * Upload to unstable
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 01 Nov 2015 19:14:34 +0100
+
 openssl (1.0.2d-2) experimental; urgency=medium
 
   * Build with no-ssl3-method to remove all SSLv3 support.  This results in
