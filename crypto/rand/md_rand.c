@@ -480,6 +480,7 @@ int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo, int lock)
         MD_Update(&m, (unsigned char *)&(md_c[0]), sizeof(md_c));
 
 #ifndef PURIFY                  /* purify complains */
+#if 0
         /*
          * The following line uses the supplied buffer as a small source of
          * entropy: since this buffer is often uninitialised it may cause
@@ -488,6 +489,7 @@ int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo, int lock)
          * entropy has negligible impact on security.
          */
         MD_Update(&m, buf, j);
+#endif
 #endif
 
         k = (st_idx + MD_DIGEST_LENGTH / 2) - st_num;
