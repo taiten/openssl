@@ -1,3 +1,16 @@
+openssl (1.0.2e-1) unstable; urgency=high
+
+  * New upstream release
+    - Fix CVE-2015-3193
+    - Fix CVE-2015-3194
+    - Fix CVE-2015-3195
+    - Fix CVE-2015-3196
+  * Remove all symlinks during clean
+  * Run make depend after configure
+  * Remove openssl_button.* from the doc package
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 03 Dec 2015 19:33:05 +0100
+
 openssl (1.0.2d-3) unstable; urgency=medium
 
   * Upload to unstable
