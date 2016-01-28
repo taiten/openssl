@@ -1,3 +1,11 @@
+openssl (1.0.2f-2) unstable; urgency=high
+
+  * New upstream version.
+    - Fixes CVE-2016-0701
+    - Not affected by CVE-2015-3197 because SSLv2 is disabled.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 28 Jan 2016 19:32:02 +0100
+
 openssl (1.0.2e-1) unstable; urgency=high
 
   * New upstream release
