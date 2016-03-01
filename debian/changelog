@@ -1,3 +1,17 @@
+openssl (1.0.2g-1) unstable; urgency=high
+
+  * New upstream version
+  * Fix CVE-2016-0797
+  * Fix CVE-2016-0798
+  * Fix CVE-2016-0799
+  * Fix CVE-2016-0702
+  * Fix CVE-2016-0705
+  * Disable EXPORT and LOW ciphers: The DROWN attack (CVE-2016-0800)
+    makes use of those, and SLOTH attack (CVE-2015-7575) can make use of them
+    too.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 01 Mar 2016 18:31:09 +0100
+
 openssl (1.0.2f-2) unstable; urgency=high
 
   * New upstream version.

@@ -15,7 +15,7 @@ Index: openssl-1.0.2~beta1.obsolete.0.0498436515490575/openssl.ld
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ openssl-1.0.2~beta1.obsolete.0.0498436515490575/openssl.ld	2014-02-24 22:19:08.601827266 +0100
-@@ -0,0 +1,4602 @@
+@@ -0,0 +1,4608 @@
 +OPENSSL_1.0.2d {
 +	global:
 +		BIO_f_ssl;
@@ -4617,6 +4617,12 @@ Index: openssl-1.0.2~beta1.obsolete.0.0498436515490575/openssl.ld
 +	local:
 +		*;
 +};
++
++OPENSSL_1.0.2g {
++       global:
++               SRP_VBASE_get1_by_user;
++               SRP_user_pwd_free;
++} OPENSSL_1.0.2d;
 +
 Index: openssl-1.0.2~beta1.obsolete.0.0498436515490575/engines/openssl.ld
 ===================================================================

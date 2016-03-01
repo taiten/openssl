@@ -4600,3 +4600,9 @@ OPENSSL_1.0.2d {
 		*;
 };
 
+OPENSSL_1.0.2g {
+       global:
+               SRP_VBASE_get1_by_user;
+               SRP_user_pwd_free;
+} OPENSSL_1.0.2d;
+
