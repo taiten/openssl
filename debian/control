@@ -55,6 +55,17 @@ Description: Secure Sockets Layer toolkit - libcrypto udeb
  It contains a version of the libcrypto shared library for use with the
  Debian Installer. Do not install it on a normal system.
 
+Package: libssl1.0.2-udeb
+XC-Package-Type: udeb
+Section: debian-installer
+Priority: optional
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ssl shared library - udeb
+ libssl shared library.
+ .
+ Do not install it on a normal system.
+
 Package: libssl-dev
 Section: libdevel
 Priority: optional
