@@ -1,3 +1,14 @@
+openssl (1.0.2h-1) unstable; urgency=high
+
+  * New upstream version
+    - Fixes CVE-2016-2107
+    - Fixes CVE-2016-2105
+    - Fixes CVE-2016-2106
+    - Fixes CVE-2016-2109
+    - Fixes CVE-2016-2176
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 03 May 2016 18:31:22 +0200
+
 openssl (1.0.2g-2) unstable; urgency=medium
 
   * Use assembler of arm64 (Closes: #794326)
