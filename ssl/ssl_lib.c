@@ -162,6 +162,8 @@
 
 const char *SSL_version_str = OPENSSL_VERSION_TEXT;
 
+#define OPENSSL_NO_BUF_FREELISTS
+
 SSL3_ENC_METHOD ssl3_undef_enc_method = {
     /*
      * evil casts, but these functions are only called if there's a library
