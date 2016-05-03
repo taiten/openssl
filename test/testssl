@@ -160,7 +160,7 @@ test_cipher() {
 }
 
 echo "Testing ciphersuites"
-for protocol in TLSv1.2 SSLv3; do
+for protocol in TLSv1.2; do
   echo "Testing ciphersuites for $protocol"
   for cipher in `../util/shlib_wrap.sh ../apps/openssl ciphers "RSA+$protocol" | tr ':' ' '`; do
     test_cipher $cipher $protocol
