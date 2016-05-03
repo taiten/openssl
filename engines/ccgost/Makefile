@@ -47,7 +47,7 @@ install:
 		pfx=lib; \
 		if expr "$(PLATFORM)" : "Cygwin" >/dev/null; then \
 			sfx=".so"; \
-			cp cyg$(LIBNAME).dll $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/engines/$${pfx}$(LIBNAME)$$sfx.new; \
+			cp cyg$(LIBNAME).dll $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/openssl-1.0.2/engines/$${pfx}$(LIBNAME)$$sfx.new; \
 		else \
 			case "$(CFLAGS)" in \
 			*DSO_BEOS*) sfx=".so";; \
@@ -56,10 +56,10 @@ install:
 			*DSO_WIN32*) sfx="eay32.dll"; pfx=;; \
 			*) sfx=".bad";; \
 			esac; \
-			cp $${pfx}$(LIBNAME)$$sfx $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/engines/$${pfx}$(LIBNAME)$$sfx.new; \
+			cp $${pfx}$(LIBNAME)$$sfx $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/openssl-1.0.2/engines/$${pfx}$(LIBNAME)$$sfx.new; \
 		fi; \
-		chmod 555 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/engines/$${pfx}$(LIBNAME)$$sfx.new; \
-		mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/engines/$${pfx}$(LIBNAME)$$sfx.new $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/engines/$${pfx}$(LIBNAME)$$sfx; \
+		chmod 555 $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/openssl-1.0.2/engines/$${pfx}$(LIBNAME)$$sfx.new; \
+		mv -f $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/openssl-1.0.2/engines/$${pfx}$(LIBNAME)$$sfx.new $(INSTALL_PREFIX)$(INSTALLTOP)/$(LIBDIR)/openssl-1.0.2/engines/$${pfx}$(LIBNAME)$$sfx; \
 	fi
 
 links:
