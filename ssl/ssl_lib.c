@@ -1,115 +1,12 @@
 /*
- * ! \file ssl/ssl_lib.c \brief Version independent SSL functions.
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
- *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 /* ====================================================================
  * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
  * ECC cipher suite support in OpenSSL originally developed by
@@ -215,6 +112,7 @@ static int dane_ctx_enable(struct dane_ctx_st *dctx)
     mdord = OPENSSL_zalloc(n * sizeof(*mdord));
 
     if (mdord == NULL || mdevp == NULL) {
+        OPENSSL_free(mdord);
         OPENSSL_free(mdevp);
         SSLerr(SSL_F_DANE_CTX_ENABLE, ERR_R_MALLOC_FAILURE);
         return 0;
@@ -284,10 +182,18 @@ static int ssl_dane_dup(SSL *to, SSL *from)
         return 1;
 
     dane_final(&to->dane);
+    to->dane.dctx = &to->ctx->dane;
+    to->dane.trecs = sk_danetls_record_new_null();
+
+    if (to->dane.trecs == NULL) {
+        SSLerr(SSL_F_SSL_DANE_DUP, ERR_R_MALLOC_FAILURE);
+        return 0;
+    }
 
     num  = sk_danetls_record_num(from->dane.trecs);
     for (i = 0; i < num; ++i) {
         danetls_record *t = sk_danetls_record_value(from->dane.trecs, i);
+
         if (SSL_dane_tlsa_add(to, t->usage, t->selector, t->mtype,
                               t->data, t->dlen) <= 0)
             return 0;
@@ -363,6 +269,7 @@ static int dane_tlsa_add(
     const EVP_MD *md = NULL;
     int ilen = (int)dlen;
     int i;
+    int num;
 
     if (dane->trecs == NULL) {
         SSLerr(SSL_F_DANE_TLSA_ADD, SSL_R_DANE_NOT_ENABLED);
@@ -495,8 +402,10 @@ static int dane_tlsa_add(
      * The choice of order for the selector is not significant, so we
      * use the same descending order for consistency.
      */
-    for (i = 0; i < sk_danetls_record_num(dane->trecs); ++i) {
+    num = sk_danetls_record_num(dane->trecs);
+    for (i = 0; i < num; ++i) {
         danetls_record *rec = sk_danetls_record_value(dane->trecs, i);
+
         if (rec->usage > usage)
             continue;
         if (rec->usage < usage)
@@ -681,7 +590,7 @@ SSL *SSL_new(SSL_CTX *ctx)
     s->tlsext_debug_cb = 0;
     s->tlsext_debug_arg = NULL;
     s->tlsext_ticket_expected = 0;
-    s->tlsext_status_type = -1;
+    s->tlsext_status_type = ctx->tlsext_status_type;
     s->tlsext_status_expected = 0;
     s->tlsext_ocsp_ids = NULL;
     s->tlsext_ocsp_exts = NULL;
@@ -739,7 +648,8 @@ SSL *SSL_new(SSL_CTX *ctx)
     if (!SSL_clear(s))
         goto err;
 
-    CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL, s, &s->ex_data);
+    if (!CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL, s, &s->ex_data))
+        goto err;
 
 #ifndef OPENSSL_NO_PSK
     s->psk_client_callback = ctx->psk_client_callback;
@@ -761,10 +671,16 @@ SSL *SSL_new(SSL_CTX *ctx)
     return NULL;
 }
 
-void SSL_up_ref(SSL *s)
+int SSL_up_ref(SSL *s)
 {
     int i;
-    CRYPTO_atomic_add(&s->references, 1, &i, s->lock);
+
+    if (CRYPTO_atomic_add(&s->references, 1, &i, s->lock) <= 0)
+        return 0;
+
+    REF_PRINT_COUNT("SSL", s);
+    REF_ASSERT_ISNT(i < 2);
+    return ((i > 1) ? 1 : 0);
 }
 
 int SSL_CTX_set_session_id_context(SSL_CTX *ctx, const unsigned char *sid_ctx,
@@ -900,9 +816,9 @@ int SSL_dane_enable(SSL *s, const char *basedomain)
      * invalid input, set the SNI name first.
      */
     if (s->tlsext_hostname == NULL) {
-	if (!SSL_set_tlsext_host_name(s, basedomain)) {
+        if (!SSL_set_tlsext_host_name(s, basedomain)) {
             SSLerr(SSL_F_SSL_DANE_ENABLE, SSL_R_ERROR_SETTING_TLSA_BASE_DOMAIN);
-	    return -1;
+            return -1;
         }
     }
 
@@ -1503,6 +1419,9 @@ static int ssl_start_async_job(SSL *s, struct ssl_async_args *args,
     case ASYNC_PAUSE:
         s->rwstate = SSL_ASYNC_PAUSED;
         return -1;
+    case ASYNC_NO_JOBS:
+        s->rwstate = SSL_ASYNC_NO_JOBS;
+        return -1;
     case ASYNC_FINISH:
         s->job = NULL;
         return ret;
@@ -1743,8 +1662,8 @@ long SSL_ctrl(SSL *s, int cmd, long larg, void *parg)
         }
     case SSL_CTRL_GET_EXTMS_SUPPORT:
         if (!s->session || SSL_in_init(s) || ossl_statem_get_in_handshake(s))
-		return -1;
-	if (s->session->flags & SSL_SESS_FLAG_EXTMS)
+                return -1;
+        if (s->session->flags & SSL_SESS_FLAG_EXTMS)
             return 1;
         else
             return 0;
@@ -1862,7 +1781,7 @@ long SSL_CTX_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
             return 0;
         ctx->max_send_fragment = larg;
         if (ctx->max_send_fragment < ctx->split_send_fragment)
-            ctx->split_send_fragment = ctx->split_send_fragment;
+            ctx->split_send_fragment = ctx->max_send_fragment;
         return 1;
     case SSL_CTRL_SET_SPLIT_SEND_FRAGMENT:
         if ((unsigned int)larg > ctx->max_send_fragment || larg == 0)
@@ -2429,7 +2348,8 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
     if ((ret->client_CA = sk_X509_NAME_new_null()) == NULL)
         goto err;
 
-    CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL_CTX, ret, &ret->ex_data);
+    if (!CRYPTO_new_ex_data(CRYPTO_EX_INDEX_SSL_CTX, ret, &ret->ex_data))
+        goto err;
 
     /* No compression for DTLS */
     if (!(meth->ssl3_enc->enc_flags & SSL_ENC_FLAG_DTLS))
@@ -2438,10 +2358,10 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
     ret->max_send_fragment = SSL3_RT_MAX_PLAIN_LENGTH;
     ret->split_send_fragment = SSL3_RT_MAX_PLAIN_LENGTH;
 
-    /* Setup RFC4507 ticket keys */
-    if ((RAND_bytes(ret->tlsext_tick_key_name, 16) <= 0)
-        || (RAND_bytes(ret->tlsext_tick_hmac_key, 16) <= 0)
-        || (RAND_bytes(ret->tlsext_tick_aes_key, 16) <= 0))
+    /* Setup RFC5077 ticket keys */
+    if ((RAND_bytes(ret->tlsext_tick_key_name, sizeof(ret->tlsext_tick_key_name)) <= 0)
+        || (RAND_bytes(ret->tlsext_tick_hmac_key, sizeof(ret->tlsext_tick_hmac_key)) <= 0)
+        || (RAND_bytes(ret->tlsext_tick_aes_key, sizeof(ret->tlsext_tick_aes_key)) <= 0))
         ret->options |= SSL_OP_NO_TICKET;
 
 #ifndef OPENSSL_NO_SRP
@@ -2479,6 +2399,8 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
      */
     ret->options |= SSL_OP_NO_COMPRESSION;
 
+    ret->tlsext_status_type = -1;
+
     return ret;
  err:
     SSLerr(SSL_F_SSL_CTX_NEW, ERR_R_MALLOC_FAILURE);
@@ -2487,10 +2409,16 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
     return NULL;
 }
 
-void SSL_CTX_up_ref(SSL_CTX *ctx)
+int SSL_CTX_up_ref(SSL_CTX *ctx)
 {
     int i;
-    CRYPTO_atomic_add(&ctx->references, 1, &i, ctx->lock);
+
+    if (CRYPTO_atomic_add(&ctx->references, 1, &i, ctx->lock) <= 0)
+        return 0;
+
+    REF_PRINT_COUNT("SSL_CTX", ctx);
+    REF_ASSERT_ISNT(i < 2);
+    return ((i > 1) ? 1 : 0);
 }
 
 void SSL_CTX_free(SSL_CTX *a)
@@ -2925,56 +2853,61 @@ int SSL_get_error(const SSL *s, int i)
             return (SSL_ERROR_SSL);
     }
 
-    if ((i < 0) && SSL_want_read(s)) {
-        bio = SSL_get_rbio(s);
-        if (BIO_should_read(bio))
-            return (SSL_ERROR_WANT_READ);
-        else if (BIO_should_write(bio))
-            /*
-             * This one doesn't make too much sense ... We never try to write
-             * to the rbio, and an application program where rbio and wbio
-             * are separate couldn't even know what it should wait for.
-             * However if we ever set s->rwstate incorrectly (so that we have
-             * SSL_want_read(s) instead of SSL_want_write(s)) and rbio and
-             * wbio *are* the same, this test works around that bug; so it
-             * might be safer to keep it.
-             */
-            return (SSL_ERROR_WANT_WRITE);
-        else if (BIO_should_io_special(bio)) {
-            reason = BIO_get_retry_reason(bio);
-            if (reason == BIO_RR_CONNECT)
-                return (SSL_ERROR_WANT_CONNECT);
-            else if (reason == BIO_RR_ACCEPT)
-                return (SSL_ERROR_WANT_ACCEPT);
-            else
-                return (SSL_ERROR_SYSCALL); /* unknown */
+    if (i < 0) {
+        if (SSL_want_read(s)) {
+            bio = SSL_get_rbio(s);
+            if (BIO_should_read(bio))
+                return (SSL_ERROR_WANT_READ);
+            else if (BIO_should_write(bio))
+                /*
+                 * This one doesn't make too much sense ... We never try to write
+                 * to the rbio, and an application program where rbio and wbio
+                 * are separate couldn't even know what it should wait for.
+                 * However if we ever set s->rwstate incorrectly (so that we have
+                 * SSL_want_read(s) instead of SSL_want_write(s)) and rbio and
+                 * wbio *are* the same, this test works around that bug; so it
+                 * might be safer to keep it.
+                 */
+                return (SSL_ERROR_WANT_WRITE);
+            else if (BIO_should_io_special(bio)) {
+                reason = BIO_get_retry_reason(bio);
+                if (reason == BIO_RR_CONNECT)
+                    return (SSL_ERROR_WANT_CONNECT);
+                else if (reason == BIO_RR_ACCEPT)
+                    return (SSL_ERROR_WANT_ACCEPT);
+                else
+                    return (SSL_ERROR_SYSCALL); /* unknown */
+            }
         }
-    }
 
-    if ((i < 0) && SSL_want_write(s)) {
-        bio = SSL_get_wbio(s);
-        if (BIO_should_write(bio))
-            return (SSL_ERROR_WANT_WRITE);
-        else if (BIO_should_read(bio))
-            /*
-             * See above (SSL_want_read(s) with BIO_should_write(bio))
-             */
-            return (SSL_ERROR_WANT_READ);
-        else if (BIO_should_io_special(bio)) {
-            reason = BIO_get_retry_reason(bio);
-            if (reason == BIO_RR_CONNECT)
-                return (SSL_ERROR_WANT_CONNECT);
-            else if (reason == BIO_RR_ACCEPT)
-                return (SSL_ERROR_WANT_ACCEPT);
-            else
-                return (SSL_ERROR_SYSCALL);
+        if (SSL_want_write(s)) {
+            bio = SSL_get_wbio(s);
+            if (BIO_should_write(bio))
+                return (SSL_ERROR_WANT_WRITE);
+            else if (BIO_should_read(bio))
+                /*
+                 * See above (SSL_want_read(s) with BIO_should_write(bio))
+                 */
+                return (SSL_ERROR_WANT_READ);
+            else if (BIO_should_io_special(bio)) {
+                reason = BIO_get_retry_reason(bio);
+                if (reason == BIO_RR_CONNECT)
+                    return (SSL_ERROR_WANT_CONNECT);
+                else if (reason == BIO_RR_ACCEPT)
+                    return (SSL_ERROR_WANT_ACCEPT);
+                else
+                    return (SSL_ERROR_SYSCALL);
+            }
         }
-    }
-    if ((i < 0) && SSL_want_x509_lookup(s)) {
-        return (SSL_ERROR_WANT_X509_LOOKUP);
-    }
-    if ((i < 0) && SSL_want_async(s)) {
-        return SSL_ERROR_WANT_ASYNC;
+        if (SSL_want_x509_lookup(s)) {
+            return (SSL_ERROR_WANT_X509_LOOKUP);
+        }
+        if (SSL_want_async(s)) {
+            return SSL_ERROR_WANT_ASYNC;
+        }
+        if (SSL_want_async_job(s)) {
+            return SSL_ERROR_WANT_ASYNC_JOB;
+        }
     }
 
     if (i == 0) {
@@ -3135,7 +3068,8 @@ SSL *SSL_dup(SSL *s)
             goto err;
     }
 
-    ssl_dane_dup(ret, s);
+    if (!ssl_dane_dup(ret, s))
+        goto err;
     ret->version = s->version;
     ret->options = s->options;
     ret->mode = s->mode;
@@ -3286,34 +3220,27 @@ const COMP_METHOD *SSL_get_current_expansion(SSL *s)
 #endif
 }
 
-int ssl_init_wbio_buffer(SSL *s, int push)
+int ssl_init_wbio_buffer(SSL *s)
 {
     BIO *bbio;
 
     if (s->bbio == NULL) {
         bbio = BIO_new(BIO_f_buffer());
         if (bbio == NULL)
-            return (0);
+            return 0;
         s->bbio = bbio;
+        s->wbio = BIO_push(bbio, s->wbio);
     } else {
         bbio = s->bbio;
-        if (s->bbio == s->wbio)
-            s->wbio = BIO_pop(s->wbio);
+        (void)BIO_reset(bbio);
     }
-    (void)BIO_reset(bbio);
-/*      if (!BIO_set_write_buffer_size(bbio,16*1024)) */
+
     if (!BIO_set_read_buffer_size(bbio, 1)) {
         SSLerr(SSL_F_SSL_INIT_WBIO_BUFFER, ERR_R_BUF_LIB);
-        return (0);
+        return 0;
     }
-    if (push) {
-        if (s->wbio != bbio)
-            s->wbio = BIO_push(bbio, s->wbio);
-    } else {
-        if (s->wbio == bbio)
-            s->wbio = BIO_pop(bbio);
-    }
-    return (1);
+
+    return 1;
 }
 
 void ssl_free_wbio_buffer(SSL *s)
@@ -3358,17 +3285,22 @@ void SSL_set_shutdown(SSL *s, int mode)
 
 int SSL_get_shutdown(const SSL *s)
 {
-    return (s->shutdown);
+    return s->shutdown;
 }
 
 int SSL_version(const SSL *s)
 {
-    return (s->version);
+    return s->version;
+}
+
+int SSL_client_version(const SSL *s)
+{
+    return s->client_version;
 }
 
 SSL_CTX *SSL_get_SSL_CTX(const SSL *ssl)
 {
-    return (ssl->ctx);
+    return ssl->ctx;
 }
 
 SSL_CTX *SSL_set_SSL_CTX(SSL *ssl, SSL_CTX *ctx)
@@ -3709,7 +3641,7 @@ void SSL_set_not_resumable_session_callback(SSL *ssl,
 
 /*
  * Allocates new EVP_MD_CTX and sets pointer to it into given pointer
- * vairable, freeing EVP_MD_CTX previously stored in that variable, if any.
+ * variable, freeing EVP_MD_CTX previously stored in that variable, if any.
  * If EVP_MD pointer is passed, initializes ctx with this md Returns newly
  * allocated ctx;
  */
@@ -4195,6 +4127,23 @@ int ssl_validate_ct(SSL *s)
 
 end:
     CT_POLICY_EVAL_CTX_free(ctx);
+    /*
+     * With SSL_VERIFY_NONE the session may be cached and re-used despite a
+     * failure return code here.  Also the application may wish the complete
+     * the handshake, and then disconnect cleanly at a higher layer, after
+     * checking the verification status of the completed connection.
+     *
+     * We therefore force a certificate verification failure which will be
+     * visible via SSL_get_verify_result() and cached as part of any resumed
+     * session.
+     *
+     * Note: the permissive callback is for information gathering only, always
+     * returns success, and does not affect verification status.  Only the
+     * strict callback or a custom application-specified callback can trigger
+     * connection failure or record a verification error.
+     */
+    if (ret <= 0)
+        s->verify_result = X509_V_ERR_NO_VALID_SCTS;
     return ret;
 }
 

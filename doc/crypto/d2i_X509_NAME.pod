@@ -32,14 +32,23 @@ the encoding of an B<X509_NAME> structure without copying it.
 
 =head1 RETURN VALUES
 
-=head1 SEE ALSO
-
 The meanings of the return values of d2i_X509_NAME() and i2d_X509_NAME()
 are similar to those for d2i_X509() and i2d_X509().
 
 The function X509_NAME_get0_der() returns 1 for success and 0 if an error
 occurred.
 
+=head1 SEE ALSO
+
 L<d2i_X509(3)>
+
+=head1 COPYRIGHT
+
+Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut

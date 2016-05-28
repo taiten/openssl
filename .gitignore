@@ -57,6 +57,14 @@ Makefile
 
 # Executables
 /apps/openssl
+/fuzz/asn1
+/fuzz/asn1parse
+/fuzz/bignum
+/fuzz/bndiv
+/fuzz/conf
+/fuzz/cms
+/fuzz/server
+/fuzz/x509
 /test/sha256t
 /test/sha512t
 /test/gost2814789t
@@ -71,6 +79,8 @@ Makefile
 /test/fips_ecdsavs
 /test/fips_rngvs
 /test/fips_test_suite
+/test/ssltest_old
+/test/x509aux
 *.so*
 *.dylib*
 *.dll*

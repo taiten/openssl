@@ -82,6 +82,10 @@ CONFIGURE_ARGS=({- join(", ",quotify_l(@{$config{perlargv}})) -})
 SRCDIR={- $config{sourcedir} -}
 BUILDDIR={- $config{builddir} -}
 
+# Allow both V and VERBOSE to indicate verbosity.  This only applies
+# to testing.
+VERBOSE=$(V)
+
 VERSION={- $config{version} -}
 MAJOR={- $config{major} -}
 MINOR={- $config{minor} -}
@@ -109,6 +113,10 @@ DEPS={- our @deps = map { (my $x = $_) =~ s|\.o$|\$(DEP_EXT)|; $x; }
                     keys %{$unified_info{sources}};
         join(", ", map { "-\n\t".$_ } @deps); -}
 {- output_on() if $disabled{makedepend}; "" -}
+{- output_off() if $disabled{apps}; "" -}
+BIN_SCRIPTS=[.tools]c_rehash.pl
+MISC_SCRIPTS=[.apps]CA.pl, [.apps]tsget.pl
+{- output_on() if $disabled{apps}; "" -}
 
 # DESTDIR is for package builders so that they can configure for, say,
 # SYS$COMMON:[OPENSSL] and yet have everything installed in STAGING:[USER].
@@ -137,6 +145,9 @@ CFLAGS_Q=$(CFLAGS)
 DEPFLAG= /DEFINE=({- join(",", @{$config{depdefines}}) -})
 LDFLAGS= {- $target{lflags} -}
 EX_LIBS= {- $target{ex_libs} ? ",".$target{ex_libs} : "" -}{- $config{ex_libs} ? ",".$config{ex_libs} : "" -}
+LIB_CFLAGS={- $target{lib_cflags} || "" -}
+DSO_CFLAGS={- $target{dso_cflags} || "" -}
+BIN_CFLAGS={- $target{bin_cflags} || "" -}
 
 PERL={- $config{perl} -}
 
@@ -231,6 +242,7 @@ test tests : configdata.pm, -
         DEFINE SRCTOP {- sourcedir() -}
         DEFINE BLDTOP {- builddir() -}
         DEFINE OPENSSL_ENGINES {- builddir("engines") -}
+        IF "$(VERBOSE)" .NES. "" THEN DEFINE VERBOSE "$(VERBOSE)"
         $(PERL) {- sourcefile("test", "run_tests.pl") -} $(TESTS)
         DEASSIGN OPENSSL_ENGINES
         DEASSIGN BLDTOP
@@ -339,8 +351,7 @@ install_runtime : check_INSTALLTOP
         COPY/PROT=W:RE [.APPS]openssl.EXE ossl_installroot:[EXE.'arch']
         @ ! Install scripts
         - CREATE/DIR ossl_installroot:[EXE]
-        COPY/PROT=W:RE [.APPS]CA.pl ossl_installroot:[EXE]
-        COPY/PROT=W:RE [.TOOLS]c_rehash. ossl_installroot:[EXE]c_rehash.pl
+        COPY/PROT=W:RE $(BIN_SCRIPTS) ossl_installroot:[EXE]
         @ ! {- output_on() if $disabled{apps}; "" -}
         @ ! Install configuration file
         - CREATE/DIR ossl_dataroot:[000000]
@@ -362,6 +373,8 @@ install_config : [.VMS]openssl_startup.com [.VMS]openssl_shutdown.com -
                 CREATE/DIR/PROT=(S:RWED,O:RWE,G:RE,W:RE) OSSL_DATAROOT:[CERTS]
         IF F$SEARCH("OSSL_DATAROOT:[000000]PRIVATE.DIR;1") .EQS. "" THEN -
                 CREATE/DIR/PROT=(S:RWED,O:RWE,G,W) OSSL_DATAROOT:[PRIVATE]
+        IF F$SEARCH("OSSL_DATAROOT:[000000]MISC.DIR;1") .EQS. "" THEN -
+                CREATE/DIR/PROT=(S:RWED,O:RWE,G,W) OSSL_DATAROOT:[MISC]
         - CREATE/DIR ossl_installroot:[SYS$STARTUP]
         COPY/PROT=W:RE -
                 [.VMS]openssl_startup.com,openssl_shutdown.com -
@@ -369,14 +382,15 @@ install_config : [.VMS]openssl_startup.com [.VMS]openssl_shutdown.com -
         COPY/PROT=W:RE -
                 {- sourcefile("VMS", "openssl_utils.com") -} -
                 ossl_installroot:[SYS$STARTUP]
+        COPY/PROT=W:RE $(MISC_SCRIPTS) OSSL_DATAROOT:[MISC]
 
-[.VMS]openssl_startup.com : vmsconfig.pm
+[.VMS]openssl_startup.com : vmsconfig.pm {- sourcefile("VMS", "openssl_startup.com.in") -}
         - CREATE/DIR [.VMS]
         $(PERL) "-I." "-Mvmsconfig" {- sourcefile("util", "dofile.pl") -} -
                 {- sourcefile("VMS", "openssl_startup.com.in") -} -
                 > [.VMS]openssl_startup.com
 
-[.VMS]openssl_shutdown.com : vmsconfig.pm
+[.VMS]openssl_shutdown.com : vmsconfig.pm {- sourcefile("VMS", "openssl_shutdown.com.in") -}
         - CREATE/DIR [.VMS]
         $(PERL) "-I." "-Mvmsconfig" {- sourcefile("util", "dofile.pl") -} -
                 {- sourcefile("VMS", "openssl_shutdown.com.in") -} -
@@ -397,7 +411,10 @@ vmsconfig.pm : configdata.pm
         WRITE CONFIG "  OPENSSLDIR => '$(OPENSSLDIR)',"
         WRITE CONFIG "  pointersize => '","{- $target{pointersize} -}","',"
         WRITE CONFIG "  shared_libs => ["
-        {- join("\n        ", map { "WRITE CONFIG \"    '$_'," } map { $unified_info{sharednames}->{$_} || () } @{$unified_info{libraries}}) || "\@ !" -}
+        {- $disabled{shared}
+           ? "\@ !"
+           : join("\n        ", map { "WRITE CONFIG \"    '$_'," } map { $unified_info{sharednames}->{$_} || () } @{$unified_info{libraries}})
+        -}
         WRITE CONFIG "  ],"
         WRITE CONFIG ");"
         WRITE CONFIG "our %target = ();"
@@ -406,6 +423,10 @@ vmsconfig.pm : configdata.pm
         WRITE CONFIG "our %unified_info = ();"
         WRITE CONFIG "1;"
         CLOSE CONFIG
+
+install_html_docs : check_INSTALLTOP
+        @ $(PERL) {- sourcefile("util", "process_docs.pl") -} -
+                --destdir=ossl_installroot:[HTML] --type=html
 
 check_INSTALLTOP :
         @ IF "$(INSTALLTOP)" .EQS. "" THEN -
@@ -418,9 +439,7 @@ check_INSTALLTOP :
 # Developer targets ##################################################
 
 debug_logicals :
-        SH LOGICAL/PROC openssl,internal,ossl_installroot
-        IF "$(DESTDIR)" .EQS. "" THEN -
-                SH LOGICAL/PROC ossl_dataroot
+        SH LOGICAL/PROC openssl,internal,ossl_installroot,ossl_dataroot
 
 # Building targets ###################################################
 
@@ -441,12 +460,13 @@ configdata.pm : {- join(" ", sourcefile("Configurations", "descrip.mms.tmpl"), s
   sub generatesrc {
       my %args = @_;
       my $generator = join(" ", @{$args{generator}});
-      my $deps = join(", -\n\t\t", @{$args{deps}});
+      my $generator_incs = join("", map { ' "-I'.$_.'"' } @{$args{generator_incs}});
+      my $deps = join(", -\n\t\t", @{$args{generator_deps}}, @{$args{deps}});
 
       if ($args{src} !~ /\.[sS]$/) {
           return <<"EOF";
 $args{src} : $args{generator}->[0] $deps
-	\$(PERL) $generator > \$@
+	\$(PERL)$generator_incs $generator > \$@
 EOF
       } else {
           die "No method to generate assembler source present.\n";
@@ -471,6 +491,9 @@ EOF
       my $srcs =
           join(", ",
                map { abs2rel(rel2abs($_), rel2abs($forward)) } @{$args{srcs}});
+      my $ecflags = { lib => '$(LIB_CFLAGS)',
+                      dso => '$(DSO_CFLAGS)',
+                      bin => '$(BIN_CFLAGS)' } -> {$args{intent}};
       my $incs_on = "\@ !";
       my $incs_off = "\@ !";
       my $incs = "";
@@ -501,7 +524,7 @@ $obj.OBJ : $deps
         ${before}
         SET DEFAULT $forward
         $incs_on
-        \$(CC) \$(CFLAGS)${incs}${depbuild} /OBJECT=${objd}${objn}.OBJ /REPOSITORY=$backward $srcs
+        \$(CC) \$(CFLAGS)${ecflags}${incs}${depbuild} /OBJECT=${objd}${objn}.OBJ /REPOSITORY=$backward $srcs
         $incs_off
         SET DEFAULT $backward
         ${after}

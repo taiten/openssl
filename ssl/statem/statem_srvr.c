@@ -1,112 +1,12 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 /* ====================================================================
  * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
  *
@@ -368,7 +268,7 @@ static int send_certificate_request(SSL *s)
            && (!(s->s3->tmp.new_cipher->algorithm_auth & SSL_aNULL)
            /*
             * ... except when the application insists on
-            * verification (against the specs, but s3_clnt.c accepts
+            * verification (against the specs, but statem_clnt.c accepts
             * this for SSL 3)
             */
                || (s->verify_mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT))
@@ -747,6 +647,23 @@ int ossl_statem_server_construct_message(SSL *s)
     return 0;
 }
 
+/*
+ * Maximum size (excluding the Handshake header) of a ClientHello message,
+ * calculated as follows:
+ *
+ *  2 + # client_version
+ *  32 + # only valid length for random
+ *  1 + # length of session_id
+ *  32 + # maximum size for session_id
+ *  2 + # length of cipher suites
+ *  2^16-2 + # maximum length of cipher suites array
+ *  1 + # length of compression_methods
+ *  2^8-1 + # maximum length of compression methods
+ *  2 + # length of extensions
+ *  2^16-1 # maximum length of extensions
+ */
+#define CLIENT_HELLO_MAX_LENGTH         131396
+
 #define CLIENT_KEY_EXCH_MAX_LENGTH      2048
 #define NEXT_PROTO_MAX_LENGTH           514
 
@@ -760,7 +677,7 @@ unsigned long ossl_statem_server_max_message_size(SSL *s)
 
     switch(st->hand_state) {
     case TLS_ST_SR_CLNT_HELLO:
-        return SSL3_RT_MAX_PLAIN_LENGTH;
+        return CLIENT_HELLO_MAX_LENGTH;
 
     case TLS_ST_SR_CERT:
         return s->max_cert_list;
@@ -971,6 +888,7 @@ MSG_PROCESS_RETURN tls_process_client_hello(SSL *s, PACKET *pkt)
     /* |cookie| will only be initialized for DTLS. */
     PACKET session_id, cipher_suites, compression, extensions, cookie;
     int is_v2_record;
+    static const unsigned char null_compression = 0;
 
     is_v2_record = RECORD_LAYER_is_sslv2_record(&s->rlayer);
 
@@ -1096,19 +1014,20 @@ MSG_PROCESS_RETURN tls_process_client_hello(SSL *s, PACKET *pkt)
             goto f_err;
         }
 
-        /* Load the client random */
+        /* Load the client random and compression list. */
         challenge_len = challenge_len > SSL3_RANDOM_SIZE ? SSL3_RANDOM_SIZE :
             challenge_len;
         memset(s->s3->client_random, 0, SSL3_RANDOM_SIZE);
         if (!PACKET_copy_bytes(&challenge,
                                s->s3->client_random + SSL3_RANDOM_SIZE -
-                               challenge_len, challenge_len)) {
+                               challenge_len, challenge_len)
+            /* Advertise only null compression. */
+            || !PACKET_buf_init(&compression, &null_compression, 1)) {
             SSLerr(SSL_F_TLS_PROCESS_CLIENT_HELLO, ERR_R_INTERNAL_ERROR);
             al = SSL_AD_INTERNAL_ERROR;
             goto f_err;
         }
 
-        PACKET_null_init(&compression);
         PACKET_null_init(&extensions);
     } else {
         /* Regular ClientHello. */
@@ -1376,7 +1295,7 @@ MSG_PROCESS_RETURN tls_process_client_hello(SSL *s, PACKET *pkt)
         if (k >= complen) {
             al = SSL_AD_ILLEGAL_PARAMETER;
             SSLerr(SSL_F_TLS_PROCESS_CLIENT_HELLO,
-                   SSL_R_REQUIRED_COMPRESSSION_ALGORITHM_MISSING);
+                   SSL_R_REQUIRED_COMPRESSION_ALGORITHM_MISSING);
             goto f_err;
         }
     } else if (s->hit)
@@ -2079,7 +1998,6 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
     EVP_PKEY *ckey = NULL;
 #endif
     PACKET enc_premaster;
-    const unsigned char *data;
     unsigned char *rsa_decrypt = NULL;
 
     alg_k = s->s3->tmp.new_cipher->algorithm_mkey;
@@ -2301,6 +2219,7 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
         DH *cdh;
         unsigned int i;
         BIGNUM *pub_key;
+        const unsigned char *data;
 
         if (!PACKET_get_net_2(pkt, &i)) {
             if (alg_k & (SSL_kDHE | SSL_kDHEPSK)) {
@@ -2378,6 +2297,7 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
             goto f_err;
         } else {
             unsigned int i;
+            const unsigned char *data;
 
             /*
              * Get client's public key from encoded point in the
@@ -2425,6 +2345,7 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
 #ifndef OPENSSL_NO_SRP
     if (alg_k & SSL_kSRP) {
         unsigned int i;
+        const unsigned char *data;
 
         if (!PACKET_get_net_2(pkt, &i)
                 || !PACKET_get_bytes(pkt, &data, i)) {
@@ -2467,6 +2388,7 @@ MSG_PROCESS_RETURN tls_process_client_key_exchange(SSL *s, PACKET *pkt)
         int Ttag, Tclass;
         long Tlen;
         long sess_key_len;
+        const unsigned char *data;
 
         /* Get our certificate private key */
         alg_a = s->s3->tmp.new_cipher->algorithm_auth;
@@ -2909,7 +2831,7 @@ MSG_PROCESS_RETURN tls_process_client_certificate(SSL *s, PACKET *pkt)
     s->session->peer_chain = sk;
     /*
      * Inconsistency alert: cert_chain does *not* include the peer's own
-     * certificate, while we do include it in s3_clnt.c
+     * certificate, while we do include it in statem_clnt.c
      */
     sk = NULL;
     ret = MSG_PROCESS_CONTINUE_READING;
@@ -2956,7 +2878,8 @@ int tls_construct_new_session_ticket(SSL *s)
     unsigned int hlen;
     SSL_CTX *tctx = s->initial_ctx;
     unsigned char iv[EVP_MAX_IV_LENGTH];
-    unsigned char key_name[16];
+    unsigned char key_name[TLSEXT_KEYNAME_LENGTH];
+    int iv_len;
 
     /* get session encoding length */
     slen_full = i2d_SSL_SESSION(s->session, NULL);
@@ -3006,13 +2929,14 @@ int tls_construct_new_session_ticket(SSL *s)
      * Grow buffer if need be: the length calculation is as
      * follows handshake_header_length +
      * 4 (ticket lifetime hint) + 2 (ticket length) +
-     * 16 (key name) + max_iv_len (iv length) +
-     * session_length + max_enc_block_size (max encrypted session
-     * length) + max_md_size (HMAC).
+     * sizeof(keyname) + max_iv_len (iv length) +
+     * max_enc_block_size (max encrypted session * length) +
+     * max_md_size (HMAC) + session_length.
      */
     if (!BUF_MEM_grow(s->init_buf,
-                      SSL_HM_HEADER_LENGTH(s) + 22 + EVP_MAX_IV_LENGTH +
-                      EVP_MAX_BLOCK_LENGTH + EVP_MAX_MD_SIZE + slen))
+                      SSL_HM_HEADER_LENGTH(s) + 6 + sizeof(key_name) +
+                      EVP_MAX_IV_LENGTH + EVP_MAX_BLOCK_LENGTH +
+                      EVP_MAX_MD_SIZE + slen))
         goto err;
 
     p = ssl_handshake_start(s);
@@ -3023,16 +2947,22 @@ int tls_construct_new_session_ticket(SSL *s)
     if (tctx->tlsext_ticket_key_cb) {
         if (tctx->tlsext_ticket_key_cb(s, key_name, iv, ctx, hctx, 1) < 0)
             goto err;
+        iv_len = EVP_CIPHER_CTX_iv_length(ctx);
     } else {
-        if (RAND_bytes(iv, 16) <= 0)
+        const EVP_CIPHER *cipher = EVP_aes_256_cbc();
+
+        iv_len = EVP_CIPHER_iv_length(cipher);
+        if (RAND_bytes(iv, iv_len) <= 0)
             goto err;
-        if (!EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL,
+        if (!EVP_EncryptInit_ex(ctx, cipher, NULL,
                                 tctx->tlsext_tick_aes_key, iv))
             goto err;
-        if (!HMAC_Init_ex(hctx, tctx->tlsext_tick_hmac_key, 16,
+        if (!HMAC_Init_ex(hctx, tctx->tlsext_tick_hmac_key,
+                          sizeof(tctx->tlsext_tick_hmac_key),
                           EVP_sha256(), NULL))
             goto err;
-        memcpy(key_name, tctx->tlsext_tick_key_name, 16);
+        memcpy(key_name, tctx->tlsext_tick_key_name,
+               sizeof(tctx->tlsext_tick_key_name));
     }
 
     /*
@@ -3046,11 +2976,11 @@ int tls_construct_new_session_ticket(SSL *s)
     p += 2;
     /* Output key name */
     macstart = p;
-    memcpy(p, key_name, 16);
-    p += 16;
+    memcpy(p, key_name, sizeof(key_name));
+    p += sizeof(key_name);
     /* output IV */
-    memcpy(p, iv, EVP_CIPHER_CTX_iv_length(ctx));
-    p += EVP_CIPHER_CTX_iv_length(ctx);
+    memcpy(p, iv, iv_len);
+    p += iv_len;
     /* Encrypt session data */
     if (!EVP_EncryptUpdate(ctx, p, &len, senc, slen))
         goto err;

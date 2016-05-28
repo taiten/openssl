@@ -4,7 +4,7 @@
 
 OPENSSL_malloc_init,
 OPENSSL_malloc, OPENSSL_zalloc, OPENSSL_realloc, OPENSSL_free,
-OPENSSL_clear_realloc, OPENSSL_clear_free, OPENSSL_cleanse
+OPENSSL_clear_realloc, OPENSSL_clear_free, OPENSSL_cleanse,
 CRYPTO_malloc, CRYPTO_zalloc, CRYPTO_realloc, CRYPTO_free,
 OPENSSL_strdup, OPENSSL_strndup,
 OPENSSL_memdup, OPENSSL_strlcpy, OPENSSL_strlcat,
@@ -94,10 +94,10 @@ before ultimately calling OPENSSL_free().
 
 OPENSSL_cleanse() fills B<ptr> of size B<len> with a string of 0's.
 Use OPENSSL_cleanse() with care if the memory is a mapping of a file.
-If the storage controller uses write compression, then its possible 
-that sensitive tail bytes will survive zeroization because the block of 
-zeros will be compressed. If the storage controller uses wear leveling, 
-then the old sensitive data will not be overwritten; rather, a block of 
+If the storage controller uses write compression, then its possible
+that sensitive tail bytes will survive zeroization because the block of
+zeros will be compressed. If the storage controller uses wear leveling,
+then the old sensitive data will not be overwritten; rather, a block of
 0's will be written at a new physical location.
 
 OPENSSL_strdup(), OPENSSL_strndup() and OPENSSL_memdup() are like the
@@ -194,5 +194,14 @@ with CRYPTO_set_mem_functions(), it's recommended to swap them all out
 at once.  I<This applies specially if OpenSSL was built with the
 configuration option> C<crypto-mdebug> I<enabled.  In case, swapping out
 only, say, the malloc() implementation is outright dangerous.>
+
+=head1 COPYRIGHT
+
+Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut

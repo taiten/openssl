@@ -1,66 +1,13 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 #include "e_os.h"
-
-/* We need to define this to get macros like S_IFBLK and S_IFCHR */
-#if !defined(OPENSSL_SYS_VXWORKS)
-# define _XOPEN_SOURCE 500
-#endif
 
 #include <errno.h>
 #include <stdio.h>
@@ -80,6 +27,29 @@
 #ifndef OPENSSL_NO_POSIX_IO
 # include <sys/stat.h>
 # include <fcntl.h>
+/*
+ * Following should not be needed, and we could have been stricter
+ * and demand S_IS*. But some systems just don't comply... Formally
+ * below macros are "anatomically incorrect", because normally they
+ * would look like ((m) & MASK == TYPE), but since MASK availability
+ * is as questionable, we settle for this poor-man fallback...
+ */
+# if !defined(S_ISBLK)
+#  if defined(_S_IFBLK)
+#   define S_ISBLK(m) ((m) & _S_IFBLK)
+#  elif defined(S_IFBLK)
+#   define S_ISBLK(m) ((m) & S_IFBLK)
+#  elif defined(_WIN32)
+#   define S_ISBLK(m) 0 /* no concept of block devices on Windows */
+#  endif
+# endif
+# if !defined(S_ISCHR)
+#  if defined(_S_IFCHR)
+#   define S_ISCHR(m) ((m) & _S_IFCHR)
+#  elif defined(S_IFCHR)
+#   define S_ISCHR(m) ((m) & S_IFCHR)
+#  endif
+# endif
 #endif
 
 #ifdef _WIN32
@@ -95,12 +65,45 @@
 
 #ifdef OPENSSL_SYS_VMS
 /*
- * This declaration is a nasty hack to get around vms' extension to fopen for
- * passing in sharing options being disabled by our /STANDARD=ANSI89
+ * Misc hacks needed for specific cases.
+ *
+ * __FILE_ptr32 is a type provided by DEC C headers (types.h specifically)
+ * to make sure the FILE* is a 32-bit pointer no matter what.  We know that
+ * stdio function return this type (a study of stdio.h proves it).
+ * Additionally, we create a similar char pointer type for the sake of
+ * vms_setbuf below.
  */
-static FILE *(*const vms_fopen)(const char *, const char *, ...) =
-    (FILE *(*)(const char *, const char *, ...))fopen;
+# if __INITIAL_POINTER_SIZE == 64
+#  pragma pointer_size save
+#  pragma pointer_size 32
+# endif
+typedef char *char_ptr32;
+# if __INITIAL_POINTER_SIZE == 64
+#  pragma pointer_size restore
+# endif
+
+/*
+ * On VMS, setbuf() will only take 32-bit pointers, and a compilation
+ * with /POINTER_SIZE=64 will give off a MAYLOSEDATA2 warning here.
+ * Since we know that the FILE* really is a 32-bit pointer expanded to
+ * 64 bits, we also know it's safe to convert it back to a 32-bit pointer.
+ * As for the buffer parameter, we only use NULL here, so that passes as
+ * well...
+ */
+static void vms_setbuf(FILE *fp, char *buf)
+{
+    setbuf((__FILE_ptr32)fp, (char_ptr32)buf);
+}
+/*
+ * This declaration is a nasty hack to get around vms' extension to fopen for
+ * passing in sharing options being disabled by /STANDARD=ANSI89
+ */
+static __FILE_ptr32 (*const vms_fopen)(const char *, const char *, ...) =
+    (__FILE_ptr32 (*)(const char *, const char *, ...))fopen;
 # define VMS_OPEN_ATTRS "shr=get,put,upd,del","ctx=bin,stm","rfm=stm","rat=none","mrs=0"
+
+# define fopen(fname,mode) vms_fopen((fname), (mode), VMS_OPEN_ATTRS)
+# define setbuf(fp,buf) vms_setbuf((fp), (buf))
 #endif
 
 #define RFILE ".rnd"
@@ -142,22 +145,18 @@ int RAND_load_file(const char *file, long bytes)
     if (bytes == 0)
         return (ret);
 
-#ifdef OPENSSL_SYS_VMS
-    in = vms_fopen(file, "rb", VMS_OPEN_ATTRS);
-#else
     in = fopen(file, "rb");
-#endif
     if (in == NULL)
         goto err;
-#if defined(S_IFBLK) && defined(S_IFCHR) && !defined(OPENSSL_NO_POSIX_IO)
-    if (sb.st_mode & (S_IFBLK | S_IFCHR)) {
+#if defined(S_ISBLK) && defined(S_ISCHR) && !defined(OPENSSL_NO_POSIX_IO)
+    if (S_ISBLK(sb.st_mode) || S_ISCHR(sb.st_mode)) {
         /*
          * this file is a device. we don't want read an infinite number of
          * bytes from a random device, nor do we want to use buffered I/O
          * because we will waste system entropy.
          */
         bytes = (bytes == -1) ? 2048 : bytes; /* ok, is 2048 enough? */
-        setbuf(stdin, NULL); /* don't do buffered reads */
+        setbuf(in, NULL); /* don't do buffered reads */
     }
 #endif
     for (;;) {
@@ -242,13 +241,10 @@ int RAND_write_file(const char *file)
      * rand file in a concurrent use situation.
      */
 
-    out = vms_fopen(file, "rb+", VMS_OPEN_ATTRS);
-    if (out == NULL)
-        out = vms_fopen(file, "wb", VMS_OPEN_ATTRS);
-#else
+    out = fopen(file, "rb+");
+#endif
     if (out == NULL)
         out = fopen(file, "wb");
-#endif
     if (out == NULL)
         goto err;
 

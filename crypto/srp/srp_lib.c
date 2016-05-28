@@ -1,61 +1,12 @@
 /*
- * Written by Christophe Renou (christophe.renou@edelweb.fr) with the
- * precious help of Peter Sylvester (peter.sylvester@edelweb.fr) for the
- * EdelKey project and contributed to the OpenSSL project 2004.
+ * Copyright 2011-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 2004 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 #ifndef OPENSSL_NO_SRP
 # include "internal/cryptlib.h"
 # include <openssl/sha.h>
@@ -153,8 +104,7 @@ BIGNUM *SRP_Calc_server_key(BIGNUM *A, BIGNUM *v, BIGNUM *u, BIGNUM *b,
     if (u == NULL || A == NULL || v == NULL || b == NULL || N == NULL)
         return NULL;
 
-    if ((bn_ctx = BN_CTX_new()) == NULL ||
-        (tmp = BN_new()) == NULL || (S = BN_new()) == NULL)
+    if ((bn_ctx = BN_CTX_new()) == NULL || (tmp = BN_new()) == NULL)
         goto err;
 
     /* S = (A*v**u) ** b */
@@ -163,8 +113,12 @@ BIGNUM *SRP_Calc_server_key(BIGNUM *A, BIGNUM *v, BIGNUM *u, BIGNUM *b,
         goto err;
     if (!BN_mod_mul(tmp, A, tmp, N, bn_ctx))
         goto err;
-    if (!BN_mod_exp(S, tmp, b, N, bn_ctx))
-        goto err;
+
+    S = BN_new();
+    if (S != NULL && !BN_mod_exp(S, tmp, b, N, bn_ctx)) {
+        BN_free(S);
+        S = NULL;
+    }
  err:
     BN_CTX_free(bn_ctx);
     BN_clear_free(tmp);
@@ -265,8 +219,7 @@ BIGNUM *SRP_Calc_client_key(BIGNUM *N, BIGNUM *B, BIGNUM *g, BIGNUM *x,
 
     if ((tmp = BN_new()) == NULL ||
         (tmp2 = BN_new()) == NULL ||
-        (tmp3 = BN_new()) == NULL ||
-        (K = BN_new()) == NULL)
+        (tmp3 = BN_new()) == NULL)
         goto err;
 
     if (!BN_mod_exp(tmp, g, x, N, bn_ctx))
@@ -277,12 +230,15 @@ BIGNUM *SRP_Calc_client_key(BIGNUM *N, BIGNUM *B, BIGNUM *g, BIGNUM *x,
         goto err;
     if (!BN_mod_sub(tmp, B, tmp2, N, bn_ctx))
         goto err;
-    if (!BN_mod_mul(tmp3, u, x, N, bn_ctx))
+    if (!BN_mul(tmp3, u, x, bn_ctx))
         goto err;
-    if (!BN_mod_add(tmp2, a, tmp3, N, bn_ctx))
+    if (!BN_add(tmp2, a, tmp3))
         goto err;
-    if (!BN_mod_exp(K, tmp, tmp2, N, bn_ctx))
-        goto err;
+    K = BN_new();
+    if (K != NULL && !BN_mod_exp(K, tmp, tmp2, N, bn_ctx)) {
+        BN_free(K);
+        K = NULL;
+    }
 
  err:
     BN_CTX_free(bn_ctx);

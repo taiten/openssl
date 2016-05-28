@@ -2,16 +2,15 @@
  OPENSSL INSTALLATION
  --------------------
 
- [This document describes installation on the main supported operating
-  systems, currently the Linux/Unix family, OpenVMS and Windows.
-  Installation on DOS (with djgpp), MacOS (before MacOS X)
-  is described in INSTALL.DJGPP or INSTALL.MacOS, respectively.]
+ [This document describes installation on all supported operating
+  systems (currently mainly the Linux/Unix family, OpenVMS and
+  Windows)]
 
  To install OpenSSL, you will need:
 
-  * make
-  * Perl 5 with core modules (please read README.PERL)
-  * The perl module Text::Template (please read README.PERL)
+  * A make implementation
+  * Perl 5 with core modules (please read NOTES.PERL)
+  * The perl module Text::Template (please read NOTES.PERL)
   * an ANSI C compiler
   * a development environment in the form of development libraries and C
     header files
@@ -21,7 +20,8 @@
  please read one of these:
 
   * NOTES.VMS (OpenVMS)
-  * NOTES.WIN (any Windows except for Windows CE)
+  * NOTES.WIN (any supported Windows)
+  * NOTES.DJGPP (DOS platform with DJGPP)
 
  Quick Start
  -----------
@@ -233,9 +233,6 @@
   no-rfc3779
                    Don't build support for RFC3779 ("X.509 Extensions for IP
                    Addresses and AS Identifiers")
-
-  no-sct
-                   ??
 
   sctp
                    Build support for SCTP
@@ -496,13 +493,11 @@
      malfunction with Perl).  You may want increased verbosity, that
      can be accomplished like this:
 
-       $ HARNESS_VERBOSE=yes make test                  # Unix
+       $ make VERBOSE=1 test                            # Unix
 
-       $ DEFINE HARNESS_VERBOSE YES
-       $ mms test                                       ! OpenVMS
+       $ mms /macro=(VERBOSE=1) test                    ! OpenVMS
 
-       $ set HARNESS_VERBOSE=yes
-       $ nmake test                                     # Windows
+       $ nmake VERBOSE=1 test                           # Windows
 
      If you want to run just one or a few specific tests, you can use
      the make variable TESTS to specify them, like this:
@@ -513,7 +508,7 @@
 
      And of course, you can combine (Unix example shown):
        
-       $ HARNESS_VERBOSE=yes make TESTS='test_rsa test_dsa' test
+       $ make VERBOSE=1 TESTS='test_rsa test_dsa' test
 
      You can find the list of available tests like this:
 

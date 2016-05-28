@@ -60,8 +60,8 @@ described in the L<d2i_X509(3)> manual page.
 The B<RSA> structure passed to the private key encoding functions should have
 all the PKCS#1 private key components present.
 
-The data encoded by the private key functions is unencrypted and therefore 
-offers no private key security. 
+The data encoded by the private key functions is unencrypted and therefore
+offers no private key security.
 
 The NET format functions are present to provide compatibility with certain very
 old software. This format has some severe security weaknesses and should be
@@ -71,8 +71,13 @@ avoided if possible.
 
 L<d2i_X509(3)>
 
-=head1 HISTORY
+=head1 COPYRIGHT
 
-TBA
+Copyright 2000-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut

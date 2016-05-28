@@ -1,3 +1,12 @@
+/*
+ * Copyright 1998-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
+ */
+
 /* NOCW */
 #include <stdio.h>
 #ifdef _OSD_POSIX
@@ -8,19 +17,6 @@
 #ifdef CHARSET_EBCDIC
 # include <openssl/ebcdic.h>
 #endif
-
-/*
- * This version of crypt has been developed from my MIT compatible DES
- * library. Eric Young (eay@cryptsoft.com)
- */
-
-/*
- * Modification by Jens Kupferschmidt (Cu) I have included directive PARA for
- * shared memory computers. I have included a directive LONGCRYPT to using
- * this routine to cipher passwords with more then 8 bytes like HP-UX 10.x it
- * used. The MAXPLEN definition is the maximum of length of password and can
- * changed. I have defined 24.
- */
 
 #include <openssl/crypto.h>
 #include "des_locl.h"

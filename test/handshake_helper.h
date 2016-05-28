@@ -1,11 +1,10 @@
 /*
  * Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL licenses, (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- * or in the file LICENSE in the source distribution.
  */
 
 #ifndef HEADER_HANDSHAKE_HELPER_H
@@ -30,6 +29,7 @@ typedef struct handshake_result {
 } HANDSHAKE_RESULT;
 
 /* Do a handshake and report some information about the result. */
-HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx);
+HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx,
+                              const SSL_TEST_CTX *test_ctx);
 
 #endif  /* HEADER_HANDSHAKE_HELPER_H */

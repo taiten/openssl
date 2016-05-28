@@ -1,58 +1,10 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 #include <stdio.h>
@@ -118,21 +70,28 @@ int RSA_set_method(RSA *rsa, const RSA_METHOD *meth)
 
 RSA *RSA_new_method(ENGINE *engine)
 {
-    RSA *ret;
+    RSA *ret = OPENSSL_zalloc(sizeof(*ret));
 
-    ret = OPENSSL_zalloc(sizeof(*ret));
     if (ret == NULL) {
         RSAerr(RSA_F_RSA_NEW_METHOD, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
+    ret->references = 1;
+    ret->lock = CRYPTO_THREAD_lock_new();
+    if (ret->lock == NULL) {
+        RSAerr(RSA_F_RSA_NEW_METHOD, ERR_R_MALLOC_FAILURE);
+        OPENSSL_free(ret);
+        return NULL;
+    }
+
     ret->meth = RSA_get_default_method();
 #ifndef OPENSSL_NO_ENGINE
+    ret->flags = ret->meth->flags & ~RSA_FLAG_NON_FIPS_ALLOW;
     if (engine) {
         if (!ENGINE_init(engine)) {
             RSAerr(RSA_F_RSA_NEW_METHOD, ERR_R_ENGINE_LIB);
-            OPENSSL_free(ret);
-            return NULL;
+            goto err;
         }
         ret->engine = engine;
     } else
@@ -141,39 +100,26 @@ RSA *RSA_new_method(ENGINE *engine)
         ret->meth = ENGINE_get_RSA(ret->engine);
         if (ret->meth == NULL) {
             RSAerr(RSA_F_RSA_NEW_METHOD, ERR_R_ENGINE_LIB);
-            ENGINE_finish(ret->engine);
-            OPENSSL_free(ret);
-            return NULL;
+            goto err;
         }
     }
 #endif
 
-    ret->references = 1;
     ret->flags = ret->meth->flags & ~RSA_FLAG_NON_FIPS_ALLOW;
     if (!CRYPTO_new_ex_data(CRYPTO_EX_INDEX_RSA, ret, &ret->ex_data)) {
-#ifndef OPENSSL_NO_ENGINE
-        ENGINE_finish(ret->engine);
-#endif
-        OPENSSL_free(ret);
-        return NULL;
-    }
-
-    ret->lock = CRYPTO_THREAD_lock_new();
-    if (ret->lock == NULL) {
-#ifndef OPENSSL_NO_ENGINE
-        ENGINE_finish(ret->engine);
-#endif
-        CRYPTO_free_ex_data(CRYPTO_EX_INDEX_RSA, ret, &ret->ex_data);
-        OPENSSL_free(ret);
-        return NULL;
+        goto err;
     }
 
     if ((ret->meth->init != NULL) && !ret->meth->init(ret)) {
-        RSA_free(ret);
-        ret = NULL;
+        RSAerr(RSA_F_RSA_NEW_METHOD, ERR_R_INIT_FAIL);
+        goto err;
     }
 
     return ret;
+
+err:
+    RSA_free(ret);
+    return NULL;
 }
 
 void RSA_free(RSA *r)
@@ -286,44 +232,79 @@ int RSA_security_bits(const RSA *rsa)
 
 int RSA_set0_key(RSA *r, BIGNUM *n, BIGNUM *e, BIGNUM *d)
 {
-    /* d is the private component and may be NULL */
-    if (n == NULL || e == NULL)
+    /* If the fields in r are NULL, the corresponding input
+     * parameters MUST be non-NULL for n and e.  d may be
+     * left NULL (in case only the public key is used).
+     *
+     * It is an error to give the results from get0 on r
+     * as input parameters.
+     */
+    if (n == r->n || e == r->e
+        || (r->d != NULL && d == r->d))
         return 0;
 
-    BN_free(r->n);
-    BN_free(r->e);
-    BN_free(r->d);
-    r->n = n;
-    r->e = e;
-    r->d = d;
+    if (n != NULL) {
+        BN_free(r->n);
+        r->n = n;
+    }
+    if (e != NULL) {
+        BN_free(r->e);
+        r->e = e;
+    }
+    if (d != NULL) {
+        BN_free(r->d);
+        r->d = d;
+    }
 
     return 1;
 }
 
 int RSA_set0_factors(RSA *r, BIGNUM *p, BIGNUM *q)
 {
-    if (p == NULL || q == NULL)
+    /* If the fields in r are NULL, the corresponding input
+     * parameters MUST be non-NULL.
+     *
+     * It is an error to give the results from get0 on r
+     * as input parameters.
+     */
+    if (p == r->p || q == r->q)
         return 0;
 
-    BN_free(r->p);
-    BN_free(r->q);
-    r->p = p;
-    r->q = q;
+    if (p != NULL) {
+        BN_free(r->p);
+        r->p = p;
+    }
+    if (q != NULL) {
+        BN_free(r->q);
+        r->q = q;
+    }
 
     return 1;
 }
 
 int RSA_set0_crt_params(RSA *r, BIGNUM *dmp1, BIGNUM *dmq1, BIGNUM *iqmp)
 {
-    if (dmp1 == NULL || dmq1 == NULL || iqmp == NULL)
+    /* If the fields in r are NULL, the corresponding input
+     * parameters MUST be non-NULL.
+     *
+     * It is an error to give the results from get0 on r
+     * as input parameters.
+     */
+    if (dmp1 == r->dmp1 || dmq1 == r->dmq1 || iqmp == r->iqmp)
         return 0;
 
-    BN_free(r->dmp1);
-    BN_free(r->dmq1);
-    BN_free(r->iqmp);
-    r->dmp1 = dmp1;
-    r->dmq1 = dmq1;
-    r->iqmp = iqmp;
+    if (dmp1 != NULL) {
+        BN_free(r->dmp1);
+        r->dmp1 = dmp1;
+    }
+    if (dmq1 != NULL) {
+        BN_free(r->dmq1);
+        r->dmq1 = dmq1;
+    }
+    if (iqmp != NULL) {
+        BN_free(r->iqmp);
+        r->iqmp = iqmp;
+    }
 
     return 1;
 }

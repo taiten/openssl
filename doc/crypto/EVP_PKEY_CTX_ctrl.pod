@@ -16,9 +16,9 @@ EVP_PKEY_CTX_set_ec_param_enc - algorithm specific control operations
  #include <openssl/evp.h>
 
  int EVP_PKEY_CTX_ctrl(EVP_PKEY_CTX *ctx, int keytype, int optype,
-				int cmd, int p1, void *p2);
+                                int cmd, int p1, void *p2);
  int EVP_PKEY_CTX_ctrl_str(EVP_PKEY_CTX *ctx, const char *type,
-						const char *value);
+                                                const char *value);
 
  #include <openssl/rsa.h>
 
@@ -140,5 +140,14 @@ L<EVP_PKEY_keygen(3)>
 =head1 HISTORY
 
 These functions were first added to OpenSSL 1.0.0.
+
+=head1 COPYRIGHT
+
+Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut

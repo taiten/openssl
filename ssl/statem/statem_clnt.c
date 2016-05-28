@@ -1,112 +1,12 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 /* ====================================================================
  * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
  *
@@ -341,9 +241,11 @@ int ossl_statem_client_read_transition(SSL *s, int mt)
         break;
 
     case TLS_ST_CW_FINISHED:
-        if (mt == SSL3_MT_NEWSESSION_TICKET && s->tlsext_ticket_expected) {
-            st->hand_state = TLS_ST_CR_SESSION_TICKET;
-            return 1;
+        if (s->tlsext_ticket_expected) {
+            if (mt == SSL3_MT_NEWSESSION_TICKET) {
+                st->hand_state = TLS_ST_CR_SESSION_TICKET;
+                return 1;
+            }
         } else if (mt == SSL3_MT_CHANGE_CIPHER_SPEC) {
             st->hand_state = TLS_ST_CR_CHANGE;
             return 1;
@@ -535,20 +437,9 @@ WORK_STATE ossl_statem_client_post_work(SSL *s, WORK_STATE wst)
 
     switch(st->hand_state) {
     case TLS_ST_CW_CLNT_HELLO:
-        if (SSL_IS_DTLS(s) && s->d1->cookie_len > 0 && statem_flush(s) != 1)
+        if (wst == WORK_MORE_A && statem_flush(s) != 1)
             return WORK_MORE_A;
-#ifndef OPENSSL_NO_SCTP
-        /* Disable buffering for SCTP */
-        if (!SSL_IS_DTLS(s) || !BIO_dgram_is_sctp(SSL_get_wbio(s))) {
-#endif
-            /*
-             * turn on buffering for the next lot of output
-             */
-            if (s->bbio != s->wbio)
-                s->wbio = BIO_push(s->bbio, s->wbio);
-#ifndef OPENSSL_NO_SCTP
-            }
-#endif
+
         if (SSL_IS_DTLS(s)) {
             /* Treat the next message as the first packet */
             s->first_packet = 1;
@@ -870,7 +761,7 @@ int tls_construct_client_hello(SSL *s)
      *      1. Client hello indicates TLS 1.2
      *      2. Server hello says TLS 1.0
      *      3. RSA encrypted premaster secret uses 1.2.
-     *      4. Handhaked proceeds using TLS 1.0.
+     *      4. Handshake proceeds using TLS 1.0.
      *      5. Server sends hello request to renegotiate.
      *      6. Client hello indicates TLS v1.0 as we now
      *         know that is maximum server supports.
@@ -1350,7 +1241,7 @@ MSG_PROCESS_RETURN tls_process_server_certificate(SSL *s, PACKET *pkt)
     s->session->peer_chain = sk;
     /*
      * Inconsistency alert: cert_chain does include the peer's certificate,
-     * which we don't include in s3_srvr.c
+     * which we don't include in statem_srvr.c
      */
     x = sk_X509_value(sk, 0);
     sk = NULL;
@@ -1525,9 +1416,10 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
 #ifndef OPENSSL_NO_DH
     else if (alg_k & (SSL_kDHE | SSL_kDHEPSK)) {
         PACKET prime, generator, pub_key;
+        EVP_PKEY *peer_tmp = NULL;
 
-        DH *dh;
-        BIGNUM *p, *g, *bnpub_key;
+        DH *dh = NULL;
+        BIGNUM *p = NULL, *g = NULL, *bnpub_key = NULL;
 
         if (!PACKET_get_length_prefixed_2(pkt, &prime)
             || !PACKET_get_length_prefixed_2(pkt, &generator)
@@ -1536,19 +1428,13 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
             goto f_err;
         }
 
-        s->s3->peer_tmp = EVP_PKEY_new();
+        peer_tmp = EVP_PKEY_new();
         dh = DH_new();
 
-        if (s->s3->peer_tmp == NULL || dh == NULL) {
+        if (peer_tmp == NULL || dh == NULL) {
+            al = SSL_AD_INTERNAL_ERROR;
             SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, ERR_R_MALLOC_FAILURE);
-            DH_free(dh);
-            goto err;
-        }
-
-        if (EVP_PKEY_assign_DH(s->s3->peer_tmp, dh) == 0) {
-            SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, ERR_R_EVP_LIB);
-            DH_free(dh);
-            goto err;
+            goto dherr;
         }
 
         p = BN_bin2bn(PACKET_data(&prime), PACKET_remaining(&prime), NULL);
@@ -1558,39 +1444,53 @@ MSG_PROCESS_RETURN tls_process_key_exchange(SSL *s, PACKET *pkt)
                               NULL);
         if (p == NULL || g == NULL || bnpub_key == NULL) {
             SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, ERR_R_BN_LIB);
-            BN_free(p);
-            BN_free(g);
-            BN_free(bnpub_key);
-            goto err;
+            goto dherr;
         }
 
         if (BN_is_zero(p) || BN_is_zero(g) || BN_is_zero(bnpub_key)) {
             SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, SSL_R_BAD_DH_VALUE);
-            BN_free(p);
-            BN_free(g);
-            BN_free(bnpub_key);
-            goto f_err;
+            goto dherr;
         }
 
         if (!DH_set0_pqg(dh, p, NULL, g)) {
+            al = SSL_AD_INTERNAL_ERROR;
             SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, ERR_R_BN_LIB);
-            BN_free(p);
-            BN_free(g);
-            BN_free(bnpub_key);
-            goto err;
+            goto dherr;
         }
 
         if (!DH_set0_key(dh, bnpub_key, NULL)) {
+            al = SSL_AD_INTERNAL_ERROR;
             SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, ERR_R_BN_LIB);
-            BN_free(bnpub_key);
-            goto err;
+            goto dherr;
         }
 
         if (!ssl_security(s, SSL_SECOP_TMP_DH, DH_security_bits(dh), 0, dh)) {
             al = SSL_AD_HANDSHAKE_FAILURE;
             SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, SSL_R_DH_KEY_TOO_SMALL);
-            goto f_err;
+            goto dherr;
         }
+
+        if (EVP_PKEY_assign_DH(peer_tmp, dh) == 0) {
+            al = SSL_AD_INTERNAL_ERROR;
+            SSLerr(SSL_F_TLS_PROCESS_KEY_EXCHANGE, ERR_R_EVP_LIB);
+            goto dherr;
+        }
+
+        s->s3->peer_tmp = peer_tmp;
+
+        goto dhend;
+ dherr:
+        BN_free(p);
+        BN_free(g);
+        BN_free(bnpub_key);
+        DH_free(dh);
+        EVP_PKEY_free(peer_tmp);
+        goto f_err;
+ dhend:
+        /*
+         * FIXME: This makes assumptions about which ciphersuites come with
+         * public keys. We should have a less ad-hoc way of doing this
+         */
         if (alg_a & (SSL_aRSA|SSL_aDSS))
             pkey = X509_get0_pubkey(s->session->peer);
         /* else anonymous DH, so no certificate or pkey. */
@@ -2538,6 +2438,9 @@ int tls_client_key_exchange_post_work(SSL *s)
     unsigned char *pms = NULL;
     size_t pmslen = 0;
 
+    pms = s->s3->tmp.pms;
+    pmslen = s->s3->tmp.pmslen;
+
 #ifndef OPENSSL_NO_SRP
     /* Check for SRP */
     if (s->s3->tmp.new_cipher->algorithm_mkey & SSL_kSRP) {
@@ -2549,8 +2452,6 @@ int tls_client_key_exchange_post_work(SSL *s)
         return 1;
     }
 #endif
-    pms = s->s3->tmp.pms;
-    pmslen = s->s3->tmp.pmslen;
 
     if (pms == NULL && !(s->s3->tmp.new_cipher->algorithm_mkey & SSL_kPSK)) {
         ssl3_send_alert(s, SSL3_AL_FATAL, SSL_AD_INTERNAL_ERROR);
@@ -2560,8 +2461,13 @@ int tls_client_key_exchange_post_work(SSL *s)
     if (!ssl_generate_master_secret(s, pms, pmslen, 1)) {
         ssl3_send_alert(s, SSL3_AL_FATAL, SSL_AD_INTERNAL_ERROR);
         SSLerr(SSL_F_TLS_CLIENT_KEY_EXCHANGE_POST_WORK, ERR_R_INTERNAL_ERROR);
+        /* ssl_generate_master_secret frees the pms even on error */
+        pms = NULL;
+        pmslen = 0;
         goto err;
     }
+    pms = NULL;
+    pmslen = 0;
 
 #ifndef OPENSSL_NO_SCTP
     if (SSL_IS_DTLS(s)) {

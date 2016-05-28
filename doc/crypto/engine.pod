@@ -444,7 +444,7 @@ boolean success or failure.
              ENGINE_free(e);
              return 0;
          }
-	 pre_cmds += 2;
+         pre_cmds += 2;
      }
      if(!ENGINE_init(e)) {
          fprintf(stderr, "Failed initialisation\n");
@@ -461,7 +461,7 @@ boolean success or failure.
              ENGINE_finish(e);
              return 0;
          }
-	 post_cmds += 2;
+         post_cmds += 2;
      }
      ENGINE_set_default(e, ENGINE_METHOD_ALL & ~ENGINE_METHOD_RAND);
      /* Success */
@@ -491,15 +491,15 @@ OpenSSL core routines.
 It is using these "core" control commands that one can discover the control
 commands implemented by a given ENGINE, specifically the commands;
 
- #define ENGINE_HAS_CTRL_FUNCTION		10
- #define ENGINE_CTRL_GET_FIRST_CMD_TYPE		11
- #define ENGINE_CTRL_GET_NEXT_CMD_TYPE		12
- #define ENGINE_CTRL_GET_CMD_FROM_NAME		13
- #define ENGINE_CTRL_GET_NAME_LEN_FROM_CMD	14
- #define ENGINE_CTRL_GET_NAME_FROM_CMD		15
- #define ENGINE_CTRL_GET_DESC_LEN_FROM_CMD	16
- #define ENGINE_CTRL_GET_DESC_FROM_CMD		17
- #define ENGINE_CTRL_GET_CMD_FLAGS		18
+ #define ENGINE_HAS_CTRL_FUNCTION               10
+ #define ENGINE_CTRL_GET_FIRST_CMD_TYPE         11
+ #define ENGINE_CTRL_GET_NEXT_CMD_TYPE          12
+ #define ENGINE_CTRL_GET_CMD_FROM_NAME          13
+ #define ENGINE_CTRL_GET_NAME_LEN_FROM_CMD      14
+ #define ENGINE_CTRL_GET_NAME_FROM_CMD          15
+ #define ENGINE_CTRL_GET_DESC_LEN_FROM_CMD      16
+ #define ENGINE_CTRL_GET_DESC_FROM_CMD          17
+ #define ENGINE_CTRL_GET_CMD_FLAGS              18
 
 Whilst these commands are automatically processed by the OpenSSL framework code,
 they use various properties exposed by each ENGINE to process these
@@ -535,10 +535,10 @@ or populate a supplied character buffer with a copy of the command name or
 description. ENGINE_CTRL_GET_FLAGS returns a bitwise-OR'd mask of the following
 possible values;
 
- #define ENGINE_CMD_FLAG_NUMERIC		(unsigned int)0x0001
- #define ENGINE_CMD_FLAG_STRING			(unsigned int)0x0002
- #define ENGINE_CMD_FLAG_NO_INPUT		(unsigned int)0x0004
- #define ENGINE_CMD_FLAG_INTERNAL		(unsigned int)0x0008
+ #define ENGINE_CMD_FLAG_NUMERIC                (unsigned int)0x0001
+ #define ENGINE_CMD_FLAG_STRING                 (unsigned int)0x0002
+ #define ENGINE_CMD_FLAG_NO_INPUT               (unsigned int)0x0004
+ #define ENGINE_CMD_FLAG_INTERNAL               (unsigned int)0x0008
 
 If the ENGINE_CMD_FLAG_INTERNAL flag is set, then any other flags are purely
 informational to the caller - this flag will prevent the command being usable
@@ -562,5 +562,14 @@ L<OPENSSL_init_crypto(3)>, L<rsa(3)>, L<dsa(3)>, L<dh(3)>, L<rand(3)>
 ENGINE_cleanup(), ENGINE_load_openssl(), ENGINE_load_dynamic(), and
 ENGINE_load_cryptodev() were deprecated in OpenSSL 1.1.0 by
 OPENSSL_init_crypto().
+
+=head1 COPYRIGHT
+
+Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut

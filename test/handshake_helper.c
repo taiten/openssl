@@ -1,16 +1,16 @@
 /*
  * Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL licenses, (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- * or in the file LICENSE in the source distribution.
  */
 
 #include <string.h>
 
 #include <openssl/bio.h>
+#include <openssl/x509_vfy.h>
 #include <openssl/ssl.h>
 
 #include "handshake_helper.h"
@@ -39,6 +39,37 @@ static void info_callback(const SSL *s, int where, int ret)
         }
     }
 }
+
+static int verify_reject_callback(X509_STORE_CTX *ctx, void *arg) {
+    X509_STORE_CTX_set_error(ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+    return 0;
+}
+
+static int verify_accept_callback(X509_STORE_CTX *ctx, void *arg) {
+    return 1;
+}
+
+/*
+ * Configure callbacks and other properties that can't be set directly
+ * in the server/client CONF.
+ */
+static void configure_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx,
+                                const SSL_TEST_CTX *test_ctx)
+{
+    switch (test_ctx->client_verify_callback) {
+    case SSL_TEST_VERIFY_ACCEPT_ALL:
+        SSL_CTX_set_cert_verify_callback(client_ctx, &verify_accept_callback,
+                                         NULL);
+        break;
+    case SSL_TEST_VERIFY_REJECT_ALL:
+        SSL_CTX_set_cert_verify_callback(client_ctx, &verify_reject_callback,
+                                         NULL);
+        break;
+    default:
+        break;
+    }
+}
+
 
 typedef enum {
     PEER_SUCCESS,
@@ -139,7 +170,8 @@ static handshake_status_t handshake_status(peer_status_t last_status,
     return INTERNAL_ERROR;
 }
 
-HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx)
+HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx,
+                              const SSL_TEST_CTX *test_ctx)
 {
     SSL *server, *client;
     BIO *client_to_server, *server_to_client;
@@ -148,6 +180,8 @@ HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx)
     int client_turn = 1;
     peer_status_t client_status = PEER_RETRY, server_status = PEER_RETRY;
     handshake_status_t status = HANDSHAKE_RETRY;
+
+    configure_handshake(server_ctx, client_ctx, test_ctx);
 
     server = SSL_new(server_ctx);
     client = SSL_new(client_ctx);

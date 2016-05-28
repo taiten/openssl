@@ -84,7 +84,12 @@ DEPS={- join(" ", map { (my $x = $_) =~ s|\.o$|$depext|; $x; }
                   grep { $unified_info{sources}->{$_}->[0] =~ /\.c$/ }
                   keys %{$unified_info{sources}}); -}
 {- output_on() if $disabled{makedepend}; "" -}
-GENERATED={- join(" ", map { (my $x = $_) =~ s|\.S$|\.s|; $x } keys %{$unified_info{generate}}) -}
+GENERATED={- join(" ",
+                  ( map { (my $x = $_) =~ s|\.S$|\.s|; $x }
+                    grep { defined $unified_info{generate}->{$_} }
+                    map { @{$unified_info{sources}->{$_}} }
+                    grep { /\.o$/ } keys %{$unified_info{sources}} ),
+                  ( grep { /\.h$/ } keys %{$unified_info{generate}} )) -}
 
 {- output_off() if $disabled{apps}; "" -}
 BIN_SCRIPTS=$(BLDDIR)/tools/c_rehash
@@ -169,10 +174,9 @@ LIB_LDFLAGS={- $target{shared_ldflag}." ".$config{shared_ldflag}
                # $prefix is not /usr.
                . ($config{target} =~ m|^BSD-| && $prefix !~ m|^/usr/.*$|
                   ? " -Wl,-rpath,\$\$(LIBRPATH)" : "") -}
-RCFLAGS={- $target{shared_rcflag} -}
 DSO_CFLAGS={- $target{shared_cflag} || "" -}
 DSO_LDFLAGS=$(LIB_LDFLAGS)
-BIN_CFLAGS={- "" -}
+BIN_CFLAGS={- $target{bin_cflags} -}
 
 PERL={- $config{perl} -}
 
@@ -180,6 +184,8 @@ ARFLAGS= {- $target{arflags} -}
 AR=$(CROSS_COMPILE){- $target{ar} || "ar" -} $(ARFLAGS) r
 RANLIB= {- $target{ranlib} -}
 NM= $(CROSS_COMPILE){- $target{nm} || "nm" -}
+RCFLAGS={- $target{shared_rcflag} -}
+RC= $(CROSS_COMPILE){- $target{rc} || "windres" -}
 RM= rm -f
 RMDIR= rmdir
 TAR= {- $target{tar} || "tar" -}
@@ -217,12 +223,14 @@ build_apps_nodep: $(PROGRAMS) $(SCRIPTS)
 build_tests: configdata.pm build_tests_nodep depend
 build_tests_nodep: $(TESTPROGS)
 
-test tests: build_tests_nodep build_apps_nodep build_engines_nodep \
-            depend link-utils
+test: tests
+tests: build_tests_nodep build_apps_nodep build_engines_nodep \
+       depend link-utils
 	@ : {- output_off() if $disabled{tests}; "" -}
 	( cd test; \
 	  SRCTOP=../$(SRCDIR) \
 	  BLDTOP=../$(BLDDIR) \
+	  PERL="$(PERL)" \
 	  EXE_EXT={- $exeext -} \
 	  OPENSSL_ENGINES=../$(BLDDIR)/engines \
 	    $(PERL) ../$(SRCDIR)/test/run_tests.pl $(TESTS) )
@@ -231,7 +239,7 @@ test tests: build_tests_nodep build_apps_nodep build_engines_nodep \
 	@ : {- output_on() if !$disabled{tests}; "" -}
 
 list-tests:
-	@TOP=$(SRCDIR) PERL=$(PERL) $(PERL) $(SRCDIR)/test/run_tests.pl list
+	@TOP="$(SRCDIR)" PERL="$(PERL)" $(PERL) $(SRCDIR)/test/run_tests.pl list
 
 libclean:
 	@set -e; for s in $(SHLIB_INFO); do \
@@ -258,7 +266,7 @@ clean: libclean
 	rm -f core
 	rm -f tags TAGS
 	rm -f openssl.pc libcrypto.pc libssl.pc
-	-rm -f `find . -type l`
+	-rm -f `find . -type l -a \! -path "./.git/*"`
 	rm -f $(TARFILE)
 
 # This exists solely for those who still type 'make depend'
@@ -526,6 +534,7 @@ PROCESS_PODS=\
 		SEC=`sed -ne 's/^=for  *comment  *openssl_manual_section: *\([0-9]\) *$$/\1/p' $$p`; \
 		[ -z "$$SEC" ] && SEC=$$defsec; \
 		fn=`basename $$p .pod`; \
+		Name=$$fn; \
 		NAME=`echo $$fn | tr [a-z] [A-Z]`; \
 		suf=`eval "echo $$OUTSUFFIX"`; \
 		top=`eval "echo $$OUTTOP"`; \
@@ -605,7 +614,7 @@ install_html_docs:
 	OUTSUFFIX='.$(HTMLSUFFIX)'; \
 	OUTTOP="$(DESTDIR)$(HTMLDIR)"; \
 	GENERATE="pod2html --podroot=$(SRCDIR)/doc --htmldir=.. \
-			   --podpath=apps:crypto:ssl \
+			   --podpath=apps:crypto:ssl --title=\$$Name \
 		  | sed -e 's|href=\"http://man.he.net/man|href=\"../man|g'"; \
 	$(PROCESS_PODS)
 
@@ -621,7 +630,8 @@ uninstall_html_docs:
 
 update: generate errors ordinals
 
-generate: generate_apps generate_crypto_bn generate_crypto_objects
+generate: generate_apps generate_crypto_bn generate_crypto_objects \
+          generate_crypto_conf generate_crypto_asn1
 
 # Test coverage is a good idea for the future
 #coverage: $(PROGRAMS) $(TESTPROGRAMS)
@@ -652,17 +662,25 @@ generate_crypto_bn:
 	( cd $(SRCDIR); $(PERL) crypto/bn/bn_prime.pl > crypto/bn/bn_prime.h )
 
 generate_crypto_objects:
-	( cd $(SRCDIR); $(PERL) crypto/objects/obj_dat.pl \
-				include/openssl/obj_mac.h \
-				crypto/objects/obj_dat.h )
 	( cd $(SRCDIR); $(PERL) crypto/objects/objects.pl \
 				crypto/objects/objects.txt \
 				crypto/objects/obj_mac.num \
 				include/openssl/obj_mac.h )
+	( cd $(SRCDIR); $(PERL) crypto/objects/obj_dat.pl \
+				include/openssl/obj_mac.h \
+				crypto/objects/obj_dat.h )
 	( cd $(SRCDIR); $(PERL) crypto/objects/objxref.pl \
 				crypto/objects/obj_mac.num \
 				crypto/objects/obj_xref.txt \
 				> crypto/objects/obj_xref.h )
+
+generate_crypto_conf:
+	( cd $(SRCDIR); $(PERL) crypto/conf/keysets.pl \
+			        > crypto/conf/conf_def.h )
+
+generate_crypto_asn1:
+	( cd $(SRCDIR); $(PERL) crypto/asn1/charmap.pl \
+			        > crypto/asn1/charmap.h )
 
 errors:
 	( cd $(SRCDIR); $(PERL) util/ck_errf.pl -strict */*.c */*/*.c )
@@ -807,19 +825,20 @@ configdata.pm: $(SRCDIR)/Configurations/unix-Makefile.tmpl $(SRCDIR)/Configurati
   sub generatesrc {
       my %args = @_;
       my $generator = join(" ", @{$args{generator}});
+      my $generator_incs = join("", map { " -I".$_ } @{$args{generator_incs}});
       my $incs = join("", map { " -I".$_ } @{$args{incs}});
-      my $deps = join(" ", @{$args{deps}});
+      my $deps = join(" ", @{$args{generator_deps}}, @{$args{deps}});
 
       if ($args{src} !~ /\.[sS]$/) {
           return <<"EOF";
 $args{src}: $args{generator}->[0] $deps
-	\$(PERL) $generator > \$@
+	\$(PERL)$generator_incs $generator > \$@
 EOF
       } else {
           if ($args{generator}->[0] =~ /\.pl$/) {
-              $generator = 'CC="$(CC)" $(PERL) '.$generator;
+              $generator = 'CC="$(CC)" $(PERL)'.$generator_incs.' '.$generator;
           } elsif ($args{generator}->[0] =~ /\.m4$/) {
-              $generator = 'm4 -B 8192 '.$generator.' >'
+              $generator = 'm4 -B 8192'.$generator_incs.' '.$generator.' >'
           } elsif ($args{generator}->[0] =~ /\.S$/) {
               $generator = undef;
           } else {
@@ -835,7 +854,9 @@ EOF
 $target: $args{generator}->[0] $deps
 	( trap "rm -f \$@.*" INT 0; \\
 	  $generator \$@.S; \\
-	  \$(CC) \$(CFLAGS) $incs -E -P \$@.S > \$@.i && mv -f \$@.i \$@ )
+	  \$(CC) \$(CFLAGS) $incs -E \$@.S | \\
+	  \$(PERL) -ne '/^#(line)?\\s*[0-9]+/ or print' > \$@.i && \\
+	  mv -f \$@.i \$@ )
 EOF
               }
               # Otherwise....
@@ -846,7 +867,8 @@ EOF
           }
           return <<"EOF";
 $args{src}: $args{generator}->[0] $deps
-	\$(CC) \$(CFLAGS) $incs -E -P \$< > \$@
+	\$(CC) \$(CFLAGS) $incs -E \$< | \\
+	\$(PERL) -ne '/^#(line)?\\s*[0-9]+/ or print' > \$@
 EOF
       }
   }
@@ -939,15 +961,15 @@ EOF
 $target: $lib$libext $deps $ordinalsfile
 	\$(MAKE) -f \$(SRCDIR)/Makefile.shared -e \\
 		PLATFORM=\$(PLATFORM) \\
-		PERL=\$(PERL) SRCDIR='\$(SRCDIR)' DSTDIR="$libd" \\
+		PERL="\$(PERL)" SRCDIR='\$(SRCDIR)' DSTDIR="$libd" \\
 		INSTALLTOP='\$(INSTALLTOP)' LIBDIR='\$(LIBDIR)' \\
 		LIBDEPS='\$(PLIB_LDFLAGS) '"$linklibs"' \$(EX_LIBS)' \\
 		LIBNAME=$libname LIBVERSION=\$(SHLIB_MAJOR).\$(SHLIB_MINOR) \\
 		LIBCOMPATVERSIONS=';\$(SHLIB_VERSION_HISTORY)' \\
 		CC='\$(CC)' CFLAGS='\$(CFLAGS) \$(LIB_CFLAGS)' \\
-		CROSS_COMPILE='\$(CROSS_COMPILE)' LDFLAGS='\$(LDFLAGS)' \\
+		LDFLAGS='\$(LDFLAGS)' \\
 		SHARED_LDFLAGS='\$(LIB_LDFLAGS)' SHLIB_EXT=$shlibext \\
-		SHARED_RCFLAGS='\$(RCFLAGS)' \\
+		RC='\$(RC)' SHARED_RCFLAGS='\$(RCFLAGS)' \\
 		link_shlib.$shlib_target
 EOF
 	  . (windowsdll() ? <<"EOF" : "");
@@ -975,7 +997,7 @@ EOF
 $target: $objs $deps
 	\$(MAKE) -f \$(SRCDIR)/Makefile.shared -e \\
 		PLATFORM=\$(PLATFORM) \\
-		PERL=\$(PERL) SRCDIR='\$(SRCDIR)' DSTDIR="$libd" \\
+		PERL="\$(PERL)" SRCDIR='\$(SRCDIR)' DSTDIR="$libd" \\
 		LIBDEPS='\$(PLIB_LDFLAGS) '"$shlibdeps"' \$(EX_LIBS)' \\
 		LIBNAME=$libname LDFLAGS='\$(LDFLAGS)' \\
 		CC='\$(CC)' CFLAGS='\$(CFLAGS) \$(DSO_CFLAGS)' \\
@@ -1012,7 +1034,7 @@ EOF
 $bin$exeext: $objs $deps
 	\$(RM) $bin$exeext
 	\$(MAKE) -f \$(SRCDIR)/Makefile.shared -e \\
-		PERL=\$(PERL) SRCDIR=\$(SRCDIR) \\
+		PERL="\$(PERL)" SRCDIR=\$(SRCDIR) \\
 		APPNAME=$bin$exeext OBJECTS="$objs" \\
 		LIBDEPS='\$(PLIB_LDFLAGS) '"$linklibs"' \$(EX_LIBS)' \\
 		CC='\$(CC)' CFLAGS='\$(CFLAGS) \$(BIN_CFLAGS)' \\
