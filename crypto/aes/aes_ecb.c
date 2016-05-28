@@ -1,4 +1,3 @@
-/* crypto/aes/aes_ecb.c */
 /* ====================================================================
  * Copyright (c) 1998-2002 The OpenSSL Project.  All rights reserved.
  *
@@ -49,11 +48,6 @@
  *
  */
 
-#ifndef AES_DEBUG
-# ifndef NDEBUG
-#  define NDEBUG
-# endif
-#endif
 #include <assert.h>
 
 #include <openssl/aes.h>

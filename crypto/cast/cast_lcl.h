@@ -1,4 +1,3 @@
-/* crypto/cast/cast_lcl.h */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -152,10 +151,8 @@
 
 #if defined(OPENSSL_SYS_WIN32) && defined(_MSC_VER)
 # define ROTL(a,n)     (_lrotl(a,n))
-#elif defined(PEDANTIC)
-# define ROTL(a,n)     ((((a)<<(n))&0xffffffffL)|((a)>>((32-(n))&31)))
 #else
-# define ROTL(a,n)     ((((a)<<(n))&0xffffffffL)|((a)>>(32-(n))))
+# define ROTL(a,n)     ((((a)<<(n))&0xffffffffL)|((a)>>((32-(n))&31)))
 #endif
 
 #define C_M    0x3fc

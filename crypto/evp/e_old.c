@@ -1,4 +1,3 @@
-/* crypto/evp/e_old.c */
 /*
  * Written by Richard Levitte (richard@levitte.org) for the OpenSSL project
  * 2004.
@@ -57,8 +56,9 @@
  *
  */
 
-#ifdef OPENSSL_NO_DEPRECATED
-static void *dummy = &dummy;
+#include <openssl/opensslconf.h>
+#if OPENSSL_API_COMPAT >= 0x00908000L
+NON_EMPTY_TRANSLATION_UNIT
 #else
 
 # include <openssl/evp.h>
@@ -138,27 +138,25 @@ const EVP_CIPHER *EVP_rc5_32_12_16_cfb(void)
 }
 # endif
 
-# ifndef OPENSSL_NO_AES
-#  undef EVP_aes_128_cfb
+# undef EVP_aes_128_cfb
 const EVP_CIPHER *EVP_aes_128_cfb(void);
 const EVP_CIPHER *EVP_aes_128_cfb(void)
 {
     return EVP_aes_128_cfb128();
 }
 
-#  undef EVP_aes_192_cfb
+# undef EVP_aes_192_cfb
 const EVP_CIPHER *EVP_aes_192_cfb(void);
 const EVP_CIPHER *EVP_aes_192_cfb(void)
 {
     return EVP_aes_192_cfb128();
 }
 
-#  undef EVP_aes_256_cfb
+# undef EVP_aes_256_cfb
 const EVP_CIPHER *EVP_aes_256_cfb(void);
 const EVP_CIPHER *EVP_aes_256_cfb(void)
 {
     return EVP_aes_256_cfb128();
 }
-# endif
 
 #endif

@@ -1,6 +1,5 @@
-/* crypto/x509/x509_err.c */
 /* ====================================================================
- * Copyright (c) 1999-2012 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1999-2016 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -70,11 +69,13 @@
 # define ERR_REASON(reason) ERR_PACK(ERR_LIB_X509,0,reason)
 
 static ERR_STRING_DATA X509_str_functs[] = {
-    {ERR_FUNC(X509_F_ADD_CERT_DIR), "ADD_CERT_DIR"},
-    {ERR_FUNC(X509_F_BY_FILE_CTRL), "BY_FILE_CTRL"},
-    {ERR_FUNC(X509_F_CHECK_POLICY), "CHECK_POLICY"},
-    {ERR_FUNC(X509_F_DIR_CTRL), "DIR_CTRL"},
-    {ERR_FUNC(X509_F_GET_CERT_BY_SUBJECT), "GET_CERT_BY_SUBJECT"},
+    {ERR_FUNC(X509_F_ADD_CERT_DIR), "add_cert_dir"},
+    {ERR_FUNC(X509_F_BUILD_CHAIN), "build_chain"},
+    {ERR_FUNC(X509_F_BY_FILE_CTRL), "by_file_ctrl"},
+    {ERR_FUNC(X509_F_CHECK_POLICY), "check_policy"},
+    {ERR_FUNC(X509_F_DANE_I2D), "dane_i2d"},
+    {ERR_FUNC(X509_F_DIR_CTRL), "dir_ctrl"},
+    {ERR_FUNC(X509_F_GET_CERT_BY_SUBJECT), "get_cert_by_subject"},
     {ERR_FUNC(X509_F_NETSCAPE_SPKI_B64_DECODE), "NETSCAPE_SPKI_b64_decode"},
     {ERR_FUNC(X509_F_NETSCAPE_SPKI_B64_ENCODE), "NETSCAPE_SPKI_b64_encode"},
     {ERR_FUNC(X509_F_X509AT_ADD1_ATTR), "X509at_add1_attr"},
@@ -109,7 +110,8 @@ static ERR_STRING_DATA X509_str_functs[] = {
     {ERR_FUNC(X509_F_X509_NAME_ONELINE), "X509_NAME_oneline"},
     {ERR_FUNC(X509_F_X509_NAME_PRINT), "X509_NAME_print"},
     {ERR_FUNC(X509_F_X509_PRINT_EX_FP), "X509_print_ex_fp"},
-    {ERR_FUNC(X509_F_X509_PUBKEY_GET), "X509_PUBKEY_get"},
+    {ERR_FUNC(X509_F_X509_PUBKEY_DECODE), "x509_pubkey_decode"},
+    {ERR_FUNC(X509_F_X509_PUBKEY_GET0), "X509_PUBKEY_get0"},
     {ERR_FUNC(X509_F_X509_PUBKEY_SET), "X509_PUBKEY_set"},
     {ERR_FUNC(X509_F_X509_REQ_CHECK_PRIVATE_KEY),
      "X509_REQ_check_private_key"},
@@ -124,6 +126,8 @@ static ERR_STRING_DATA X509_str_functs[] = {
     {ERR_FUNC(X509_F_X509_STORE_CTX_NEW), "X509_STORE_CTX_new"},
     {ERR_FUNC(X509_F_X509_STORE_CTX_PURPOSE_INHERIT),
      "X509_STORE_CTX_purpose_inherit"},
+    {ERR_FUNC(X509_F_X509_STORE_GET_X509_BY_SUBJECT),
+     "X509_STORE_get_X509_by_subject"},
     {ERR_FUNC(X509_F_X509_TO_X509_REQ), "X509_to_X509_REQ"},
     {ERR_FUNC(X509_F_X509_TRUST_ADD), "X509_TRUST_add"},
     {ERR_FUNC(X509_F_X509_TRUST_SET), "X509_TRUST_set"},
@@ -133,6 +137,7 @@ static ERR_STRING_DATA X509_str_functs[] = {
 
 static ERR_STRING_DATA X509_str_reasons[] = {
     {ERR_REASON(X509_R_AKID_MISMATCH), "akid mismatch"},
+    {ERR_REASON(X509_R_BAD_SELECTOR), "bad selector"},
     {ERR_REASON(X509_R_BAD_X509_FILETYPE), "bad x509 filetype"},
     {ERR_REASON(X509_R_BASE64_DECODE_ERROR), "base64 decode error"},
     {ERR_REASON(X509_R_CANT_CHECK_DH_KEY), "cant check dh key"},
@@ -151,7 +156,6 @@ static ERR_STRING_DATA X509_str_reasons[] = {
     {ERR_REASON(X509_R_LOADING_CERT_DIR), "loading cert dir"},
     {ERR_REASON(X509_R_LOADING_DEFAULTS), "loading defaults"},
     {ERR_REASON(X509_R_METHOD_NOT_SUPPORTED), "method not supported"},
-    {ERR_REASON(X509_R_NAME_TOO_LONG), "name too long"},
     {ERR_REASON(X509_R_NEWER_CRL_NOT_NEWER), "newer crl not newer"},
     {ERR_REASON(X509_R_NO_CERT_SET_FOR_US_TO_VERIFY),
      "no cert set for us to verify"},

@@ -1,4 +1,3 @@
-/* crypto/bio/bf_null.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -58,8 +57,8 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include "cryptlib.h"
-#include <openssl/bio.h>
+#include "bio_lcl.h"
+#include "internal/cryptlib.h"
 
 /*
  * BIO_put and BIO_get both add to the digest, BIO_gets returns the digest
@@ -73,7 +72,7 @@ static long nullf_ctrl(BIO *h, int cmd, long arg1, void *arg2);
 static int nullf_new(BIO *h);
 static int nullf_free(BIO *data);
 static long nullf_callback_ctrl(BIO *h, int cmd, bio_info_cb *fp);
-static BIO_METHOD methods_nullf = {
+static const BIO_METHOD methods_nullf = {
     BIO_TYPE_NULL_FILTER,
     "NULL filter",
     nullf_write,
@@ -86,7 +85,7 @@ static BIO_METHOD methods_nullf = {
     nullf_callback_ctrl,
 };
 
-BIO_METHOD *BIO_f_null(void)
+const BIO_METHOD *BIO_f_null(void)
 {
     return (&methods_nullf);
 }

@@ -1,4 +1,3 @@
-/* crypto/asn1/d2i_pr.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -57,16 +56,15 @@
  */
 
 #include <stdio.h>
-#include "cryptlib.h"
+#include "internal/cryptlib.h"
 #include <openssl/bn.h>
 #include <openssl/evp.h>
 #include <openssl/objects.h>
-#ifndef OPENSSL_NO_ENGINE
-# include <openssl/engine.h>
-#endif
+#include <openssl/engine.h>
 #include <openssl/x509.h>
 #include <openssl/asn1.h>
-#include "asn1_locl.h"
+#include "internal/asn1_int.h"
+#include "internal/evp_int.h"
 
 EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, const unsigned char **pp,
                          long length)
@@ -82,10 +80,8 @@ EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, const unsigned char **pp,
     } else {
         ret = *a;
 #ifndef OPENSSL_NO_ENGINE
-        if (ret->engine) {
-            ENGINE_finish(ret->engine);
-            ret->engine = NULL;
-        }
+        ENGINE_finish(ret->engine);
+        ret->engine = NULL;
 #endif
     }
 
@@ -116,7 +112,7 @@ EVP_PKEY *d2i_PrivateKey(int type, EVP_PKEY **a, const unsigned char **pp,
         (*a) = ret;
     return (ret);
  err:
-    if ((ret != NULL) && ((a == NULL) || (*a != ret)))
+    if (a == NULL || *a != ret)
         EVP_PKEY_free(ret);
     return (NULL);
 }

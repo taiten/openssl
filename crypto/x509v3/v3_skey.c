@@ -1,4 +1,3 @@
-/* v3_skey.c */
 /*
  * Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL project
  * 1999.
@@ -58,8 +57,10 @@
  */
 
 #include <stdio.h>
-#include "cryptlib.h"
+#include "internal/cryptlib.h"
 #include <openssl/x509v3.h>
+#include "internal/x509_int.h"
+#include "ext_dat.h"
 
 static ASN1_OCTET_STRING *s2i_skey_id(X509V3_EXT_METHOD *method,
                                       X509V3_CTX *ctx, char *str);
@@ -74,7 +75,7 @@ const X509V3_EXT_METHOD v3_skey_id = {
 
 char *i2s_ASN1_OCTET_STRING(X509V3_EXT_METHOD *method, ASN1_OCTET_STRING *oct)
 {
-    return hex_to_string(oct->data, oct->length);
+    return OPENSSL_buf2hexstr(oct->data, oct->length);
 }
 
 ASN1_OCTET_STRING *s2i_ASN1_OCTET_STRING(X509V3_EXT_METHOD *method,
@@ -83,13 +84,13 @@ ASN1_OCTET_STRING *s2i_ASN1_OCTET_STRING(X509V3_EXT_METHOD *method,
     ASN1_OCTET_STRING *oct;
     long length;
 
-    if (!(oct = M_ASN1_OCTET_STRING_new())) {
+    if ((oct = ASN1_OCTET_STRING_new()) == NULL) {
         X509V3err(X509V3_F_S2I_ASN1_OCTET_STRING, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 
-    if (!(oct->data = string_to_hex(str, &length))) {
-        M_ASN1_OCTET_STRING_free(oct);
+    if ((oct->data = OPENSSL_hexstr2buf(str, &length)) == NULL) {
+        ASN1_OCTET_STRING_free(oct);
         return NULL;
     }
 
@@ -103,14 +104,16 @@ static ASN1_OCTET_STRING *s2i_skey_id(X509V3_EXT_METHOD *method,
                                       X509V3_CTX *ctx, char *str)
 {
     ASN1_OCTET_STRING *oct;
-    ASN1_BIT_STRING *pk;
+    X509_PUBKEY *pubkey;
+    const unsigned char *pk;
+    int pklen;
     unsigned char pkey_dig[EVP_MAX_MD_SIZE];
     unsigned int diglen;
 
     if (strcmp(str, "hash"))
         return s2i_ASN1_OCTET_STRING(method, ctx, str);
 
-    if (!(oct = M_ASN1_OCTET_STRING_new())) {
+    if ((oct = ASN1_OCTET_STRING_new()) == NULL) {
         X509V3err(X509V3_F_S2I_SKEY_ID, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
@@ -124,20 +127,21 @@ static ASN1_OCTET_STRING *s2i_skey_id(X509V3_EXT_METHOD *method,
     }
 
     if (ctx->subject_req)
-        pk = ctx->subject_req->req_info->pubkey->public_key;
+        pubkey = ctx->subject_req->req_info.pubkey;
     else
-        pk = ctx->subject_cert->cert_info->key->public_key;
+        pubkey = ctx->subject_cert->cert_info.key;
 
-    if (!pk) {
+    if (pubkey == NULL) {
         X509V3err(X509V3_F_S2I_SKEY_ID, X509V3_R_NO_PUBLIC_KEY);
         goto err;
     }
 
-    if (!EVP_Digest
-        (pk->data, pk->length, pkey_dig, &diglen, EVP_sha1(), NULL))
+    X509_PUBKEY_get0_param(NULL, &pk, &pklen, NULL, pubkey);
+
+    if (!EVP_Digest(pk, pklen, pkey_dig, &diglen, EVP_sha1(), NULL))
         goto err;
 
-    if (!M_ASN1_OCTET_STRING_set(oct, pkey_dig, diglen)) {
+    if (!ASN1_OCTET_STRING_set(oct, pkey_dig, diglen)) {
         X509V3err(X509V3_F_S2I_SKEY_ID, ERR_R_MALLOC_FAILURE);
         goto err;
     }
@@ -145,6 +149,6 @@ static ASN1_OCTET_STRING *s2i_skey_id(X509V3_EXT_METHOD *method,
     return oct;
 
  err:
-    M_ASN1_OCTET_STRING_free(oct);
+    ASN1_OCTET_STRING_free(oct);
     return NULL;
 }

@@ -1,3 +1,34 @@
+openssl (1.1.0~pre5-1) experimental; urgency=medium
+
+  * New upstream version with soname change.  Upload to experimental.
+    - Rename binary packages
+    - Remove patches:
+      - block_diginotar.patch: All cross certificates expired in 2013
+      - block_digicert_malaysia.patch: intermediate certificates expired in
+        2015
+      - man-dir.patch: Fixed upstream
+      - valgrind.patch: Upstream no longer adds the uninitialized data to the
+        RNG
+      - shared-lib-ext.patch: No longer needed
+      - version-script.patch: Upstream does symbol versioning itself now
+      - disable_freelist.patch: No longer needed
+      - soname.patch: Was to change to the 1.0.2 soname that upstream never had
+      - disable_sslv3_test.patch: Fixed upstream
+      - libdoc-manpgs-pod-spell.patch: Fixed upstream (Closes: #813191)
+    - Rewrite debian-targets.patch to work with the new configuration system.
+    - Update other patches to apply
+    - Update list of install docs
+    - Use DESTDIR instead of INSTALL_PREFIX
+    - Clean up more files
+    - Remove the configure option enable-tlsext no-ssl2 since they're no
+      longer supported.
+  * Add upstream snapshot:
+    - Add d2i-tests.tar to get new binary test files.
+  * Don't build i686 optimized version anymore on i386, it's now the default.
+    (Closes: #823774)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 28 May 2016 20:58:31 +0200
+
 openssl (1.0.2h-1) unstable; urgency=high
 
   * New upstream version

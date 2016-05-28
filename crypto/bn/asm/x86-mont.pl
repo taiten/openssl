@@ -30,6 +30,9 @@ $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 push(@INC,"${dir}","${dir}../../perlasm");
 require "x86asm.pl";
 
+$output = pop;
+open STDOUT,">$output";
+ 
 &asm_init($ARGV[0],$0);
 
 $sse2=0;
@@ -85,7 +88,9 @@ $frame=32;				# size of above frame rounded up to 16n
 
 	&and	("esp",-64);		# align to cache line
 
-	# Some OSes, *cough*-dows, insist on stack being "wired" to
+	# An OS-agnostic version of __chkstk.
+	#
+	# Some OSes (Windows) insist on stack being "wired" to
 	# physical memory in strictly sequential manner, i.e. if stack
 	# allocation spans two pages, then reference to farmost one can
 	# be punishable by SEGV. But page walking can do good even on
@@ -606,3 +611,5 @@ $sbit=$num;
 &asciz("Montgomery Multiplication for x86, CRYPTOGAMS by <appro\@openssl.org>");
 
 &asm_finish();
+
+close STDOUT;

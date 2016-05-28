@@ -1,4 +1,3 @@
-/* crypto/evp/names.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -57,10 +56,11 @@
  */
 
 #include <stdio.h>
-#include "cryptlib.h"
+#include "internal/cryptlib.h"
 #include <openssl/evp.h>
-#include <openssl/objects.h>
+#include <internal/objects.h>
 #include <openssl/x509.h>
+#include "internal/evp_int.h"
 
 int EVP_add_cipher(const EVP_CIPHER *c)
 {
@@ -69,13 +69,10 @@ int EVP_add_cipher(const EVP_CIPHER *c)
     if (c == NULL)
         return 0;
 
-    OPENSSL_init();
-
     r = OBJ_NAME_add(OBJ_nid2sn(c->nid), OBJ_NAME_TYPE_CIPHER_METH,
                      (const char *)c);
     if (r == 0)
         return (0);
-    check_defer(c->nid);
     r = OBJ_NAME_add(OBJ_nid2ln(c->nid), OBJ_NAME_TYPE_CIPHER_METH,
                      (const char *)c);
     return (r);
@@ -85,13 +82,11 @@ int EVP_add_digest(const EVP_MD *md)
 {
     int r;
     const char *name;
-    OPENSSL_init();
 
     name = OBJ_nid2sn(md->type);
     r = OBJ_NAME_add(name, OBJ_NAME_TYPE_MD_METH, (const char *)md);
     if (r == 0)
         return (0);
-    check_defer(md->type);
     r = OBJ_NAME_add(OBJ_nid2ln(md->type), OBJ_NAME_TYPE_MD_METH,
                      (const char *)md);
     if (r == 0)
@@ -102,7 +97,6 @@ int EVP_add_digest(const EVP_MD *md)
                          OBJ_NAME_TYPE_MD_METH | OBJ_NAME_ALIAS, name);
         if (r == 0)
             return (0);
-        check_defer(md->pkey_type);
         r = OBJ_NAME_add(OBJ_nid2ln(md->pkey_type),
                          OBJ_NAME_TYPE_MD_METH | OBJ_NAME_ALIAS, name);
     }
@@ -113,6 +107,9 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name)
 {
     const EVP_CIPHER *cp;
 
+    if (!OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS, NULL))
+        return NULL;
+
     cp = (const EVP_CIPHER *)OBJ_NAME_get(name, OBJ_NAME_TYPE_CIPHER_METH);
     return (cp);
 }
@@ -121,11 +118,14 @@ const EVP_MD *EVP_get_digestbyname(const char *name)
 {
     const EVP_MD *cp;
 
+    if (!OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_DIGESTS, NULL))
+        return NULL;
+
     cp = (const EVP_MD *)OBJ_NAME_get(name, OBJ_NAME_TYPE_MD_METH);
     return (cp);
 }
 
-void EVP_cleanup(void)
+void evp_cleanup_int(void)
 {
     OBJ_NAME_cleanup(OBJ_NAME_TYPE_CIPHER_METH);
     OBJ_NAME_cleanup(OBJ_NAME_TYPE_MD_METH);
@@ -137,10 +137,6 @@ void EVP_cleanup(void)
     OBJ_NAME_cleanup(-1);
 
     EVP_PBE_cleanup();
-    if (obj_cleanup_defer == 2) {
-        obj_cleanup_defer = 0;
-        OBJ_cleanup();
-    }
     OBJ_sigid_free();
 }
 
@@ -164,6 +160,10 @@ void EVP_CIPHER_do_all(void (*fn) (const EVP_CIPHER *ciph,
                        void *arg)
 {
     struct doall_cipher dc;
+
+    /* Ignore errors */
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS, NULL);
+
     dc.fn = fn;
     dc.arg = arg;
     OBJ_NAME_do_all(OBJ_NAME_TYPE_CIPHER_METH, do_all_cipher_fn, &dc);
@@ -174,6 +174,10 @@ void EVP_CIPHER_do_all_sorted(void (*fn) (const EVP_CIPHER *ciph,
                                           void *x), void *arg)
 {
     struct doall_cipher dc;
+
+    /* Ignore errors */
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS, NULL);
+
     dc.fn = fn;
     dc.arg = arg;
     OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_CIPHER_METH, do_all_cipher_fn, &dc);
@@ -199,6 +203,10 @@ void EVP_MD_do_all(void (*fn) (const EVP_MD *md,
                    void *arg)
 {
     struct doall_md dc;
+
+    /* Ignore errors */
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
+
     dc.fn = fn;
     dc.arg = arg;
     OBJ_NAME_do_all(OBJ_NAME_TYPE_MD_METH, do_all_md_fn, &dc);
@@ -209,6 +217,9 @@ void EVP_MD_do_all_sorted(void (*fn) (const EVP_MD *md,
                                       void *x), void *arg)
 {
     struct doall_md dc;
+
+    OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_DIGESTS, NULL);
+
     dc.fn = fn;
     dc.arg = arg;
     OBJ_NAME_do_all_sorted(OBJ_NAME_TYPE_MD_METH, do_all_md_fn, &dc);

@@ -1767,7 +1767,7 @@ ___
 {	# __rsaz_512_mul
 	#
 	# input: %rsi - ap, %rbp - bp
-	# ouput:
+	# output:
 	# clobbers: everything
 my ($ap,$bp) = ("%rsi","%rbp");
 $code.=<<___;
@@ -1919,7 +1919,7 @@ if ($addx) {
 	# __rsaz_512_mulx
 	#
 	# input: %rsi - ap, %rbp - bp
-	# ouput:
+	# output:
 	# clobbers: everything
 my ($ap,$bp,$zero) = ("%rsi","%rbp","%rdi");
 $code.=<<___;

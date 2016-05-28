@@ -52,13 +52,6 @@
 #include "modes_lcl.h"
 #include <string.h>
 
-#ifndef MODES_DEBUG
-# ifndef NDEBUG
-#  define NDEBUG
-# endif
-#endif
-#include <assert.h>
-
 /*
  * NOTE: the IV/counter CTR mode is big-endian.  The code itself is
  * endian-neutral.
@@ -113,7 +106,7 @@ static void ctr128_inc_aligned(unsigned char *counter)
  * before the first call to CRYPTO_ctr128_encrypt(). This algorithm assumes
  * that the counter is in the x lower bits of the IV (ivec), and that the
  * application has full control over overflow and the rest of the IV.  This
- * implementation takes NO responsability for checking that the counter
+ * implementation takes NO responsibility for checking that the counter
  * doesn't overflow into the rest of the IV when incremented.
  */
 void CRYPTO_ctr128_encrypt(const unsigned char *in, unsigned char *out,
@@ -124,9 +117,6 @@ void CRYPTO_ctr128_encrypt(const unsigned char *in, unsigned char *out,
 {
     unsigned int n;
     size_t l = 0;
-
-    assert(in && out && key && ecount_buf && num);
-    assert(*num < 16);
 
     n = *num;
 
@@ -203,9 +193,6 @@ void CRYPTO_ctr128_encrypt_ctr32(const unsigned char *in, unsigned char *out,
 {
     unsigned int n, ctr32;
 
-    assert(in && out && key && ecount_buf && num);
-    assert(*num < 16);
-
     n = *num;
 
     while (n && len) {
@@ -238,7 +225,7 @@ void CRYPTO_ctr128_encrypt_ctr32(const unsigned char *in, unsigned char *out,
         (*func) (in, out, blocks, key, ivec);
         /* (*ctr) does not update ivec, caller does: */
         PUTU32(ivec + 12, ctr32);
-        /* ... overflow was detected, propogate carry. */
+        /* ... overflow was detected, propagate carry. */
         if (ctr32 == 0)
             ctr96_inc(ivec);
         blocks *= 16;

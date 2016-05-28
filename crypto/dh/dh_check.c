@@ -1,4 +1,3 @@
-/* crypto/dh/dh_check.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -57,9 +56,9 @@
  */
 
 #include <stdio.h>
-#include "cryptlib.h"
+#include "internal/cryptlib.h"
 #include <openssl/bn.h>
-#include <openssl/dh.h>
+#include "dh_locl.h"
 
 /*-
  * Check that p is a safe prime and
@@ -116,15 +115,7 @@ int DH_check(const DH *dh, int *ret)
         l = BN_mod_word(dh->p, 24);
         if (l != 11)
             *ret |= DH_NOT_SUITABLE_GENERATOR;
-    }
-#if 0
-    else if (BN_is_word(dh->g, DH_GENERATOR_3)) {
-        l = BN_mod_word(dh->p, 12);
-        if (l != 5)
-            *ret |= DH_NOT_SUITABLE_GENERATOR;
-    }
-#endif
-    else if (BN_is_word(dh->g, DH_GENERATOR_5)) {
+    } else if (BN_is_word(dh->g, DH_GENERATOR_5)) {
         l = BN_mod_word(dh->p, 10);
         if ((l != 3) && (l != 7))
             *ret |= DH_NOT_SUITABLE_GENERATOR;

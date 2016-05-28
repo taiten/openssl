@@ -1,4 +1,3 @@
-/* crypto/idea/i_ofb64.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -64,7 +63,7 @@
  * The extra state information to record how much of the 64bit block we have
  * used is contained in *num;
  */
-void idea_ofb64_encrypt(const unsigned char *in, unsigned char *out,
+void IDEA_ofb64_encrypt(const unsigned char *in, unsigned char *out,
                         long length, IDEA_KEY_SCHEDULE *schedule,
                         unsigned char *ivec, int *num)
 {
@@ -87,7 +86,7 @@ void idea_ofb64_encrypt(const unsigned char *in, unsigned char *out,
     l2n(v1, dp);
     while (l--) {
         if (n == 0) {
-            idea_encrypt((unsigned long *)ti, schedule);
+            IDEA_encrypt((unsigned long *)ti, schedule);
             dp = (char *)d;
             t = ti[0];
             l2n(t, dp);

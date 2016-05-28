@@ -2,7 +2,10 @@
 
 =head1 NAME
 
-X509_STORE_CTX_get_error, X509_STORE_CTX_set_error, X509_STORE_CTX_get_error_depth, X509_STORE_CTX_get_current_cert, X509_STORE_CTX_get1_chain, X509_verify_cert_error_string - get or set certificate verification status information
+X509_STORE_CTX_get_error, X509_STORE_CTX_set_error,
+X509_STORE_CTX_get_error_depth, X509_STORE_CTX_get_current_cert,
+X509_STORE_CTX_get0_cert,
+X509_STORE_CTX_get1_chain, X509_verify_cert_error_string - get or set certificate verification status information
 
 =head1 SYNOPSIS
 
@@ -13,6 +16,7 @@ X509_STORE_CTX_get_error, X509_STORE_CTX_set_error, X509_STORE_CTX_get_error_dep
  void	X509_STORE_CTX_set_error(X509_STORE_CTX *ctx,int s);
  int	X509_STORE_CTX_get_error_depth(X509_STORE_CTX *ctx);
  X509 *	X509_STORE_CTX_get_current_cert(X509_STORE_CTX *ctx);
+ X509 *	X509_STORE_CTX_get0_cert(X509_STORE_CTX *ctx);
 
  STACK_OF(X509) *X509_STORE_CTX_get1_chain(X509_STORE_CTX *ctx);
 
@@ -35,6 +39,8 @@ non-negative integer representing where in the certificate chain the error
 occurred. If it is zero it occurred in the end entity certificate, one if
 it is the certificate which signed the end entity certificate and so on.
 
+X509_STORE_CTX_get0_cert() returns the leaf certificate being verified.
+
 X509_STORE_CTX_get_current_cert() returns the certificate in B<ctx> which
 caused the error or B<NULL> if no certificate is relevant.
 
@@ -55,7 +61,7 @@ X509_STORE_CTX_get_error() returns B<X509_V_OK> or an error code.
 
 X509_STORE_CTX_get_error_depth() returns a non-negative error depth.
 
-X509_STORE_CTX_get_current_cert() returns the cerificate which caused the
+X509_STORE_CTX_get_current_cert() returns the certificate which caused the
 error or B<NULL> if no certificate is relevant to the error.
 
 X509_verify_cert_error_string() returns a human readable error string for
@@ -296,7 +302,7 @@ thread safe but will never happen unless an invalid code is passed.
 
 =head1 SEE ALSO
 
-L<X509_verify_cert(3)|X509_verify_cert(3)>
+L<X509_verify_cert(3)>
 
 =head1 HISTORY
 

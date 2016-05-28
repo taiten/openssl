@@ -1,6 +1,5 @@
-/* crypto/cpt_err.c */
 /* ====================================================================
- * Copyright (c) 1999-2011 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1999-2016 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -70,23 +69,32 @@
 # define ERR_REASON(reason) ERR_PACK(ERR_LIB_CRYPTO,0,reason)
 
 static ERR_STRING_DATA CRYPTO_str_functs[] = {
+    {ERR_FUNC(CRYPTO_F_CRYPTO_DUP_EX_DATA), "CRYPTO_dup_ex_data"},
+    {ERR_FUNC(CRYPTO_F_CRYPTO_FREE_EX_DATA), "CRYPTO_free_ex_data"},
     {ERR_FUNC(CRYPTO_F_CRYPTO_GET_EX_NEW_INDEX), "CRYPTO_get_ex_new_index"},
     {ERR_FUNC(CRYPTO_F_CRYPTO_GET_NEW_DYNLOCKID), "CRYPTO_get_new_dynlockid"},
     {ERR_FUNC(CRYPTO_F_CRYPTO_GET_NEW_LOCKID), "CRYPTO_get_new_lockid"},
+    {ERR_FUNC(CRYPTO_F_CRYPTO_MEMDUP), "CRYPTO_memdup"},
+    {ERR_FUNC(CRYPTO_F_CRYPTO_NEW_EX_DATA), "CRYPTO_new_ex_data"},
     {ERR_FUNC(CRYPTO_F_CRYPTO_SET_EX_DATA), "CRYPTO_set_ex_data"},
     {ERR_FUNC(CRYPTO_F_DEF_ADD_INDEX), "DEF_ADD_INDEX"},
     {ERR_FUNC(CRYPTO_F_DEF_GET_CLASS), "DEF_GET_CLASS"},
     {ERR_FUNC(CRYPTO_F_FIPS_MODE_SET), "FIPS_mode_set"},
+    {ERR_FUNC(CRYPTO_F_GET_AND_LOCK), "get_and_lock"},
     {ERR_FUNC(CRYPTO_F_INT_DUP_EX_DATA), "INT_DUP_EX_DATA"},
     {ERR_FUNC(CRYPTO_F_INT_FREE_EX_DATA), "INT_FREE_EX_DATA"},
     {ERR_FUNC(CRYPTO_F_INT_NEW_EX_DATA), "INT_NEW_EX_DATA"},
+    {ERR_FUNC(CRYPTO_F_OPENSSL_BUF2HEXSTR), "OPENSSL_buf2hexstr"},
+    {ERR_FUNC(CRYPTO_F_OPENSSL_INIT_CRYPTO), "OPENSSL_init_crypto"},
+    {ERR_FUNC(CRYPTO_F_OPENSSL_MEMDUP), "OPENSSL_MEMDUP"},
+    {ERR_FUNC(CRYPTO_F_OPENSSL_HEXSTR2BUF), "OPENSSL_hexstr2buf"},
     {0, NULL}
 };
 
 static ERR_STRING_DATA CRYPTO_str_reasons[] = {
     {ERR_REASON(CRYPTO_R_FIPS_MODE_NOT_SUPPORTED), "fips mode not supported"},
-    {ERR_REASON(CRYPTO_R_NO_DYNLOCK_CREATE_CALLBACK),
-     "no dynlock create callback"},
+    {ERR_REASON(CRYPTO_R_ILLEGAL_HEX_DIGIT), "illegal hex digit"},
+    {ERR_REASON(CRYPTO_R_ODD_NUMBER_OF_DIGITS), "odd number of digits"},
     {0, NULL}
 };
 

@@ -1,4 +1,3 @@
-/* dso_openssl.c */
 /*
  * Written by Geoff Thorpe (geoff@geoffthorpe.net) for the OpenSSL project
  * 2000.
@@ -57,27 +56,16 @@
  *
  */
 
-#include <stdio.h>
-#include "cryptlib.h"
-#include <openssl/dso.h>
+#include "dso_locl.h"
 
-/* We just pinch the method from an appropriate "default" method. */
+#if !defined(DSO_VMS) && !defined(DSO_DLCFN) && !defined(DSO_DL) && !defined(DSO_WIN32) && !defined(DSO_DLFCN)
+
+static DSO_METHOD dso_meth_null = {
+    "NULL shared library method"
+};
 
 DSO_METHOD *DSO_METHOD_openssl(void)
 {
-#ifdef DEF_DSO_METHOD
-    return (DEF_DSO_METHOD());
-#elif defined(DSO_DLFCN)
-    return (DSO_METHOD_dlfcn());
-#elif defined(DSO_DL)
-    return (DSO_METHOD_dl());
-#elif defined(DSO_WIN32)
-    return (DSO_METHOD_win32());
-#elif defined(DSO_VMS)
-    return (DSO_METHOD_vms());
-#elif defined(DSO_BEOS)
-    return (DSO_METHOD_beos());
-#else
-    return (DSO_METHOD_null());
-#endif
+    return &dso_meth_null;
 }
+#endif

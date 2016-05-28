@@ -1,4 +1,3 @@
-/* crypto/bio/b_print.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -56,13 +55,6 @@
  * [including the GNU Public Licence.]
  */
 
-/* disable assert() unless BIO_DEBUG has been defined */
-#ifndef BIO_DEBUG
-# ifndef NDEBUG
-#  define NDEBUG
-# endif
-#endif
-
 /*
  * Stolen from tjh's ssl/ssl_trc.c stuff.
  */
@@ -72,7 +64,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <limits.h>
-#include "cryptlib.h"
+#include "internal/cryptlib.h"
 #ifndef NO_SYS_TYPES_H
 # include <sys/types.h>
 #endif
@@ -376,7 +368,7 @@ _dopr(char **sbuffer,
                     return 0;
                 break;
             case 'p':
-                value = (long)va_arg(args, void *);
+                value = (size_t)va_arg(args, void *);
                 if (!fmtint(sbuffer, buffer, &currlen, maxlen,
                             value, 16, min, max, flags | DP_F_NUM))
                     return 0;
@@ -807,7 +799,6 @@ int BIO_vprintf(BIO *bio, const char *format, va_list args)
     int ignored;
 
     dynbuf = NULL;
-    CRYPTO_push_info("doapr()");
     if (!_dopr(&hugebufp, &dynbuf, &hugebufsize, &retlen, &ignored, format,
                 args)) {
         OPENSSL_free(dynbuf);
@@ -819,7 +810,6 @@ int BIO_vprintf(BIO *bio, const char *format, va_list args)
     } else {
         ret = BIO_write(bio, hugebuf, (int)retlen);
     }
-    CRYPTO_pop_info();
     return (ret);
 }
 
