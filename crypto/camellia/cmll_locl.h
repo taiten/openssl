@@ -1,4 +1,12 @@
-/* crypto/camellia/camellia_locl.h */
+/*
+ * Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
+ */
+
 /* ====================================================================
  * Copyright 2006 NTT (Nippon Telegraph and Telephone Corporation) .
  * ALL RIGHTS RESERVED.
@@ -83,6 +91,4 @@ void Camellia_EncryptBlock(int keyBitLength, const u8 plaintext[],
                            const KEY_TABLE_TYPE keyTable, u8 ciphertext[]);
 void Camellia_DecryptBlock(int keyBitLength, const u8 ciphertext[],
                            const KEY_TABLE_TYPE keyTable, u8 plaintext[]);
-int private_Camellia_set_key(const unsigned char *userKey, const int bits,
-                             CAMELLIA_KEY *key);
 #endif                          /* #ifndef HEADER_CAMELLIA_LOCL_H */

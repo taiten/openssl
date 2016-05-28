@@ -1,72 +1,16 @@
-/* ocsp_prn.c */
 /*
- * Written by Tom Titchener <Tom_Titchener@groove.net> for the OpenSSL
- * project.
- */
-
-/*
- * History: This file was originally part of ocsp.c and was transfered to
- * Richard Levitte from CertCo by Kathy Weinhold in mid-spring 2000 to be
- * included in OpenSSL or released as a patch kit.
- */
-
-/* ====================================================================
- * Copyright (c) 1998-2000 The OpenSSL Project.  All rights reserved.
+ * Copyright 2000-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/ocsp.h>
+#include "ocsp_lcl.h"
 #include <openssl/pem.h>
 
 static int ocsp_certid_print(BIO *bp, OCSP_CERTID *a, int indent)
@@ -74,13 +18,13 @@ static int ocsp_certid_print(BIO *bp, OCSP_CERTID *a, int indent)
     BIO_printf(bp, "%*sCertificate ID:\n", indent, "");
     indent += 2;
     BIO_printf(bp, "%*sHash Algorithm: ", indent, "");
-    i2a_ASN1_OBJECT(bp, a->hashAlgorithm->algorithm);
+    i2a_ASN1_OBJECT(bp, a->hashAlgorithm.algorithm);
     BIO_printf(bp, "\n%*sIssuer Name Hash: ", indent, "");
-    i2a_ASN1_STRING(bp, a->issuerNameHash, V_ASN1_OCTET_STRING);
+    i2a_ASN1_STRING(bp, &a->issuerNameHash, 0);
     BIO_printf(bp, "\n%*sIssuer Key Hash: ", indent, "");
-    i2a_ASN1_STRING(bp, a->issuerKeyHash, V_ASN1_OCTET_STRING);
+    i2a_ASN1_STRING(bp, &a->issuerKeyHash, 0);
     BIO_printf(bp, "\n%*sSerial Number: ", indent, "");
-    i2a_ASN1_INTEGER(bp, a->serialNumber);
+    i2a_ASN1_INTEGER(bp, &a->serialNumber);
     BIO_printf(bp, "\n");
     return 1;
 }
@@ -143,7 +87,7 @@ int OCSP_REQUEST_print(BIO *bp, OCSP_REQUEST *o, unsigned long flags)
     long l;
     OCSP_CERTID *cid = NULL;
     OCSP_ONEREQ *one = NULL;
-    OCSP_REQINFO *inf = o->tbsRequest;
+    OCSP_REQINFO *inf = &o->tbsRequest;
     OCSP_SIGNATURE *sig = o->optionalSignature;
 
     if (BIO_write(bp, "OCSP Request Data:\n", 19) <= 0)
@@ -171,7 +115,7 @@ int OCSP_REQUEST_print(BIO *bp, OCSP_REQUEST *o, unsigned long flags)
                                  inf->requestExtensions, flags, 4))
         goto err;
     if (sig) {
-        X509_signature_print(bp, sig->signatureAlgorithm, sig->signature);
+        X509_signature_print(bp, &sig->signatureAlgorithm, sig->signature);
         for (i = 0; i < sk_X509_num(sig->certs); i++) {
             X509_print(bp, sk_X509_value(sig->certs, i));
             PEM_write_bio_X509(bp, sk_X509_value(sig->certs, i));
@@ -214,20 +158,20 @@ int OCSP_RESPONSE_print(BIO *bp, OCSP_RESPONSE *o, unsigned long flags)
 
     if ((br = OCSP_response_get1_basic(o)) == NULL)
         goto err;
-    rd = br->tbsResponseData;
+    rd = &br->tbsResponseData;
     l = ASN1_INTEGER_get(rd->version);
     if (BIO_printf(bp, "\n    Version: %lu (0x%lx)\n", l + 1, l) <= 0)
         goto err;
     if (BIO_puts(bp, "    Responder Id: ") <= 0)
         goto err;
 
-    rid = rd->responderId;
+    rid = &rd->responderId;
     switch (rid->type) {
     case V_OCSP_RESPID_NAME:
         X509_NAME_print_ex(bp, rid->value.byName, 0, XN_FLAG_ONELINE);
         break;
     case V_OCSP_RESPID_KEY:
-        i2a_ASN1_STRING(bp, rid->value.byKey, V_ASN1_OCTET_STRING);
+        i2a_ASN1_STRING(bp, rid->value.byKey, 0);
         break;
     }
 
@@ -284,7 +228,7 @@ int OCSP_RESPONSE_print(BIO *bp, OCSP_RESPONSE *o, unsigned long flags)
     if (!X509V3_extensions_print(bp, "Response Extensions",
                                  rd->responseExtensions, flags, 4))
         goto err;
-    if (X509_signature_print(bp, br->signatureAlgorithm, br->signature) <= 0)
+    if (X509_signature_print(bp, &br->signatureAlgorithm, br->signature) <= 0)
         goto err;
 
     for (i = 0; i < sk_X509_num(br->certs); i++) {

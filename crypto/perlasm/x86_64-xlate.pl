@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # Ascetic x86_64 AT&T to MASM/NASM assembler translator by <appro>.
 #
@@ -80,7 +87,7 @@ my $nasm=0;
 
 if    ($flavour eq "mingw64")	{ $gas=1; $elf=0; $win64=1;
 				  $prefix=`echo __USER_LABEL_PREFIX__ | $ENV{CC} -E -P -`;
-				  chomp($prefix);
+				  $prefix =~ s|\R$||; # Better chomp
 				}
 elsif ($flavour eq "macosx")	{ $gas=1; $elf=0; $prefix="_"; $decor="L\$"; }
 elsif ($flavour eq "masm")	{ $gas=0; $elf=0; $masm=$masmref; $win64=1; $decor="\$L\$"; }
@@ -286,7 +293,7 @@ my %globals;
 	    (opcode->mnemonic() =~ /^v?mov([qd])$/)		&& ($sz=$1)  ||
 	    (opcode->mnemonic() =~ /^v?pinsr([qdwb])$/)		&& ($sz=$1)  ||
 	    (opcode->mnemonic() =~ /^vpbroadcast([qdwb])$/)	&& ($sz=$1)  ||
-	    (opcode->mnemonic() =~ /^vinsert[fi]128$/)		&& ($sz="x");
+	    (opcode->mnemonic() =~ /^v(?!perm)[a-z]+[fi]128$/)	&& ($sz="x");
 
 	    if (defined($self->{index})) {
 		sprintf "%s[%s%s*%d%s]",$szmap{$sz},
@@ -305,7 +312,7 @@ my %globals;
 }
 { package register;	# pick up registers, which start with %.
     sub re {
-	my	$class = shift;	# muliple instances...
+	my	$class = shift;	# multiple instances...
 	my	$self = {};
 	local	*line = shift;
 	undef	$ret;
@@ -607,7 +614,10 @@ my %globals;
 				    }
 				    last;
 				  };
-		/\.align/   && do { $self->{value} = "ALIGN\t".$line; last; };
+		/\.align/   && do { my $max = ($masm && $masm>=$masmref) ? 256 : 4096;
+				    $self->{value} = "ALIGN\t".($line>$max?$max:$line);
+				    last;
+				  };
 		/\.(value|long|rva|quad)/
 			    && do { my $sz  = substr($1,0,1);
 				    my @arr = split(/,\s*/,$line);
@@ -850,9 +860,9 @@ ___
 OPTION	DOTNAME
 ___
 }
-while($line=<>) {
+while(defined($line=<>)) {
 
-    chomp($line);
+    $line =~ s|\R$||;           # Better chomp
 
     $line =~ s|[#!].*$||;	# get rid of asm-style comments...
     $line =~ s|/\*.*\*/||;	# ... and C-style comments...
@@ -953,7 +963,7 @@ close STDOUT;
 # (#)	Nth argument, volatile
 #
 # In Unix terms top of stack is argument transfer area for arguments
-# which could not be accomodated in registers. Or in other words 7th
+# which could not be accommodated in registers. Or in other words 7th
 # [integer] argument resides at 8(%rsp) upon function entry point.
 # 128 bytes above %rsp constitute a "red zone" which is not touched
 # by signal handlers and can be used as temporal storage without
@@ -1117,7 +1127,7 @@ close STDOUT;
 #	.rva	.LSEH_end_function
 #	.rva	function_unwind_info
 #
-# Reference to functon_unwind_info from .xdata segment is the anchor.
+# Reference to function_unwind_info from .xdata segment is the anchor.
 # In case you wonder why references are 32-bit .rvas and not 64-bit
 # .quads. References put into these two segments are required to be
 # *relative* to the base address of the current binary module, a.k.a.

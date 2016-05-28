@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -86,6 +93,7 @@
 # Sandy Bridge	17.4	14.2(+23%)  11.6(+50%(**))  11.2    8.10(+38%(**))
 # Ivy Bridge	12.6	10.5(+20%)  10.3(+22%)	    8.17    7.22(+13%)
 # Haswell	12.2	9.28(+31%)  7.80(+56%)	    7.66    5.40(+42%)
+# Skylake	11.4	9.03(+26%)  7.70(+48%)      7.25    5.20(+40%)
 # Bulldozer	21.1	13.6(+54%)  13.6(+54%(***)) 13.5    8.58(+57%)
 # VIA Nano	23.0	16.5(+39%)  -		    14.7    -
 # Atom		23.0	18.9(+22%)  -		    14.7    -

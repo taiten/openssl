@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2013-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 #
 # ====================================================================
 # Written by Andy Polyakov <appro@openssl.org> for the OpenSSL
@@ -22,10 +29,11 @@
 # [1] and [2], with MOVBE twist suggested by Ilya Albrekht and Max
 # Locktyukhin of Intel Corp. who verified that it reduces shuffles
 # pressure with notable relative improvement, achieving 1.0 cycle per
-# byte processed with 128-bit key on Haswell processor, and 0.74 -
-# on Broadwell. [Mentioned results are raw profiled measurements for
-# favourable packet size, one divisible by 96. Applications using the
-# EVP interface will observe a few percent worse performance.]
+# byte processed with 128-bit key on Haswell processor, 0.74 - on
+# Broadwell, 0.63 - on Skylake... [Mentioned results are raw profiled
+# measurements for favourable packet size, one divisible by 96.
+# Applications using the EVP interface will observe a few percent
+# worse performance.]
 #
 # [1] http://rt.openssl.org/Ticket/Display.html?id=2900&user=guest&pass=guest
 # [2] http://www.intel.com/content/dam/www/public/us/en/documents/software-support/enabling-high-performance-gcm.pdf

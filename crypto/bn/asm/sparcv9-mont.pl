@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 # ====================================================================
 # Written by Andy Polyakov <appro@fy.chalmers.se> for the OpenSSL
@@ -42,6 +49,9 @@
 # module still have hidden potential [see TODO list there], which is
 # estimated to be larger than 20%...
 
+$output = pop;
+open STDOUT,">$output";
+
 # int bn_mul_mont(
 $rp="%i0";	# BN_ULONG *rp,
 $ap="%i1";	# const BN_ULONG *ap,
@@ -50,10 +60,8 @@ $np="%i3";	# const BN_ULONG *np,
 $n0="%i4";	# const BN_ULONG *n0,
 $num="%i5";	# int num);
 
-$bits=32;
-for (@ARGV)	{ $bits=64 if (/\-m64/ || /\-xarch\=v9/); }
-if ($bits==64)	{ $bias=2047; $frame=192; }
-else		{ $bias=0;    $frame=128; }
+$frame="STACK_FRAME";
+$bias="STACK_BIAS";
 
 $car0="%o0";
 $car1="%o1";
@@ -76,6 +84,8 @@ $tpj="%l7";
 $fname="bn_mul_mont_int";
 
 $code=<<___;
+#include "sparc_arch.h"
+
 .section	".text",#alloc,#execinstr
 
 .global	$fname
@@ -105,7 +115,7 @@ $fname:
 	ld	[$np],$car1		! np[0]
 	sub	%o7,$bias,%sp		! alloca
 	ld	[$np+4],$npj		! np[1]
-	be,pt	`$bits==32?"%icc":"%xcc"`,.Lbn_sqr_mont
+	be,pt	SIZE_T_CC,.Lbn_sqr_mont
 	mov	12,$j
 
 	mulx	$car0,$mul0,$car0	! ap[0]*bp[0]

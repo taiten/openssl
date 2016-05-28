@@ -1,32 +1,23 @@
-Index: openssl-1.0.0c/Makefile.org
+Index: openssl-1.1.0/Configurations/unix-Makefile.tmpl
 ===================================================================
---- openssl-1.0.0c.orig/Makefile.org	2010-12-12 16:11:37.000000000 +0100
-+++ openssl-1.0.0c/Makefile.org	2010-12-12 16:13:28.000000000 +0100
-@@ -134,7 +134,8 @@
- MANDIR=/usr/share/man
- MAN1=1
- MAN3=3
+--- openssl-1.1.0.orig/Configurations/unix-Makefile.tmpl
++++ openssl-1.1.0/Configurations/unix-Makefile.tmpl
+@@ -147,7 +147,8 @@ HTMLDIR=$(DOCDIR)/html
+ # MANSUFFIX is for the benefit of anyone who may want to have a suffix
+ # appended after the manpage file section number.  "ssl" is popular,
+ # resulting in files such as config.5ssl rather than config.5.
 -MANSUFFIX=
 +MANSUFFIX=ssl
 +MANSECTION=SSL
  HTMLSUFFIX=html
- HTMLDIR=$(OPENSSLDIR)/html
- SHELL=/bin/sh
-@@ -606,7 +607,7 @@
- 		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
- 		(cd `$(PERL) util/dirname.pl $$i`; \
- 		sh -c "$$pod2man \
--			--section=$$sec --center=OpenSSL \
-+			--section=$${sec}$(MANSECTION) --center=OpenSSL \
- 			--release=$(VERSION) `basename $$i`") \
- 			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
- 		$(PERL) util/extract-names.pl < $$i | \
-@@ -623,7 +624,7 @@
- 		echo "installing man$$sec/$$fn.$${sec}$(MANSUFFIX)"; \
- 		(cd `$(PERL) util/dirname.pl $$i`; \
- 		sh -c "$$pod2man \
--			--section=$$sec --center=OpenSSL \
-+			--section=$${sec}$(MANSECTION) --center=OpenSSL \
- 			--release=$(VERSION) `basename $$i`") \
- 			>  $(INSTALL_PREFIX)$(MANDIR)/man$$sec/$$fn.$${sec}$(MANSUFFIX); \
- 		$(PERL) util/extract-names.pl < $$i | \
+ 
+ 
+@@ -597,7 +598,7 @@ install_man_docs:
+ 	@\
+ 	OUTSUFFIX='.$${SEC}$(MANSUFFIX)'; \
+ 	OUTTOP="$(DESTDIR)$(MANDIR)"; \
+-	GENERATE='pod2man --name=$$NAME --section=$$SEC --center=OpenSSL --release=$(VERSION)'; \
++	GENERATE='pod2man --name=$$NAME --section="$$SEC""$(MANSECTION)" --center=OpenSSL --release=$(VERSION)'; \
+ 	$(PROCESS_PODS)
+ 
+ uninstall_man_docs:

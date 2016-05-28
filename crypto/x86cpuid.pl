@@ -1,8 +1,18 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2004-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
 
 $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 push(@INC, "${dir}perlasm", "perlasm");
 require "x86asm.pl";
+
+$output = pop;
+open OUT,">$output";
+*STDOUT=*OUT;
 
 &asm_init($ARGV[0],"x86cpuid");
 
@@ -355,6 +365,133 @@ push(@out, ".hidden OPENSSL_ia32cap_P\n");
 	&ret	();
 &function_end_B("OPENSSL_cleanse");
 
+&function_begin_B("CRYPTO_memcmp");
+	&push	("esi");
+	&push	("edi");
+	&mov	("esi",&wparam(0));
+	&mov	("edi",&wparam(1));
+	&mov	("ecx",&wparam(2));
+	&xor	("eax","eax");
+	&xor	("edx","edx");
+	&cmp	("ecx",0);
+	&je	(&label("no_data"));
+&set_label("loop");
+	&mov	("dl",&BP(0,"esi"));
+	&lea	("esi",&DWP(1,"esi"));
+	&xor	("dl",&BP(0,"edi"));
+	&lea	("edi",&DWP(1,"edi"));
+	&or	("al","dl");
+	&dec	("ecx");
+	&jnz	(&label("loop"));
+	&neg	("eax");
+	&shr	("eax",31);
+&set_label("no_data");
+	&pop	("edi");
+	&pop	("esi");
+	&ret	();
+&function_end_B("CRYPTO_memcmp");
+{
+my $lasttick = "esi";
+my $lastdiff = "ebx";
+my $out = "edi";
+my $cnt = "ecx";
+my $max = "ebp";
+
+&function_begin("OPENSSL_instrument_bus");
+    &mov	("eax",0);
+    if ($sse2) {
+	&picmeup("edx","OPENSSL_ia32cap_P");
+	&bt	(&DWP(0,"edx"),4);
+	&jnc	(&label("nogo"));	# no TSC
+	&bt	(&DWP(0,"edx"),19);
+	&jnc	(&label("nogo"));	# no CLFLUSH
+
+	&mov	($out,&wparam(0));	# load arguments
+	&mov	($cnt,&wparam(1));
+
+	# collect 1st tick
+	&rdtsc	();
+	&mov	($lasttick,"eax");	# lasttick = tick
+	&mov	($lastdiff,0);		# lastdiff = 0
+	&clflush(&DWP(0,$out));
+	&data_byte(0xf0);		# lock
+	&add	(&DWP(0,$out),$lastdiff);
+	&jmp	(&label("loop"));
+
+&set_label("loop",16);
+	&rdtsc	();
+	&mov	("edx","eax");		# put aside tick (yes, I neglect edx)
+	&sub	("eax",$lasttick);	# diff
+	&mov	($lasttick,"edx");	# lasttick = tick
+	&mov	($lastdiff,"eax");	# lastdiff = diff
+	&clflush(&DWP(0,$out));
+	&data_byte(0xf0);		# lock
+	&add	(&DWP(0,$out),"eax");	# accumulate diff
+	&lea	($out,&DWP(4,$out));	# ++$out
+	&sub	($cnt,1);		# --$cnt
+	&jnz	(&label("loop"));
+
+	&mov	("eax",&wparam(1));
+&set_label("nogo");
+    }
+&function_end("OPENSSL_instrument_bus");
+
+&function_begin("OPENSSL_instrument_bus2");
+    &mov	("eax",0);
+    if ($sse2) {
+	&picmeup("edx","OPENSSL_ia32cap_P");
+	&bt	(&DWP(0,"edx"),4);
+	&jnc	(&label("nogo"));	# no TSC
+	&bt	(&DWP(0,"edx"),19);
+	&jnc	(&label("nogo"));	# no CLFLUSH
+
+	&mov	($out,&wparam(0));	# load arguments
+	&mov	($cnt,&wparam(1));
+	&mov	($max,&wparam(2));
+
+	&rdtsc	();			# collect 1st tick
+	&mov	($lasttick,"eax");	# lasttick = tick
+	&mov	($lastdiff,0);		# lastdiff = 0
+
+	&clflush(&DWP(0,$out));
+	&data_byte(0xf0);		# lock
+	&add	(&DWP(0,$out),$lastdiff);
+
+	&rdtsc	();			# collect 1st diff
+	&mov	("edx","eax");		# put aside tick (yes, I neglect edx)
+	&sub	("eax",$lasttick);	# diff
+	&mov	($lasttick,"edx");	# lasttick = tick
+	&mov	($lastdiff,"eax");	# lastdiff = diff
+	&jmp	(&label("loop2"));
+
+&set_label("loop2",16);
+	&clflush(&DWP(0,$out));
+	&data_byte(0xf0);		# lock
+	&add	(&DWP(0,$out),"eax");	# accumulate diff
+
+	&sub	($max,1);
+	&jz	(&label("done2"));
+
+	&rdtsc	();
+	&mov	("edx","eax");		# put aside tick (yes, I neglect edx)
+	&sub	("eax",$lasttick);	# diff
+	&mov	($lasttick,"edx");	# lasttick = tick
+	&cmp	("eax",$lastdiff);
+	&mov	($lastdiff,"eax");	# lastdiff = diff
+	&mov	("edx",0);
+	&setne	("dl");
+	&sub	($cnt,"edx");		# conditional --$cnt
+	&lea	($out,&DWP(0,$out,"edx",4));	# conditional ++$out
+	&jnz	(&label("loop2"));
+
+&set_label("done2");
+	&mov	("eax",&wparam(1));
+	&sub	("eax",$cnt);
+&set_label("nogo");
+    }
+&function_end("OPENSSL_instrument_bus2");
+}
+
 &function_begin_B("OPENSSL_ia32_rdrand");
 	&mov	("ecx",8);
 &set_label("loop");
@@ -385,3 +522,5 @@ push(@out, ".hidden OPENSSL_ia32cap_P\n");
 &hidden("OPENSSL_ia32cap_P");
 
 &asm_finish();
+
+close STDOUT;
