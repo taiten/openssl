@@ -1,3 +1,21 @@
+openssl (1.1.0~pre5-3) experimental; urgency=medium
+
+  [ Kurt Roeckx ]
+  * Don't use assembler on hppa, it's not writen for Linux.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Fri, 10 Jun 2016 22:33:06 +0200
+
+openssl (1.1.0~pre5-2) experimental; urgency=medium
+
+  [ Sebastian Andrzej Siewior ]
+  * Run the testsuite with verbose output.
+  * Use $(MAKE) so the whole make environment is passed to its child and we
+    can build in parallel with -jX
+  * Update snapshot to commit 5000a6d1215e ("Fix an error path leak in int
+    X509_ATTRIBUTE_set1_data()")
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Fri, 10 Jun 2016 21:49:55 +0200
+
 openssl (1.1.0~pre5-1) experimental; urgency=medium
 
   * New upstream version with soname change.  Upload to experimental.
