@@ -1,10 +1,18 @@
-#! /usr/bin/perl
+#! /usr/bin/env perl
+# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 use strict;
 use warnings;
 
 use File::Basename;
 use File::Compare qw/compare_text/;
+use if $^O ne "VMS", 'File::Glob' => qw/glob/;
 
 use OpenSSL::Test qw/:DEFAULT srctop_dir srctop_file/;
 use OpenSSL::Test::Utils qw/disabled alldisabled available_protocols/;
@@ -13,8 +21,10 @@ setup("test_ssl_new");
 
 $ENV{TEST_CERTS_DIR} = srctop_dir("test", "certs");
 
-my @conf_srcs =  glob(srctop_file("test", "ssl-tests", "*.conf"));
-my @conf_files = map {basename($_)} @conf_srcs;
+my @conf_srcs =  glob(srctop_file("test", "ssl-tests", "*.conf.in"));
+map { s/;.*// } @conf_srcs if $^O eq "VMS";
+my @conf_files = map { basename($_) } @conf_srcs;
+map { s/\.in// } @conf_files;
 
 # 02-protocol-version.conf test results depend on the configuration of enabled
 # protocols. We only verify generated sources in the default configuration.
@@ -32,7 +42,7 @@ foreach my $conf (@conf_files) {
 
 # We hard-code the number of tests to double-check that the globbing above
 # finds all files as expected.
-plan tests => 2;  # = scalar @conf_files
+plan tests => 6;  # = scalar @conf_srcs
 
 sub test_conf {
     plan tests => 3;

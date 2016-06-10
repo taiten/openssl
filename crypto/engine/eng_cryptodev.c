@@ -1,4 +1,13 @@
 /*
+ * Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
+ */
+
+/*
  * Copyright (c) 2002 Bob Beck <beck@openbsd.org>
  * Copyright (c) 2002 Theo de Raadt
  * Copyright (c) 2002 Markus Friedl
@@ -446,7 +455,7 @@ cryptodev_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
     cryp.op = EVP_CIPHER_CTX_encrypting(ctx) ? COP_ENCRYPT : COP_DECRYPT;
 
     if (EVP_CIPHER_CTX_iv_length(ctx) > 0) {
-        cryp.iv = *(caddr_t*) EVP_CIPHER_CTX_iv(ctx);
+        cryp.iv = (caddr_t) EVP_CIPHER_CTX_iv(ctx);
         if (!EVP_CIPHER_CTX_encrypting(ctx)) {
             iiv = in + inl - EVP_CIPHER_CTX_iv_length(ctx);
             memcpy(save_iv, iiv, EVP_CIPHER_CTX_iv_length(ctx));
@@ -1248,8 +1257,7 @@ static void zapparams(struct crypt_kop *kop)
     int i;
 
     for (i = 0; i < kop->crk_iparams + kop->crk_oparams; i++) {
-        if (kop->crk_param[i].crp_p)
-            free(kop->crk_param[i].crp_p);
+        OPENSSL_free(kop->crk_param[i].crp_p);
         kop->crk_param[i].crp_p = NULL;
         kop->crk_param[i].crp_nbits = 0;
     }
@@ -1262,16 +1270,24 @@ cryptodev_asym(struct crypt_kop *kop, int rlen, BIGNUM *r, int slen,
     int fd, ret = -1;
 
     if ((fd = get_asym_dev_crypto()) < 0)
-        return (ret);
+        return ret;
 
     if (r) {
-        kop->crk_param[kop->crk_iparams].crp_p = calloc(rlen, sizeof(char));
+        kop->crk_param[kop->crk_iparams].crp_p = OPENSSL_zalloc(rlen);
+        if (kop->crk_param[kop->crk_iparams].crp_p == NULL)
+            return ret;
         kop->crk_param[kop->crk_iparams].crp_nbits = rlen * 8;
         kop->crk_oparams++;
     }
     if (s) {
         kop->crk_param[kop->crk_iparams + 1].crp_p =
-            calloc(slen, sizeof(char));
+            OPENSSL_zalloc(slen);
+        /* No need to free the kop->crk_iparams parameter if it was allocated,
+         * callers of this routine have to free allocated parameters through
+         * zapparams both in case of success and failure
+         */
+        if (kop->crk_param[kop->crk_iparams+1].crp_p == NULL)
+            return ret;
         kop->crk_param[kop->crk_iparams + 1].crp_nbits = slen * 8;
         kop->crk_oparams++;
     }
@@ -1284,7 +1300,7 @@ cryptodev_asym(struct crypt_kop *kop, int rlen, BIGNUM *r, int slen,
         ret = 0;
     }
 
-    return (ret);
+    return ret;
 }
 
 static int

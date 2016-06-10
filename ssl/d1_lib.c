@@ -1,59 +1,10 @@
 /*
- * DTLS implementation written by Nagendra Modadugu
- * (nagendra@cs.stanford.edu) for the OpenSSL project 2005.
- */
-/* ====================================================================
- * Copyright (c) 1999-2005 The OpenSSL Project.  All rights reserved.
+ * Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 #include <stdio.h>
@@ -797,7 +748,7 @@ int DTLSv1_listen(SSL *s, BIO_ADDR *client)
             }
 
             /*
-             * This is unneccessary if rbio and wbio are one and the same - but
+             * This is unnecessary if rbio and wbio are one and the same - but
              * maybe they're not. We ignore errors here - some BIOs do not
              * support this.
              */
@@ -887,6 +838,14 @@ static int dtls1_handshake_write(SSL *s)
 }
 
 #ifndef OPENSSL_NO_HEARTBEATS
+
+#define HEARTBEAT_SIZE(payload, padding) ( \
+    1 /* heartbeat type */ + \
+    2 /* heartbeat length */ + \
+    (payload) + (padding))
+
+#define HEARTBEAT_SIZE_STD(payload) HEARTBEAT_SIZE(payload, 16)
+
 int dtls1_process_heartbeat(SSL *s, unsigned char *p, unsigned int length)
 {
     unsigned char *pl;
@@ -898,32 +857,27 @@ int dtls1_process_heartbeat(SSL *s, unsigned char *p, unsigned int length)
         s->msg_callback(0, s->version, DTLS1_RT_HEARTBEAT,
                         p, length, s, s->msg_callback_arg);
 
-    /* Read type and payload length first */
-    if (1 + 2 + 16 > length)
+    /* Read type and payload length */
+    if (HEARTBEAT_SIZE_STD(0) > length)
         return 0;               /* silently discard */
     if (length > SSL3_RT_MAX_PLAIN_LENGTH)
         return 0;               /* silently discard per RFC 6520 sec. 4 */
 
     hbtype = *p++;
     n2s(p, payload);
-    if (1 + 2 + payload + 16 > length)
+    if (HEARTBEAT_SIZE_STD(payload) > length)
         return 0;               /* silently discard per RFC 6520 sec. 4 */
     pl = p;
 
     if (hbtype == TLS1_HB_REQUEST) {
         unsigned char *buffer, *bp;
-        unsigned int write_length = 1 /* heartbeat type */  +
-            2 /* heartbeat length */  +
-            payload + padding;
+        unsigned int write_length = HEARTBEAT_SIZE(payload, padding);
         int r;
 
         if (write_length > SSL3_RT_MAX_PLAIN_LENGTH)
             return 0;
 
-        /*
-         * Allocate memory for the response, size is 1 byte message type,
-         * plus 2 bytes payload length, plus payload, plus padding
-         */
+        /* Allocate memory for the response. */
         buffer = OPENSSL_malloc(write_length);
         if (buffer == NULL)
             return -1;
@@ -975,6 +929,7 @@ int dtls1_heartbeat(SSL *s)
     int ret = -1;
     unsigned int payload = 18;  /* Sequence number + random bytes */
     unsigned int padding = 16;  /* Use minimum padding */
+    unsigned int size;
 
     /* Only send if peer supports and accepts HB requests... */
     if (!(s->tlsext_heartbeat & SSL_DTLSEXT_HB_ENABLED) ||
@@ -999,13 +954,9 @@ int dtls1_heartbeat(SSL *s)
      * Create HeartBeat message, we just use a sequence number
      * as payload to distuingish different messages and add
      * some random stuff.
-     *  - Message Type, 1 byte
-     *  - Payload Length, 2 bytes (unsigned int)
-     *  - Payload, the sequence number (2 bytes uint)
-     *  - Payload, random bytes (16 bytes uint)
-     *  - Padding
      */
-    buf = OPENSSL_malloc(1 + 2 + payload + padding);
+    size = HEARTBEAT_SIZE(payload, padding);
+    buf = OPENSSL_malloc(size);
     if (buf == NULL) {
         SSLerr(SSL_F_DTLS1_HEARTBEAT, ERR_R_MALLOC_FAILURE);
         return -1;
@@ -1029,11 +980,11 @@ int dtls1_heartbeat(SSL *s)
         goto err;
     }
 
-    ret = dtls1_write_bytes(s, DTLS1_RT_HEARTBEAT, buf, 3 + payload + padding);
+    ret = dtls1_write_bytes(s, DTLS1_RT_HEARTBEAT, buf, size);
     if (ret >= 0) {
         if (s->msg_callback)
             s->msg_callback(1, s->version, DTLS1_RT_HEARTBEAT,
-                            buf, 3 + payload + padding,
+                            buf, size,
                             s, s->msg_callback_arg);
 
         dtls1_start_timer(s);

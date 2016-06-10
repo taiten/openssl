@@ -1,11 +1,10 @@
 /*
  * Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL licenses, (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- * or in the file LICENSE in the source distribution.
  */
 
 #include <string.h>
@@ -71,7 +70,7 @@ __owur static int parse_expected_result(SSL_TEST_CTX *test_ctx, const char *valu
     return 1;
 }
 
-const char *ssl_test_result_t_name(ssl_test_result_t result)
+const char *ssl_test_result_name(ssl_test_result_t result)
 {
     return enum_name(ssl_test_results, OSSL_NELEM(ssl_test_results), result);
 }
@@ -82,6 +81,7 @@ const char *ssl_test_result_t_name(ssl_test_result_t result)
 
 static const test_enum ssl_alerts[] = {
     {"UnknownCA", SSL_AD_UNKNOWN_CA},
+    {"HandshakeFailure", SSL_AD_HANDSHAKE_FAILURE},
 };
 
 __owur static int parse_alert(int *alert, const char *value)
@@ -126,6 +126,90 @@ const char *ssl_protocol_name(int protocol)
     return enum_name(ssl_protocols, OSSL_NELEM(ssl_protocols), protocol);
 }
 
+/***********************/
+/* CertVerifyCallback. */
+/***********************/
+
+static const test_enum ssl_verify_callbacks[] = {
+    {"None", SSL_TEST_VERIFY_NONE},
+    {"AcceptAll", SSL_TEST_VERIFY_ACCEPT_ALL},
+    {"RejectAll", SSL_TEST_VERIFY_REJECT_ALL},
+};
+
+__owur static int parse_client_verify_callback(SSL_TEST_CTX *test_ctx,
+                                              const char *value)
+{
+    int ret_value;
+    if (!parse_enum(ssl_verify_callbacks, OSSL_NELEM(ssl_verify_callbacks),
+                    &ret_value, value)) {
+        return 0;
+    }
+    test_ctx->client_verify_callback = ret_value;
+    return 1;
+}
+
+const char *ssl_verify_callback_name(ssl_verify_callback_t callback)
+{
+    return enum_name(ssl_verify_callbacks, OSSL_NELEM(ssl_verify_callbacks),
+                     callback);
+}
+
+/**************/
+/* ServerName */
+/**************/
+
+static const test_enum ssl_servername[] = {
+    {"server1", SSL_TEST_SERVERNAME_SERVER1},
+    {"server2", SSL_TEST_SERVERNAME_SERVER2},
+};
+
+__owur static int parse_servername(SSL_TEST_CTX *test_ctx,
+                                   const char *value)
+{
+    int ret_value;
+    if (!parse_enum(ssl_servername, OSSL_NELEM(ssl_servername),
+                    &ret_value, value)) {
+        return 0;
+    }
+    test_ctx->servername = ret_value;
+    return 1;
+}
+
+const char *ssl_servername_name(ssl_servername_t server)
+{
+    return enum_name(ssl_servername, OSSL_NELEM(ssl_servername),
+                     server);
+}
+
+/*************************/
+/* SessionTicketExpected */
+/*************************/
+
+static const test_enum ssl_session_ticket_expected[] = {
+    {"Ignore", SSL_TEST_SESSION_TICKET_IGNORE},
+    {"Yes", SSL_TEST_SESSION_TICKET_YES},
+    {"No", SSL_TEST_SESSION_TICKET_NO},
+    {"Broken", SSL_TEST_SESSION_TICKET_BROKEN},
+};
+
+__owur static int parse_session_ticket_expected(SSL_TEST_CTX *test_ctx,
+                                                const char *value)
+{
+    int ret_value;
+    if (!parse_enum(ssl_session_ticket_expected, OSSL_NELEM(ssl_session_ticket_expected),
+                    &ret_value, value)) {
+        return 0;
+    }
+    test_ctx->session_ticket_expected = ret_value;
+    return 1;
+}
+
+const char *ssl_session_ticket_expected_name(ssl_session_ticket_expected_t server)
+{
+    return enum_name(ssl_session_ticket_expected,
+                     OSSL_NELEM(ssl_session_ticket_expected),
+                     server);
+}
 
 /*************************************************************/
 /* Known test options and their corresponding parse methods. */
@@ -141,6 +225,9 @@ static const ssl_test_ctx_option ssl_test_ctx_options[] = {
     { "ClientAlert", &parse_client_alert },
     { "ServerAlert", &parse_server_alert },
     { "Protocol", &parse_protocol },
+    { "ClientVerifyCallback", &parse_client_verify_callback },
+    { "ServerName", &parse_servername },
+    { "SessionTicketExpected", &parse_session_ticket_expected },
 };
 
 
@@ -153,7 +240,6 @@ SSL_TEST_CTX *SSL_TEST_CTX_new()
     SSL_TEST_CTX *ret;
     ret = OPENSSL_zalloc(sizeof(*ret));
     OPENSSL_assert(ret != NULL);
-    ret->expected_result = SSL_TEST_SUCCESS;
     return ret;
 }
 

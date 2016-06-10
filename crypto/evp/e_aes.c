@@ -1,51 +1,10 @@
-/* ====================================================================
- * Copyright (c) 2001-2014 The OpenSSL Project.  All rights reserved.
+/*
+ * Copyright 2001-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 #include <openssl/opensslconf.h>
@@ -184,7 +143,7 @@ void AES_xts_decrypt(const char *inp, char *out, size_t len,
                      const unsigned char iv[16]);
 #endif
 
-#if     defined(OPENSSL_CPUID_OBJ) && (defined(__powerpc__) || defined(__ppc__) || defined(_ARCH_PPC))
+#if defined(OPENSSL_CPUID_OBJ) && (defined(__powerpc__) || defined(__ppc__) || defined(_ARCH_PPC))
 # include "ppc_arch.h"
 # ifdef VPAES_ASM
 #  define VPAES_CAPABLE (OPENSSL_ppccap_P & PPC_ALTIVEC)
@@ -202,8 +161,7 @@ void AES_xts_decrypt(const char *inp, char *out, size_t len,
         ((defined(__i386)       || defined(__i386__)    || \
           defined(_M_IX86)) && defined(OPENSSL_IA32_SSE2))|| \
         defined(__x86_64)       || defined(__x86_64__)  || \
-        defined(_M_AMD64)       || defined(_M_X64)      || \
-        defined(__INTEL__)                              )
+        defined(_M_AMD64)       || defined(_M_X64)      )
 
 extern unsigned int OPENSSL_ia32cap_P[];
 
@@ -586,6 +544,15 @@ const EVP_CIPHER *EVP_aes_##keylen##_##mode(void) \
 # include "sparc_arch.h"
 
 extern unsigned int OPENSSL_sparcv9cap_P[];
+
+/*
+ * Initial Fujitsu SPARC64 X support
+ */
+# define HWAES_CAPABLE           (OPENSSL_sparcv9cap_P[0] & SPARCV9_FJAESX)
+# define HWAES_set_encrypt_key aes_fx_set_encrypt_key
+# define HWAES_set_decrypt_key aes_fx_set_decrypt_key
+# define HWAES_encrypt aes_fx_encrypt
+# define HWAES_decrypt aes_fx_decrypt
 
 # define SPARC_AES_CAPABLE       (OPENSSL_sparcv9cap_P[1] & CFR_AES)
 
@@ -1060,7 +1027,7 @@ static int aes_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
 
     mode = EVP_CIPHER_CTX_mode(ctx);
     if ((mode == EVP_CIPH_ECB_MODE || mode == EVP_CIPH_CBC_MODE)
-        && !enc)
+        && !enc) {
 #ifdef HWAES_CAPABLE
         if (HWAES_CAPABLE) {
             ret = HWAES_set_decrypt_key(key,
@@ -1099,6 +1066,7 @@ static int aes_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
             dat->block = (block128_f) AES_decrypt;
             dat->stream.cbc = mode == EVP_CIPH_CBC_MODE ?
                 (cbc128_f) AES_cbc_encrypt : NULL;
+        }
     } else
 #ifdef HWAES_CAPABLE
     if (HWAES_CAPABLE) {

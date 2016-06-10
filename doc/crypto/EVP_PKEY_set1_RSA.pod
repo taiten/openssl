@@ -6,7 +6,7 @@ EVP_PKEY_set1_RSA, EVP_PKEY_set1_DSA, EVP_PKEY_set1_DH, EVP_PKEY_set1_EC_KEY,
 EVP_PKEY_get1_RSA, EVP_PKEY_get1_DSA, EVP_PKEY_get1_DH, EVP_PKEY_get1_EC_KEY,
 EVP_PKEY_get0_RSA, EVP_PKEY_get0_DSA, EVP_PKEY_get0_DH, EVP_PKEY_get0_EC_KEY,
 EVP_PKEY_assign_RSA, EVP_PKEY_assign_DSA, EVP_PKEY_assign_DH, EVP_PKEY_assign_EC_KEY,
-EVP_PKEY_type, EVP_PKEY_id, EVP_PKEY_base_id - EVP_PKEY assignment functions.
+EVP_PKEY_type, EVP_PKEY_id, EVP_PKEY_base_id - EVP_PKEY assignment functions
 
 =head1 SYNOPSIS
 
@@ -104,5 +104,14 @@ type or B<NID_undef> (equivalently B<EVP_PKEY_NONE>) on error.
 =head1 SEE ALSO
 
 L<EVP_PKEY_new(3)>
+
+=head1 COPYRIGHT
+
+Copyright 2002-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut

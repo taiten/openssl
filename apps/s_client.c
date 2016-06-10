@@ -1,112 +1,12 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 1998-2006 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 /* ====================================================================
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -189,9 +89,6 @@ extern int verify_return_error;
 extern int verify_quiet;
 
 static char *prog;
-static int async = 0;
-static unsigned int split_send_fragment = 0;
-static unsigned int max_pipelines = 0;
 static int c_nbio = 0;
 static int c_tlsextdebug = 0;
 static int c_status_req = 0;
@@ -238,6 +135,7 @@ static void do_ssl_shutdown(SSL *ssl)
             case SSL_ERROR_WANT_READ:
             case SSL_ERROR_WANT_WRITE:
             case SSL_ERROR_WANT_ASYNC:
+            case SSL_ERROR_WANT_ASYNC_JOB:
                 /* We just do busy waiting. Nothing clever */
                 continue;
             }
@@ -341,7 +239,7 @@ typedef struct srp_arg_st {
     int msg;                    /* copy from c_msg */
     int debug;                  /* copy from c_debug */
     int amp;                    /* allow more groups */
-    int strength /* minimal size for N */ ;
+    int strength;               /* minimal size for N */
 } SRP_ARG;
 
 # define SRP_NUMBER_ITERATIONS_FOR_PRIME 64
@@ -375,7 +273,7 @@ static int srp_Verify_N_and_g(const BIGNUM *N, const BIGNUM *g)
  * The callback is only called for a non default group.
  *
  * An application does not need the call back at all if
- * only the stanard groups are used.  In real life situations,
+ * only the standard groups are used.  In real life situations,
  * client and server already share well known groups,
  * thus there is no need to verify them.
  * Furthermore, in case that a server actually proposes a group that
@@ -508,7 +406,7 @@ static ossl_ssize_t hexdecode(const char **inptr, void *result)
 {
     unsigned char **out = (unsigned char **)result;
     const char *in = *inptr;
-    unsigned char *ret = OPENSSL_malloc(strlen(in)/2);
+    unsigned char *ret = app_malloc(strlen(in)/2, "hexdecode");
     unsigned char *cp = ret;
     uint8_t byte;
     int nibble = 0;
@@ -517,19 +415,16 @@ static ossl_ssize_t hexdecode(const char **inptr, void *result)
         return -1;
 
     for (byte = 0; *in; ++in) {
-        char c;
+        int x;
 
         if (isspace(_UC(*in)))
             continue;
-        c = tolower(_UC(*in));
-        if ('0' <= c && c <= '9') {
-            byte |= c - '0';
-        } else if ('a' <= c && c <= 'f') {
-            byte |= c - 'a' + 10;
-        } else {
+        x = OPENSSL_hexchar2int(*in);
+        if (x < 0) {
             OPENSSL_free(ret);
             return 0;
         }
+        byte |= (char)x;
         if ((nibble ^= 1) == 0) {
             *cp++ = byte;
             byte = 0;
@@ -651,8 +546,14 @@ typedef enum OPTION_choice {
     OPT_DEBUG, OPT_TLSEXTDEBUG, OPT_STATUS, OPT_WDEBUG,
     OPT_MSG, OPT_MSGFILE, OPT_ENGINE, OPT_TRACE, OPT_SECURITY_DEBUG,
     OPT_SECURITY_DEBUG_VERBOSE, OPT_SHOWCERTS, OPT_NBIO_TEST, OPT_STATE,
-    OPT_PSK_IDENTITY, OPT_PSK, OPT_SRPUSER, OPT_SRPPASS, OPT_SRP_STRENGTH,
-    OPT_SRP_LATEUSER, OPT_SRP_MOREGROUPS, OPT_SSL3, OPT_SSL_CONFIG,
+#ifndef OPENSSL_NO_PSK
+    OPT_PSK_IDENTITY, OPT_PSK,
+#endif
+#ifndef OPENSSL_NO_SRP
+    OPT_SRPUSER, OPT_SRPPASS, OPT_SRP_STRENGTH, OPT_SRP_LATEUSER,
+    OPT_SRP_MOREGROUPS,
+#endif
+    OPT_SSL3, OPT_SSL_CONFIG,
     OPT_TLS1_2, OPT_TLS1_1, OPT_TLS1, OPT_DTLS, OPT_DTLS1,
     OPT_DTLS1_2, OPT_TIMEOUT, OPT_MTU, OPT_KEYFORM, OPT_PASS,
     OPT_CERT_CHAIN, OPT_CAPATH, OPT_NOCAPATH, OPT_CHAINCAPATH, OPT_VERIFYCAPATH,
@@ -683,7 +584,9 @@ OPTIONS s_client_options[] = {
     {"unix", OPT_UNIX, 's', "Connect over unix domain sockets"},
 #endif
     {"4", OPT_4, '-', "Use IPv4 only"},
+#ifdef AF_INET6
     {"6", OPT_6, '-', "Use IPv6 only"},
+#endif
     {"verify", OPT_VERIFY, 'p', "Turn on peer certificate verification"},
     {"cert", OPT_CERT, '<', "Certificate file to use, PEM format assumed"},
     {"certform", OPT_CERTFORM, 'F',
@@ -813,7 +716,7 @@ OPTIONS s_client_options[] = {
     {"psk", OPT_PSK, 's', "PSK in hex (without 0x)"},
 #endif
 #ifndef OPENSSL_NO_SRP
-    {"srpuser", OPT_SRPUSER, 's', "SRP authentification for 'user'"},
+    {"srpuser", OPT_SRPUSER, 's', "SRP authentication for 'user'"},
     {"srppass", OPT_SRPPASS, 's', "Password for 'user'"},
     {"srp_lateuser", OPT_SRP_LATEUSER, '-',
      "SRP username into second ClientHello message"},
@@ -835,7 +738,7 @@ OPTIONS s_client_options[] = {
     {"noct", OPT_NOCT, '-', "Do not request or parse SCTs (default)"},
     {"ctlogfile", OPT_CTLOG_FILE, '<', "CT log list CONF file"},
 #endif
-    {NULL}
+    {NULL, OPT_EOF, 0x00, NULL}
 };
 
 typedef enum PROTOCOL_choice {
@@ -851,7 +754,7 @@ typedef enum PROTOCOL_choice {
     PROTO_IRC
 } PROTOCOL_CHOICE;
 
-static OPT_PAIR services[] = {
+static const OPT_PAIR services[] = {
     {"smtp", PROTO_SMTP},
     {"pop3", PROTO_POP3},
     {"imap", PROTO_IMAP},
@@ -860,8 +763,12 @@ static OPT_PAIR services[] = {
     {"xmpp-server", PROTO_XMPP_SERVER},
     {"telnet", PROTO_TELNET},
     {"irc", PROTO_IRC},
-    {NULL}
+    {NULL, 0}
 };
+
+#define IS_INET_FLAG(o) \
+ (o == OPT_4 || o == OPT_6 || o == OPT_HOST || o == OPT_PORT || o == OPT_CONNECT)
+#define IS_UNIX_FLAG(o) (o == OPT_UNIX)
 
 int s_client_main(int argc, char **argv)
 {
@@ -937,6 +844,11 @@ int s_client_main(int argc, char **argv)
     int ct_validation = 0;
 #endif
     int min_version = 0, max_version = 0;
+    int async = 0;
+    unsigned int split_send_fragment = 0;
+    unsigned int max_pipelines = 0;
+    enum { use_inet, use_unix, use_unknown } connect_type = use_unknown;
+    int count4or6 = 0;
 
     FD_ZERO(&readfds);
     FD_ZERO(&writefds);
@@ -972,6 +884,19 @@ int s_client_main(int argc, char **argv)
 
     prog = opt_init(argc, argv, s_client_options);
     while ((o = opt_next()) != OPT_EOF) {
+        /* Check for intermixing flags. */
+        if (connect_type == use_unix && IS_INET_FLAG(o)) {
+            BIO_printf(bio_err,
+                "%s: Intermixed protocol flags (unix and internet domains)\n",
+                prog);
+            goto end;
+        }
+        if (connect_type == use_inet && IS_UNIX_FLAG(o)) {
+            BIO_printf(bio_err,
+                "%s: Intermixed protocol flags (internet and unix domains)\n",
+                prog);
+            goto end;
+        }
         switch (o) {
         case OPT_EOF:
         case OPT_ERR:
@@ -983,58 +908,27 @@ int s_client_main(int argc, char **argv)
             ret = 0;
             goto end;
         case OPT_4:
-#ifdef AF_UNIX
-            if (socket_family == AF_UNIX) {
-                OPENSSL_free(host); host = NULL;
-                OPENSSL_free(port); port = NULL;
-            }
-#endif
+            connect_type = use_inet;
             socket_family = AF_INET;
+            count4or6++;
             break;
-        case OPT_6:
-            if (1) {
 #ifdef AF_INET6
-#ifdef AF_UNIX
-                if (socket_family == AF_UNIX) {
-                    OPENSSL_free(host); host = NULL;
-                    OPENSSL_free(port); port = NULL;
-                }
-#endif
-                socket_family = AF_INET6;
-            } else {
-#endif
-                BIO_printf(bio_err, "%s: IPv6 domain sockets unsupported\n", prog);
-                goto end;
-            }
+        case OPT_6:
+            connect_type = use_inet;
+            socket_family = AF_INET6;
+            count4or6++;
             break;
-        case OPT_HOST:
-#ifdef AF_UNIX
-            if (socket_family == AF_UNIX) {
-                OPENSSL_free(host); host = NULL;
-                OPENSSL_free(port); port = NULL;
-                socket_family = AF_UNSPEC;
-            }
 #endif
-            OPENSSL_free(host); host = BUF_strdup(opt_arg());
+        case OPT_HOST:
+            connect_type = use_inet;
+            host = OPENSSL_strdup(opt_arg());
             break;
         case OPT_PORT:
-#ifdef AF_UNIX
-            if (socket_family == AF_UNIX) {
-                OPENSSL_free(host); host = NULL;
-                OPENSSL_free(port); port = NULL;
-                socket_family = AF_UNSPEC;
-            }
-#endif
-            OPENSSL_free(port); port = BUF_strdup(opt_arg());
+            connect_type = use_inet;
+            port = OPENSSL_strdup(opt_arg());
             break;
         case OPT_CONNECT:
-#ifdef AF_UNIX
-            if (socket_family == AF_UNIX) {
-                socket_family = AF_UNSPEC;
-            }
-#endif
-            OPENSSL_free(host); host = NULL;
-            OPENSSL_free(port); port = NULL;
+            connect_type = use_inet;
             connectstr = opt_arg();
             break;
         case OPT_PROXY:
@@ -1043,9 +937,9 @@ int s_client_main(int argc, char **argv)
             break;
 #ifdef AF_UNIX
         case OPT_UNIX:
+            connect_type = use_unix;
             socket_family = AF_UNIX;
-            OPENSSL_free(host); host = BUF_strdup(opt_arg());
-            OPENSSL_free(port); port = NULL;
+            host = OPENSSL_strdup(opt_arg());
             break;
 #endif
         case OPT_XMPPHOST:
@@ -1136,7 +1030,6 @@ int s_client_main(int argc, char **argv)
                 BIO_printf(bio_err, "Error getting client auth engine\n");
                 goto opthelp;
             }
-            break;
 #endif
             break;
         case OPT_RAND:
@@ -1200,10 +1093,6 @@ int s_client_main(int argc, char **argv)
                 goto end;
             }
             break;
-#else
-        case OPT_PSK_IDENTITY:
-        case OPT_PSK:
-            break;
 #endif
 #ifndef OPENSSL_NO_SRP
         case OPT_SRPUSER:
@@ -1232,13 +1121,6 @@ int s_client_main(int argc, char **argv)
             srp_arg.amp = 1;
             if (min_version < TLS1_VERSION)
                 min_version = TLS1_VERSION;
-            break;
-#else
-        case OPT_SRPUSER:
-        case OPT_SRPPASS:
-        case OPT_SRP_STRENGTH:
-        case OPT_SRP_LATEUSER:
-        case OPT_SRP_MOREGROUPS:
             break;
 #endif
         case OPT_SSL_CONFIG:
@@ -1384,6 +1266,7 @@ int s_client_main(int argc, char **argv)
         case OPT_STARTTLS:
             if (!opt_pair(opt_arg(), services, &starttls_proto))
                 goto end;
+            break;
         case OPT_SERVERNAME:
             servername = opt_arg();
             break;
@@ -1416,6 +1299,10 @@ int s_client_main(int argc, char **argv)
             read_buf_len = atoi(opt_arg());
             break;
         }
+    }
+    if (count4or6 >= 2) {
+        BIO_printf(bio_err, "%s: Can't use both -4 and -6\n", prog);
+        goto opthelp;
     }
     argc = opt_num_rest();
     if (argc != 0)
@@ -1801,9 +1688,9 @@ int s_client_main(int argc, char **argv)
             goto end;
         }
     } else if (dane_tlsa_rrset != NULL) {
-            BIO_printf(bio_err, "%s: DANE TLSA authentication requires the "
-                       "-dane_tlsa_domain option.\n", prog);
-            goto end;
+        BIO_printf(bio_err, "%s: DANE TLSA authentication requires the "
+                   "-dane_tlsa_domain option.\n", prog);
+        goto end;
     }
 
  re_start:
@@ -2267,18 +2154,8 @@ int s_client_main(int argc, char **argv)
                     tv.tv_usec = 0;
                     i = select(width, (void *)&readfds, (void *)&writefds,
                                NULL, &tv);
-# if defined(OPENSSL_SYS_WINCE) || defined(OPENSSL_SYS_MSDOS)
-                    if (!i && (!_kbhit() || !read_tty))
+                    if (!i && (!has_stdin_waiting() || !read_tty))
                         continue;
-# else
-                    if (!i && (!((_kbhit())
-                                 || (WAIT_OBJECT_0 ==
-                                     WaitForSingleObject(GetStdHandle
-                                                         (STD_INPUT_HANDLE),
-                                                         0)))
-                               || !read_tty))
-                        continue;
-# endif
                 } else
                     i = select(width, (void *)&readfds, (void *)&writefds,
                                NULL, timeoutp);
@@ -2359,6 +2236,8 @@ int s_client_main(int argc, char **argv)
                     write_ssl = 0;
                 }
                 break;
+            case SSL_ERROR_WANT_ASYNC_JOB:
+                /* This shouldn't ever happen in s_client - treat as an error */
             case SSL_ERROR_SSL:
                 ERR_print_errors(bio_err);
                 goto shut;
@@ -2445,20 +2324,17 @@ int s_client_main(int argc, char **argv)
                 BIO_printf(bio_c_out, "closed\n");
                 ret = 0;
                 goto shut;
+            case SSL_ERROR_WANT_ASYNC_JOB:
+                /* This shouldn't ever happen in s_client. Treat as an error */
             case SSL_ERROR_SSL:
                 ERR_print_errors(bio_err);
                 goto shut;
                 /* break; */
             }
         }
-#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_MSDOS)
-# if defined(OPENSSL_SYS_WINCE) || defined(OPENSSL_SYS_MSDOS)
-        else if (_kbhit())
-# else
-        else if ((_kbhit())
-                 || (WAIT_OBJECT_0 ==
-                     WaitForSingleObject(GetStdHandle(STD_INPUT_HANDLE), 0)))
-# endif
+/* OPENSSL_SYS_MSDOS includes OPENSSL_SYS_WINDOWS */
+#if defined(OPENSSL_SYS_MSDOS)
+        else if (has_stdin_waiting())
 #else
         else if (FD_ISSET(fileno(stdin), &readfds))
 #endif
@@ -2520,6 +2396,16 @@ int s_client_main(int argc, char **argv)
     if (in_init)
         print_stuff(bio_c_out, con, full_log);
     do_ssl_shutdown(con);
+#if defined(OPENSSL_SYS_WINDOWS)
+    /*
+     * Give the socket time to send its last data before we close it.
+     * No amount of setting SO_LINGER etc on the socket seems to persuade
+     * Windows to send the data before closing the socket...but sleeping
+     * for a short time seems to do it (units in ms)
+     * TODO: Find a better way to do this
+     */
+    Sleep(50);
+#endif
     BIO_closesocket(SSL_get_fd(con));
  end:
     if (con != NULL) {
@@ -2669,6 +2555,7 @@ static void print_stuff(BIO *bio, SSL *s, int full)
                SSL_CIPHER_get_version(c), SSL_CIPHER_get_name(c));
     if (peer != NULL) {
         EVP_PKEY *pktmp;
+
         pktmp = X509_get0_pubkey(peer);
         BIO_printf(bio, "Server public key is %d bit\n",
                    EVP_PKEY_bits(pktmp));

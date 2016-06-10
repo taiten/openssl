@@ -1,59 +1,10 @@
 /*
- * Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL project
- * 2005.
- */
-/* ====================================================================
- * Copyright (c) 2005 The OpenSSL Project.  All rights reserved.
+ * Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 /*
@@ -356,6 +307,7 @@ static EVP_PKEY *b2i_rsa(const unsigned char **in,
     const unsigned char *pin = *in;
     EVP_PKEY *ret = NULL;
     BIGNUM *e = NULL, *n = NULL, *d = NULL;
+    BIGNUM *p = NULL, *q = NULL, *dmp1 = NULL, *dmq1 = NULL, *iqmp = NULL;
     RSA *rsa = NULL;
     unsigned int nbyte, hnbyte;
     nbyte = (bitlen + 7) >> 3;
@@ -372,7 +324,6 @@ static EVP_PKEY *b2i_rsa(const unsigned char **in,
     if (!read_lebn(&pin, nbyte, &n))
         goto memerr;
     if (!ispub) {
-        BIGNUM *p = NULL, *q = NULL, *dmp1 = NULL, *dmq1 = NULL, *iqmp = NULL;
         if (!read_lebn(&pin, hnbyte, &p))
             goto memerr;
         if (!read_lebn(&pin, hnbyte, &q))
@@ -388,7 +339,7 @@ static EVP_PKEY *b2i_rsa(const unsigned char **in,
         RSA_set0_factors(rsa, p, q);
         RSA_set0_crt_params(rsa, dmp1, dmq1, iqmp);
     }
-    RSA_set0_key(rsa, e, n, d);
+    RSA_set0_key(rsa, n, e, d);
 
     EVP_PKEY_set1_RSA(ret, rsa);
     RSA_free(rsa);
@@ -396,6 +347,14 @@ static EVP_PKEY *b2i_rsa(const unsigned char **in,
     return ret;
  memerr:
     PEMerr(PEM_F_B2I_RSA, ERR_R_MALLOC_FAILURE);
+    BN_free(e);
+    BN_free(n);
+    BN_free(p);
+    BN_free(q);
+    BN_free(dmp1);
+    BN_free(dmq1);
+    BN_free(iqmp);
+    BN_free(d);
     RSA_free(rsa);
     EVP_PKEY_free(ret);
     return NULL;
@@ -798,26 +757,29 @@ static int i2b_PVK(unsigned char **out, EVP_PKEY *pk, int enclevel,
                    pem_password_cb *cb, void *u)
 {
     int outlen = 24, pklen;
-    unsigned char *p, *salt = NULL;
-    EVP_CIPHER_CTX *cctx = EVP_CIPHER_CTX_new();
+    unsigned char *p = NULL, *salt = NULL;
+    EVP_CIPHER_CTX *cctx = NULL;
     if (enclevel)
         outlen += PVK_SALTLEN;
     pklen = do_i2b(NULL, pk, 0);
     if (pklen < 0)
         return -1;
     outlen += pklen;
-    if (!out)
+    if (out == NULL)
         return outlen;
-    if (*out)
+    if (*out != NULL) {
         p = *out;
-    else {
+    } else {
         p = OPENSSL_malloc(outlen);
         if (p == NULL) {
             PEMerr(PEM_F_I2B_PVK, ERR_R_MALLOC_FAILURE);
             return -1;
         }
-        *out = p;
     }
+
+    cctx = EVP_CIPHER_CTX_new();
+    if (cctx == NULL)
+        goto error;
 
     write_ledword(&p, MS_PVKMAGIC);
     write_ledword(&p, 0);
@@ -835,9 +797,7 @@ static int i2b_PVK(unsigned char **out, EVP_PKEY *pk, int enclevel,
         p += PVK_SALTLEN;
     }
     do_i2b(&p, pk, 0);
-    if (enclevel == 0)
-        return outlen;
-    else {
+    if (enclevel != 0) {
         char psbuf[PEM_BUFSIZE];
         unsigned char keybuf[20];
         int enctmplen, inlen;
@@ -863,11 +823,18 @@ static int i2b_PVK(unsigned char **out, EVP_PKEY *pk, int enclevel,
         if (!EVP_DecryptFinal_ex(cctx, p + enctmplen, &enctmplen))
             goto error;
     }
+
     EVP_CIPHER_CTX_free(cctx);
+
+    if (*out == NULL)
+        *out = p;
+
     return outlen;
 
  error:
     EVP_CIPHER_CTX_free(cctx);
+    if (*out == NULL)
+        OPENSSL_free(p);
     return -1;
 }
 

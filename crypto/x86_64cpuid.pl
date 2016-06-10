@@ -1,4 +1,11 @@
-#!/usr/bin/env perl
+#! /usr/bin/env perl
+# Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 
 $flavour = shift;
 $output  = shift;
@@ -11,7 +18,7 @@ $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
 ( $xlate="${dir}perlasm/x86_64-xlate.pl" and -f $xlate) or
 die "can't locate x86_64-xlate.pl";
 
-open OUT,"| \"$^X\" $xlate $flavour $output";
+open OUT,"| \"$^X\" \"$xlate\" $flavour \"$output\"";
 *STDOUT=*OUT;
 
 ($arg1,$arg2,$arg3,$arg4)=$win64?("%rcx","%rdx","%r8", "%r9") :	# Win64 order
@@ -217,6 +224,28 @@ OPENSSL_cleanse:
 	jne	.Little
 	ret
 .size	OPENSSL_cleanse,.-OPENSSL_cleanse
+
+.globl  CRYPTO_memcmp
+.type   CRYPTO_memcmp,\@abi-omnipotent
+.align  16
+CRYPTO_memcmp:
+	xor	%rax,%rax
+	xor	%r10,%r10
+	cmp	\$0,$arg3
+	je	.Lno_data
+.Loop_cmp:
+	mov	($arg1),%r10b
+	lea	1($arg1),$arg1
+	xor	($arg2),%r10b
+	lea	1($arg2),$arg2
+	or	%r10b,%al
+	dec	$arg3
+	jnz	.Loop_cmp
+	neg	%rax
+	shr	\$63,%rax
+.Lno_data:
+	ret
+.size	CRYPTO_memcmp,.-CRYPTO_memcmp
 ___
 
 print<<___ if (!$win64);

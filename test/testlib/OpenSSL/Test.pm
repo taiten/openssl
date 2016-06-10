@@ -1,3 +1,10 @@
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 package OpenSSL::Test;
 
 use strict;
@@ -346,6 +353,18 @@ sub run {
     my $r = 0;
     my $e = 0;
 
+    # In non-verbose, we want to shut up the command interpreter, in case
+    # it has something to complain about.  On VMS, it might complain both
+    # on stdout and stderr
+    my $save_STDOUT;
+    my $save_STDERR;
+    if ($ENV{HARNESS_ACTIVE} && !$ENV{HARNESS_VERBOSE}) {
+        open $save_STDOUT, '>&', \*STDOUT or die "Can't dup STDOUT: $!";
+        open $save_STDERR, '>&', \*STDERR or die "Can't dup STDERR: $!";
+        open STDOUT, ">", devnull();
+        open STDERR, ">", devnull();
+    }
+
     # The dance we do with $? is the same dance the Unix shells appear to
     # do.  For example, a program that gets aborted (and therefore signals
     # SIGABRT = 6) will appear to exit with the code 134.  We mimic this
@@ -357,6 +376,13 @@ sub run {
 	system("$prefix$cmd");
 	$e = ($? & 0x7f) ? ($? & 0x7f)|0x80 : ($? >> 8);
 	$r = $hooks{exit_checker}->($e);
+    }
+
+    if ($ENV{HARNESS_ACTIVE} && !$ENV{HARNESS_VERBOSE}) {
+        close STDOUT;
+        close STDERR;
+        open STDOUT, '>&', $save_STDOUT or die "Can't restore STDOUT: $!";
+        open STDERR, '>&', $save_STDERR or die "Can't restore STDERR: $!";
     }
 
     print STDERR "$prefix$display_cmd => $e\n"
@@ -728,8 +754,8 @@ sub __exeext {
 sub __test_file {
     BAIL_OUT("Must run setup() first") if (! $test_name);
 
-    my $f = pop . __exeext();
-    $f = catfile($directories{BLDTEST},@_,$f);
+    my $f = pop;
+    $f = catfile($directories{BLDTEST},@_,$f . __exeext());
     $f = catfile($directories{SRCTEST},@_,$f) unless -x $f;
     return $f;
 }
@@ -746,8 +772,8 @@ sub __perltest_file {
 sub __apps_file {
     BAIL_OUT("Must run setup() first") if (! $test_name);
 
-    my $f = pop . __exeext();
-    $f = catfile($directories{BLDAPPS},@_,$f);
+    my $f = pop;
+    $f = catfile($directories{BLDAPPS},@_,$f . __exeext());
     $f = catfile($directories{SRCAPPS},@_,$f) unless -x $f;
     return $f;
 }
