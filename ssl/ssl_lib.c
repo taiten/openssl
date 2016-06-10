@@ -671,6 +671,11 @@ SSL *SSL_new(SSL_CTX *ctx)
     return NULL;
 }
 
+int SSL_is_dtls(const SSL *s)
+{
+    return SSL_IS_DTLS(s) ? 1 : 0;
+}
+
 int SSL_up_ref(SSL *s)
 {
     int i;
@@ -746,9 +751,9 @@ int SSL_has_matching_session_id(const SSL *ssl, const unsigned char *id,
     r.session_id_length = id_len;
     memcpy(r.session_id, id, id_len);
 
-    CRYPTO_THREAD_read_lock(ssl->ctx->lock);
-    p = lh_SSL_SESSION_retrieve(ssl->ctx->sessions, &r);
-    CRYPTO_THREAD_unlock(ssl->ctx->lock);
+    CRYPTO_THREAD_read_lock(ssl->session_ctx->lock);
+    p = lh_SSL_SESSION_retrieve(ssl->session_ctx->sessions, &r);
+    CRYPTO_THREAD_unlock(ssl->session_ctx->lock);
     return (p != NULL);
 }
 
@@ -3853,7 +3858,7 @@ static int ct_move_scts(STACK_OF(SCT) **dst, STACK_OF(SCT) *src, sct_source_t or
 err:
     if (sct != NULL)
         sk_SCT_push(src, sct); /* Put the SCT back */
-    return scts_moved;
+    return -1;
 }
 
 /*

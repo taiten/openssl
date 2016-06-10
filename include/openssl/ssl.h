@@ -1133,6 +1133,7 @@ DECLARE_PEM_rw(SSL_SESSION, SSL_SESSION)
 # define SSL_CTRL_SET_MAX_PROTO_VERSION          124
 # define SSL_CTRL_SET_SPLIT_SEND_FRAGMENT        125
 # define SSL_CTRL_SET_MAX_PIPELINES              126
+# define SSL_CTRL_GET_TLSEXT_STATUS_REQ_TYPE     127
 # define SSL_CERT_SET_FIRST                      1
 # define SSL_CERT_SET_NEXT                       2
 # define SSL_CERT_SET_SERVER                     3
@@ -1376,6 +1377,7 @@ __owur long SSL_SESSION_get_time(const SSL_SESSION *s);
 __owur long SSL_SESSION_set_time(SSL_SESSION *s, long t);
 __owur long SSL_SESSION_get_timeout(const SSL_SESSION *s);
 __owur long SSL_SESSION_set_timeout(SSL_SESSION *s, long t);
+__owur int SSL_SESSION_get_protocol_version(const SSL_SESSION *s);
 __owur const char *SSL_SESSION_get0_hostname(const SSL_SESSION *s);
 __owur int SSL_SESSION_has_ticket(const SSL_SESSION *s);
 __owur unsigned long SSL_SESSION_get_ticket_lifetime_hint(const SSL_SESSION *s);
@@ -1455,6 +1457,7 @@ __owur int SSL_CTX_set_session_id_context(SSL_CTX *ctx, const unsigned char *sid
 
 SSL *SSL_new(SSL_CTX *ctx);
 int SSL_up_ref(SSL *s);
+int SSL_is_dtls(const SSL *s);
 __owur int SSL_set_session_id_context(SSL *ssl, const unsigned char *sid_ctx,
                                unsigned int sid_ctx_len);
 
@@ -2028,6 +2031,8 @@ void ERR_load_SSL_strings(void);
 # define SSL_F_DTLS1_PREPROCESS_FRAGMENT                  288
 # define SSL_F_DTLS1_PROCESS_RECORD                       257
 # define SSL_F_DTLS1_READ_BYTES                           258
+# define SSL_F_DTLS1_READ_FAILED                          339
+# define SSL_F_DTLS1_RETRANSMIT_MESSAGE                   390
 # define SSL_F_DTLS1_WRITE_APP_DATA_BYTES                 268
 # define SSL_F_DTLSV1_LISTEN                              350
 # define SSL_F_DTLS_CONSTRUCT_CHANGE_CIPHER_SPEC          371
@@ -2046,6 +2051,7 @@ void ERR_load_SSL_strings(void);
 # define SSL_F_SSL3_GENERATE_KEY_BLOCK                    238
 # define SSL_F_SSL3_GENERATE_MASTER_SECRET                388
 # define SSL_F_SSL3_GET_RECORD                            143
+# define SSL_F_SSL3_INIT_FINISHED_MAC                     397
 # define SSL_F_SSL3_OUTPUT_CERT_CHAIN                     147
 # define SSL_F_SSL3_READ_BYTES                            148
 # define SSL_F_SSL3_READ_N                                149

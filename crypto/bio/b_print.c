@@ -363,9 +363,15 @@ _dopr(char **sbuffer,
             break;
         }
     }
-    *truncated = (currlen > *maxlen - 1);
-    if (*truncated)
-        currlen = *maxlen - 1;
+    /*
+     * We have to truncate if there is no dynamic buffer and we have filled the
+     * static buffer.
+     */
+    if (buffer == NULL) {
+        *truncated = (currlen > *maxlen - 1);
+        if (*truncated)
+            currlen = *maxlen - 1;
+    }
     if(!doapr_outch(sbuffer, buffer, &currlen, maxlen, '\0'))
         return 0;
     *retlen = currlen - 1;
@@ -390,8 +396,16 @@ fmtstr(char **sbuffer,
     padlen = min - strln;
     if (min < 0 || padlen < 0)
         padlen = 0;
-    if (max >= 0)
-        max += padlen;      /* The maximum output including padding */
+    if (max >= 0) {
+        /*
+         * Calculate the maximum output including padding.
+         * Make sure max doesn't overflow into negativity
+         */
+        if (max < INT_MAX - padlen)
+            max += padlen;
+        else
+            max = INT_MAX;
+    }
     if (flags & DP_F_MINUS)
         padlen = -padlen;
 

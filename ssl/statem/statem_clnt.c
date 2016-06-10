@@ -391,7 +391,10 @@ WORK_STATE ossl_statem_client_pre_work(SSL *s, WORK_STATE wst)
         s->shutdown = 0;
         if (SSL_IS_DTLS(s)) {
             /* every DTLS ClientHello resets Finished MAC */
-            ssl3_init_finished_mac(s);
+            if (!ssl3_init_finished_mac(s)) {
+                ossl_statem_set_error(s);
+                return WORK_ERROR;
+            }
         }
         break;
 
@@ -1013,6 +1016,7 @@ MSG_PROCESS_RETURN tls_process_server_hello(SSL *s, PACKET *pkt)
          * overwritten if the server refuses resumption.
          */
         if (s->session->session_id_length > 0) {
+            s->ctx->stats.sess_miss++;
             if (!ssl_get_new_session(s, 0)) {
                 goto f_err;
             }

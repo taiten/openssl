@@ -1,8 +1,14 @@
 =pod
 
+=for comment openssl_manual_section:7
+
 =head1 NAME
 
 SSL - OpenSSL SSL/TLS library
+
+=head1 SYNOPSIS
+
+See the individual manual pages for details.
 
 =head1 DESCRIPTION
 
@@ -516,6 +522,8 @@ fresh handle for each connection.
 
 =item const char *B<SSL_get_cipher>(const SSL *ssl);
 
+=item int B<SSL_is_dtls>(const SSL *ssl);
+
 =item int B<SSL_get_cipher_bits>(const SSL *ssl, int *alg_bits);
 
 =item char *B<SSL_get_cipher_list>(const SSL *ssl, int n);
@@ -717,6 +725,10 @@ Returns the current handshake state.
 =item const char *B<SSL_get_psk_identity>(SSL *ssl);
 
 =back
+
+=head1 RETURN VALUES
+
+See the individual manual pages for details.
 
 =head1 SEE ALSO
 

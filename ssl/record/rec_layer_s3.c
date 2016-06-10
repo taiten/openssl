@@ -63,6 +63,7 @@ void RECORD_LAYER_clear(RECORD_LAYER *rl)
     for(pipes = 0; pipes < rl->numwpipes; pipes++)
         SSL3_BUFFER_clear(&rl->wbuf[pipes]);
     rl->numwpipes = 0;
+    rl->numrpipes = 0;
     SSL3_RECORD_clear(rl->rrec, SSL_MAX_PIPELINES);
 
     RECORD_LAYER_reset_read_sequence(rl);
@@ -1056,9 +1057,9 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
                 goto f_err;
             }
         }
-        /* Skip over any records we have already used or are zero in length */
+        /* Skip over any records we have already read */
         for (curr_rec = 0;
-             curr_rec < num_recs && SSL3_RECORD_get_length(&rr[curr_rec]) == 0;
+             curr_rec < num_recs && SSL3_RECORD_is_read(&rr[curr_rec]);
              curr_rec++);
         if (curr_rec == num_recs) {
             RECORD_LAYER_set_numrpipes(&s->rlayer, 0);
@@ -1136,6 +1137,7 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
                 if (SSL3_RECORD_get_length(rr) == 0) {
                     s->rlayer.rstate = SSL_ST_READ_HEADER;
                     SSL3_RECORD_set_off(rr, 0);
+                    SSL3_RECORD_set_read(rr);
                 }
             }
             if (SSL3_RECORD_get_length(rr) == 0
@@ -1146,6 +1148,10 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             read_bytes += n;
         } while (type == SSL3_RT_APPLICATION_DATA && curr_rec < num_recs
                  && read_bytes < (unsigned int)len);
+        if (read_bytes == 0) {
+            /* We must have read empty records. Get more data */
+            goto start;
+        }
         if (!peek && curr_rec == num_recs
                 && (s->mode & SSL_MODE_RELEASE_BUFFERS)
                 && SSL3_BUFFER_get_left(rbuf) == 0)
@@ -1366,7 +1372,7 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             BIO_snprintf(tmp, sizeof tmp, "%d", alert_descr);
             ERR_add_error_data(2, "SSL alert number ", tmp);
             s->shutdown |= SSL_RECEIVED_SHUTDOWN;
-            SSL_CTX_remove_session(s->ctx, s->session);
+            SSL_CTX_remove_session(s->session_ctx, s->session);
             return (0);
         } else {
             al = SSL_AD_ILLEGAL_PARAMETER;

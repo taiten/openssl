@@ -49,7 +49,7 @@ Index: openssl-1.1.0~pre5/Configurations/20-debian.conf
 +		inherit_from => [ "debian-i386" ],
 +	},
 +	"debian-hppa" => {
-+		inherit_from => [ "linux-generic32", "debian", asm("parisc11_asm") ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-hurd-i386" => {
 +		inherit_from => [ "hurd-x86", "debian" ],

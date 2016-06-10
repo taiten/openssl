@@ -828,6 +828,11 @@ long SSL_SESSION_set_time(SSL_SESSION *s, long t)
     return (t);
 }
 
+int SSL_SESSION_get_protocol_version(const SSL_SESSION *s)
+{
+    return s->ssl_version;
+}
+
 const char *SSL_SESSION_get0_hostname(const SSL_SESSION *s)
 {
     return s->tlsext_hostname;
@@ -989,7 +994,7 @@ int ssl_clear_bad_session(SSL *s)
     if ((s->session != NULL) &&
         !(s->shutdown & SSL_SENT_SHUTDOWN) &&
         !(SSL_in_init(s) || SSL_in_before(s))) {
-        SSL_CTX_remove_session(s->ctx, s->session);
+        SSL_CTX_remove_session(s->session_ctx, s->session);
         return (1);
     } else
         return (0);

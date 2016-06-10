@@ -13,11 +13,17 @@ use File::Spec::Functions;
 use File::Basename;
 use File::Copy;
 use File::Path;
+use if $^O ne "VMS", 'File::Glob' => qw/glob/;
 use Getopt::Long;
 use Pod::Usage;
 
 use lib '.';
 use configdata;
+
+# We know we are in the 'util' directory and that our perl modules are
+# in util/perl
+use lib catdir(dirname($0), "perl");
+use OpenSSL::Util::Pod;
 
 my %options = ();
 GetOptions(\%options,
@@ -72,49 +78,15 @@ my $symlink_exists = eval { symlink("",""); 1 };
 foreach my $subdir (keys %{$options{subdir}}) {
     my $section = $options{subdir}->{$subdir};
     my $podsourcedir = catfile($options{sourcedir}, $subdir);
-    my $podglob = '"'.catfile($podsourcedir, "*.pod").'"';
+    my $podglob = catfile($podsourcedir, "*.pod");
 
     foreach my $podfile (glob $podglob) {
         my $podname = basename($podfile, ".pod");
         my $podpath = catfile($podfile);
-        my %podinfo = ( section => $section );
-
-        print STDERR "DEBUG: Reading $podpath\n" if $options{debug};
-        open my $pod_fh, $podpath or die "Trying to read $podpath: $!\n";
-        while (<$pod_fh>) {
-            s|\R$||;
-            if (m|^=for\s+comment\s+openssl_manual_section:\s*([0-9])\s*$|) {
-                print STDERR "DEBUG: Found man section number $1\n"
-                    if $options{debug};
-                $podinfo{section} = $1;
-            }
-            last if (m|^=head1|
-                     && defined $podinfo{lastsect}
-                     && $podinfo{lastsect} eq "NAME");
-            if (m|^=head1\s*(.*)|) {
-                $podinfo{lastsect} = $1;
-                $podinfo{lastsect} =~ s/\s+$//;
-                print STDERR "DEBUG: Found new pod section $1\n"
-                    if $options{debug};
-                print STDERR "DEBUG: Clearing pod section text\n"
-                    if $options{debug};
-                $podinfo{lastsecttext} = "";
-            }
-            next if (m|^=| || m|^\s*$|);
-            print STDERR "DEBUG: accumulating pod section text \"$_\"\n"
-                if $options{debug};
-            $podinfo{lastsecttext} .= " " if $podinfo{lastsecttext};
-            $podinfo{lastsecttext} .= $_;
-        }
-        close $pod_fh;
-        print STDERR "DEBUG: Done reading $podpath\n" if $options{debug};
-        $podinfo{lastsecttext} =~ s| - .*$||;
-        print STDERR "DEBUG: Done reading $podpath\n" if $options{debug};
-
-        my @podfiles =
-            grep { $_ ne $podname }
-            map { s|\s+||g; $_ }
-            split(m|,|, $podinfo{lastsecttext});
+        my %podinfo = extract_pod_info($podpath,
+                                       { debug => $options{debug},
+                                         section => $section });
+        my @podfiles = grep { $_ ne $podname } @{$podinfo{names}};
 
         my $updir = updir();
         my $name = uc $podname;

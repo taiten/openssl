@@ -74,8 +74,8 @@ struct v3_ext_method {
 };
 
 typedef struct X509V3_CONF_METHOD_st {
-    char *(*get_string) (void *db, char *section, char *value);
-    STACK_OF(CONF_VALUE) *(*get_section) (void *db, char *section);
+    char *(*get_string) (void *db, const char *section, const char *value);
+    STACK_OF(CONF_VALUE) *(*get_section) (void *db, const char *section);
     void (*free_string) (void *db, char *string);
     void (*free_section) (void *db, STACK_OF(CONF_VALUE) *section);
 } X509V3_CONF_METHOD;
@@ -481,7 +481,7 @@ STACK_OF(CONF_VALUE) *i2v_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
                                           STACK_OF(CONF_VALUE) *extlist);
 char *i2s_ASN1_IA5STRING(X509V3_EXT_METHOD *method, ASN1_IA5STRING *ia5);
 ASN1_IA5STRING *s2i_ASN1_IA5STRING(X509V3_EXT_METHOD *method,
-                                   X509V3_CTX *ctx, char *str);
+                                   X509V3_CTX *ctx, const char *str);
 
 STACK_OF(CONF_VALUE) *i2v_GENERAL_NAME(X509V3_EXT_METHOD *method,
                                        GENERAL_NAME *gen,
@@ -562,29 +562,29 @@ GENERAL_NAME *v2i_GENERAL_NAME_ex(GENERAL_NAME *out,
 void X509V3_conf_free(CONF_VALUE *val);
 
 X509_EXTENSION *X509V3_EXT_nconf_nid(CONF *conf, X509V3_CTX *ctx, int ext_nid,
-                                     char *value);
-X509_EXTENSION *X509V3_EXT_nconf(CONF *conf, X509V3_CTX *ctx, char *name,
-                                 char *value);
-int X509V3_EXT_add_nconf_sk(CONF *conf, X509V3_CTX *ctx, char *section,
+                                     const char *value);
+X509_EXTENSION *X509V3_EXT_nconf(CONF *conf, X509V3_CTX *ctx, const char *name,
+                                 const char *value);
+int X509V3_EXT_add_nconf_sk(CONF *conf, X509V3_CTX *ctx, const char *section,
                             STACK_OF(X509_EXTENSION) **sk);
-int X509V3_EXT_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
+int X509V3_EXT_add_nconf(CONF *conf, X509V3_CTX *ctx, const char *section,
                          X509 *cert);
-int X509V3_EXT_REQ_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
+int X509V3_EXT_REQ_add_nconf(CONF *conf, X509V3_CTX *ctx, const char *section,
                              X509_REQ *req);
-int X509V3_EXT_CRL_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
+int X509V3_EXT_CRL_add_nconf(CONF *conf, X509V3_CTX *ctx, const char *section,
                              X509_CRL *crl);
 
 X509_EXTENSION *X509V3_EXT_conf_nid(LHASH_OF(CONF_VALUE) *conf,
                                     X509V3_CTX *ctx, int ext_nid,
-                                    char *value);
+                                    const char *value);
 X509_EXTENSION *X509V3_EXT_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                                char *name, char *value);
+                                const char *name, const char *value);
 int X509V3_EXT_add_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                        char *section, X509 *cert);
+                        const char *section, X509 *cert);
 int X509V3_EXT_REQ_add_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                            char *section, X509_REQ *req);
+                            const char *section, X509_REQ *req);
 int X509V3_EXT_CRL_add_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                            char *section, X509_CRL *crl);
+                            const char *section, X509_CRL *crl);
 
 int X509V3_add_value_bool_nf(char *name, int asn1_bool,
                              STACK_OF(CONF_VALUE) **extlist);
@@ -610,7 +610,7 @@ int X509V3_add_value_bool(const char *name, int asn1_bool,
 int X509V3_add_value_int(const char *name, ASN1_INTEGER *aint,
                          STACK_OF(CONF_VALUE) **extlist);
 char *i2s_ASN1_INTEGER(X509V3_EXT_METHOD *meth, ASN1_INTEGER *aint);
-ASN1_INTEGER *s2i_ASN1_INTEGER(X509V3_EXT_METHOD *meth, char *value);
+ASN1_INTEGER *s2i_ASN1_INTEGER(X509V3_EXT_METHOD *meth, const char *value);
 char *i2s_ASN1_ENUMERATED(X509V3_EXT_METHOD *meth, ASN1_ENUMERATED *aint);
 char *i2s_ASN1_ENUMERATED_TABLE(X509V3_EXT_METHOD *meth,
                                 ASN1_ENUMERATED *aint);
@@ -710,7 +710,6 @@ int X509_check_ip_asc(X509 *x, const char *ipasc, unsigned int flags);
 
 ASN1_OCTET_STRING *a2i_IPADDRESS(const char *ipasc);
 ASN1_OCTET_STRING *a2i_IPADDRESS_NC(const char *ipasc);
-int a2i_ipadd(unsigned char *ipout, const char *ipasc);
 int X509V3_NAME_from_section(X509_NAME *nm, STACK_OF(CONF_VALUE) *dn_sk,
                              unsigned long chtype);
 

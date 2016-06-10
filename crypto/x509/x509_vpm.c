@@ -15,6 +15,7 @@
 #include <openssl/buffer.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include "internal/x509_int.h"
 
 #include "x509_lcl.h"
 
@@ -259,12 +260,11 @@ static int int_x509_param_set1(char **pdest, size_t *pdestlen,
 {
     void *tmp;
     if (src) {
-        if (srclen == 0) {
-            tmp = OPENSSL_strdup(src);
+        if (srclen == 0)
             srclen = strlen(src);
-        } else
-            tmp = OPENSSL_memdup(src, srclen);
-        if (!tmp)
+
+        tmp = OPENSSL_memdup(src, srclen);
+        if (tmp == NULL)
             return 0;
     } else {
         tmp = NULL;
@@ -272,7 +272,7 @@ static int int_x509_param_set1(char **pdest, size_t *pdestlen,
     }
     OPENSSL_free(*pdest);
     *pdest = tmp;
-    if (pdestlen)
+    if (pdestlen != NULL)
         *pdestlen = srclen;
     return 1;
 }

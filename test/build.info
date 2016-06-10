@@ -1,4 +1,4 @@
-{- use File::Spec::Functions qw/catdir rel2abs/; -}
+{- use File::Spec::Functions qw/catdir catfile rel2abs abs2rel updir/; -}
 IF[{- !$disabled{tests} -}]
   PROGRAMS=\
           aborttest \
@@ -11,13 +11,13 @@ IF[{- !$disabled{tests} -}]
           mdc2test rmdtest \
           randtest dhtest enginetest casttest \
           bftest ssltest_old dsatest exptest rsa_test \
-          evp_test evp_extra_test igetest v3nametest \
+          evp_test evp_extra_test igetest v3nametest v3ext \
           danetest heartbeat_test p5_crpt2_test \
           constant_time_test verify_extra_test clienthellotest \
           packettest asynctest secmemtest srptest memleaktest \
           dtlsv1listentest ct_test threadstest afalgtest d2i_test \
           ssl_test_ctx_test ssl_test x509aux cipherlist_test asynciotest \
-          bioprinttest
+          bioprinttest getsettest
 
   SOURCE[aborttest]=aborttest.c
   INCLUDE[aborttest]="{- rel2abs(catdir($builddir,"../include")) -}" ../include
@@ -163,6 +163,10 @@ IF[{- !$disabled{tests} -}]
   INCLUDE[v3nametest]="{- rel2abs(catdir($builddir,"../include")) -}" ../include
   DEPEND[v3nametest]=../libcrypto
 
+  SOURCE[v3ext]=v3ext.c
+  INCLUDE[v3ext]="{- rel2abs(catdir($builddir,"../include")) -}" ../include
+  DEPEND[v3ext]=../libcrypto
+
   SOURCE[danetest]=danetest.c
   INCLUDE[danetest]="{- rel2abs(catdir($builddir,"../include")) -}" ../include
   DEPEND[danetest]=../libcrypto ../libssl
@@ -254,4 +258,34 @@ IF[{- !$disabled{tests} -}]
   SOURCE[bioprinttest]=bioprinttest.c
   INCLUDE[bioprinttest]={- rel2abs(catdir($builddir,"../include")) -} ../include
   DEPEND[bioprinttest]=../libcrypto
+  {-
+   use File::Basename;
+   use if $^O ne "VMS", 'File::Glob' => qw/glob/;
+
+   my $includes = join(" ",
+                       rel2abs(catdir($builddir,"../include")), "../include");
+   my @nogo_headers = ( "asn1_mac.h",
+                        "__decc_include_prologue.h",
+                        "__decc_include_epilogue.h" );
+   my @headerfiles = glob catfile($sourcedir,
+                                  updir(), "include", "openssl", "*.h");
+
+   foreach my $headerfile (@headerfiles) {
+       my $name = basename($headerfile, ".h");
+       next if $disabled{$name};
+       next if grep { $_ eq lc("$name.h") } @nogo_headers;
+       $OUT .= <<"_____";
+
+  PROGRAMS=buildtest_$name
+  GENERATE[buildtest_$name.c]=generate_buildtest.pl $name
+  SOURCE[buildtest_$name]=buildtest_$name.c
+  INCLUDE[buildtest_$name]=$includes
+  DEPEND[buildtest_$name]=../libssl ../libcrypto
+_____
+   }
+  -}
+
+  SOURCE[getsettest]=getsettest.c
+  INCLUDE[getsettest]="{- rel2abs(catdir($builddir,"../include")) -}" ../include
+  DEPEND[getsettest]=../libcrypto ../libssl
 ENDIF

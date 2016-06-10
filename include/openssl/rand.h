@@ -65,12 +65,10 @@ int RAND_egd_bytes(const char *path, int bytes);
 # endif
 int RAND_poll(void);
 
-# if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32)
-
-void RAND_screen(void);
-int RAND_event(UINT, WPARAM, LPARAM);
-
-# endif
+#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32)
+DEPRECATEDIN_1_1_0(void RAND_screen(void))
+DEPRECATEDIN_1_1_0(int RAND_event(UINT, WPARAM, LPARAM))
+#endif
 
 /* BEGIN ERROR CODES */
 /*

@@ -309,8 +309,10 @@ static int bind_helper(ENGINE *e)
 #  endif
 
     chil_lock = CRYPTO_THREAD_lock_new();
-    if (chil_lock == NULL)
+    if (chil_lock == NULL) {
+        HWCRHKerr(HWCRHK_F_BIND_HELPER, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
 
     if (!ENGINE_set_id(e, engine_hwcrhk_id) ||
         !ENGINE_set_name(e, engine_hwcrhk_name) ||
@@ -639,7 +641,7 @@ static int hwcrhk_ctrl(ENGINE *e, int cmd, long i, void *p, void (*f) (void))
             CRYPTO_THREAD_write_lock(chil_lock);
             BIO_free(logstream);
             logstream = NULL;
-            if (BIO_up_ref(bio)
+            if (BIO_up_ref(bio))
                 logstream = bio;
             else
                 HWCRHKerr(HWCRHK_F_HWCRHK_CTRL, HWCRHK_R_BIO_WAS_FREED);
@@ -1092,8 +1094,10 @@ static int hwcrhk_mutex_init(HWCryptoHook_Mutex * mt,
                              HWCryptoHook_CallerContext * cactx)
 {
     mt->lock = CRYPTO_THREAD_lock_new();
-    if (mt->lock == NULL)
+    if (mt->lock == NULL) {
+        HWCRHKerr(HWCRHK_F_HWCRHK_MUTEX_INIT, ERR_R_MALLOC_FAILURE);
         return 1;               /* failure */
+    }
     return 0;                   /* success */
 }
 

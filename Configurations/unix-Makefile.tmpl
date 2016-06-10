@@ -93,9 +93,7 @@ GENERATED={- join(" ",
 
 {- output_off() if $disabled{apps}; "" -}
 BIN_SCRIPTS=$(BLDDIR)/tools/c_rehash
-MISC_SCRIPTS=$(SRCDIR)/tools/c_hash $(SRCDIR)/tools/c_info \
-	     $(SRCDIR)/tools/c_issuer $(SRCDIR)/tools/c_name \
-	     $(BLDDIR)/apps/CA.pl $(BLDDIR)/apps/tsget
+MISC_SCRIPTS=$(BLDDIR)/apps/CA.pl $(BLDDIR)/apps/tsget
 {- output_on() if $disabled{apps}; "" -}
 
 SHLIB_INFO={- join(" ", map { "\"".shlib($_).";".shlib_simple($_)."\"" } @{$unified_info{libraries}}) -}
@@ -709,7 +707,7 @@ tags TAGS: FORCE
 
 # Release targets (note: only available on Unix) #####################
 
-TAR_COMMAND=$(TAR) $(TARFLAGS) --owner 0 --group 0 -cvf - 
+TAR_COMMAND=$(TAR) $(TARFLAGS) --owner 0 --group 0 -cvf -
 PREPARE_CMD=:
 tar:
 	TMPDIR=/var/tmp/openssl-copy.$$$$; \
@@ -717,6 +715,7 @@ tar:
 	mkdir -p $$TMPDIR/$$DISTDIR; \
 	(cd $(SRCDIR); \
 	 git ls-tree -r --name-only --full-tree HEAD \
+         | grep -v '^fuzz/corpora' \
 	 | while read F; do \
 	       mkdir -p $$TMPDIR/$$DISTDIR/`dirname $$F`; \
 	       cp $$F $$TMPDIR/$$DISTDIR/$$F; \
@@ -1055,6 +1054,41 @@ $script: $sources
 	\$(PERL) "-I\$(BLDDIR)" -Mconfigdata "$dofile" \\
 	    "-o$target{build_file}" $sources > "$script"
 	chmod a+x $script
+EOF
+  }
+  sub generatedir {
+      my %args = @_;
+      my $dir = $args{dir};
+      my @deps = map { s|\.o$|$objext|; $_ } @{$args{deps}};
+      my @actions = ();
+      my %extinfo = ( dso => $dsoext,
+                      lib => $libext,
+                      bin => $exeext );
+
+      foreach my $type (("dso", "lib", "bin", "script")) {
+          next unless defined($unified_info{dirinfo}->{$dir}->{products}->{$type});
+          if ($type eq "lib") {
+              foreach my $lib (@{$unified_info{dirinfo}->{$dir}->{products}->{$type}}) {
+                  push @actions, <<"EOF";
+	\$(AR) $lib$libext \$\?
+	\$(RANLIB) $lib$libext || echo Never mind.
+EOF
+              }
+          } else {
+              foreach my $prod (@{$unified_info{dirinfo}->{$dir}->{products}->{$type}}) {
+                  if (dirname($prod) eq $dir) {
+                      push @deps, $prod.$extinfo{$type};
+                  } else {
+                      push @actions, "\t@ : No support to produce $type ".join(", ", @{$unified_info{dirinfo}->{$dir}->{products}->{$type}});
+                  }
+              }
+          }
+      }
+
+      my $deps = join(" ", @deps);
+      my $actions = join("\n", "", @actions);
+      return <<"EOF";
+$args{dir} $args{dir}/: $deps$actions
 EOF
   }
   ""    # Important!  This becomes part of the template result.

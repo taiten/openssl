@@ -266,7 +266,7 @@ static int dsa_missing_parameters(const EVP_PKEY *pkey)
 {
     DSA *dsa;
     dsa = pkey->pkey.dsa;
-    if ((dsa->p == NULL) || (dsa->q == NULL) || (dsa->g == NULL))
+    if (dsa == NULL || dsa->p == NULL || dsa->q == NULL || dsa->g == NULL)
         return 1;
     return 0;
 }
@@ -509,7 +509,7 @@ static int dsa_pkey_ctrl(EVP_PKEY *pkey, int op, long arg1, void *arg2)
 
 /* NB these are sorted in pkey_id order, lowest first */
 
-const EVP_PKEY_ASN1_METHOD dsa_asn1_meths[] = {
+const EVP_PKEY_ASN1_METHOD dsa_asn1_meths[5] = {
 
     {
      EVP_PKEY_DSA2,

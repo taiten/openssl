@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-ciphers - SSL cipher display and cipher list tool.
+ciphers - SSL cipher display and cipher list tool
 
 =head1 SYNOPSIS
 
@@ -246,7 +246,7 @@ Cipher suites using authenticated ephemeral ECDH key agreement.
 
 =item B<AECDH>
 
-Anonymous Elliptic Curve Diffie Hellman cipher suites.
+Anonymous Elliptic Curve Diffie-Hellman cipher suites.
 
 =item B<aDSS>, B<DSS>
 
@@ -663,6 +663,13 @@ Note: these ciphers can also be used in SSL v3.
  TLS_ECDHE_PSK_WITH_CHACHA20_POLY1305_SHA256      ECDHE-PSK-CHACHA20-POLY1305
  TLS_DHE_PSK_WITH_CHACHA20_POLY1305_SHA256        DHE-PSK-CHACHA20-POLY1305
  TLS_RSA_PSK_WITH_CHACHA20_POLY1305_SHA256        RSA-PSK-CHACHA20-POLY1305
+
+=head2 Older names used by OpenSSL
+
+The following names are accepted by older releases:
+
+ SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA    EDH-RSA-DES-CBC3-SHA (DHE-RSA-DES-CBC3-SHA)
+ SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA    EDH-DSS-DES-CBC3-SHA (DHE-DSS-DES-CBC3-SHA)
 
 =head1 NOTES
 

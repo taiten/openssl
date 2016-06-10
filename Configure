@@ -14,6 +14,7 @@ use strict;
 use File::Basename;
 use File::Spec::Functions qw/:DEFAULT abs2rel rel2abs/;
 use File::Path qw/mkpath/;
+use if $^O ne "VMS", 'File::Glob' => qw/glob/;
 
 # see INSTALL for instructions.
 
@@ -210,7 +211,7 @@ die "erroneous version information in opensslv.h: ",
 # Collect target configurations
 
 my $pattern = catfile(dirname($0), "Configurations", "*.conf");
-foreach (sort glob("\"$pattern\"") ) {
+foreach (sort glob($pattern)) {
     &read_config($_);
 }
 
@@ -223,7 +224,7 @@ if (defined $ENV{$local_config_envname}) {
         $pattern = catfile($ENV{$local_config_envname}, '*.conf');
     }
 
-    foreach (sort glob($pattern) ) {
+    foreach (sort glob($pattern)) {
         &read_config($_);
     }
 }
@@ -300,7 +301,8 @@ my @disablables = (
     "engine",
     "err",
     "filenames",
-    "fuzz",
+    "fuzz-libfuzzer",
+    "fuzz-afl",
     "gost",
     "heartbeats",
     "hw(-.+)?",
@@ -364,7 +366,8 @@ our %disabled = ( # "what"         => "comment"
                   "asan"		=> "default",
 		  "ec_nistp_64_gcc_128" => "default",
 		  "egd"                 => "default",
-		  "fuzz"		=> "default",
+		  "fuzz-libfuzzer"	=> "default",
+		  "fuzz-afl"		=> "default",
 		  "md2"                 => "default",
 		  "rc5"                 => "default",
 		  "sctp"                => "default",
@@ -696,6 +699,14 @@ foreach (@argvcopy)
 		elsif (/^--with-zlib-include=(.*)$/)
 			{
 			$withargs{zlib_include}=$1;
+			}
+		elsif (/^--with-fuzzer-lib=(.*)$/)
+			{
+			$withargs{fuzzer_lib}=$1;
+			}
+		elsif (/^--with-fuzzer-include=(.*)$/)
+			{
+			$withargs{fuzzer_include}=$1;
 			}
 		elsif (/^--with-fipslibdir=(.*)$/)
 			{
@@ -1041,9 +1052,13 @@ if ($disabled{"dynamic-engine"}) {
         $config{dynamic_engines} = 1;
 }
 
-unless ($disabled{fuzz}) {
+unless ($disabled{"fuzz-libfuzzer"}) {
     push @{$config{dirs}}, "fuzz";
     $config{cflags} .= "-fsanitize-coverage=edge,indirect-calls ";
+}
+
+unless ($disabled{"fuzz-afl"}) {
+    push @{$config{dirs}}, "fuzz";
 }
 
 unless ($disabled{asan}) {
@@ -1056,7 +1071,8 @@ unless ($disabled{ubsan}) {
     $config{cflags} .= "-fsanitize=undefined -fno-sanitize-recover=all ";
 }
 
-unless ($disabled{fuzz} && $disabled{asan} && $disabled{ubsan}) {
+unless ($disabled{"fuzz-libfuzzer"} && $disabled{"fuzz-afl"}
+        && $disabled{asan} && $disabled{ubsan}) {
     $config{cflags} .= "-fno-omit-frame-pointer -g ";
 }
 #
@@ -1378,6 +1394,7 @@ if ($builder eq "unified") {
             $template->fill_in(HASH => { config => \%config,
                                          target => \%target,
                                          disabled => \%disabled,
+                                         withargs => \%withargs,
                                          builddir => abs2rel($buildd, $blddir),
                                          sourcedir => abs2rel($sourced, $blddir),
                                          buildtop => abs2rel($blddir, $blddir),
@@ -1925,52 +1942,11 @@ for (@generated_headers) {
                catfile($srcdir, $_.".in"));
 }
 
-###
-### When the old "unixmake" scheme goes away, so does this function
-###
-sub build_Makefile {
-    run_dofile("Makefile","Makefile.in");
-
-    # Copy all Makefile.in to Makefile (except top-level)
-    use File::Find;
-    use IO::File;
-    find(
-        {
-            preprocess => sub {
-                grep(!/^\./, @_);
-            },
-            wanted => sub {
-                return if ($_ ne "Makefile.in" || $File::Find::dir eq ".");
-                my $in = IO::File->new($_, "r") or
-                    die sprintf "Error reading Makefile.in in %s: !$\n",
-                    $File::Find::dir;
-                my $out = IO::File->new("Makefile", "w") or
-                    die sprintf "Error writing Makefile in %s: !$\n",
-                    $File::Find::dir;
-                print $out "# Generated from $_, do not edit\n";
-                while (my $line = <$in>) { print $out $line }
-                $in->close() or
-                    die sprintf "Error reading Makefile.in in %s: !$\n",
-                    $File::Find::dir;
-                $out->close() or
-                    die sprintf "Error writing Makefile in %s: !$\n",
-                    $File::Find::dir;
-            },
-        },
-        ".");
-}
-
 my %builders = (
     unified => sub {
         run_dofile(catfile($blddir, $target{build_file}),
                    $config{build_file_template},
                    catfile($srcdir, "Configurations", "common.tmpl"));
-    },
-    unixmake => sub {
-        build_Makefile();
-
-        run_dofile("util/domd", "util/domd.in");
-        chmod 0755, "util/domd";
     },
     );
 

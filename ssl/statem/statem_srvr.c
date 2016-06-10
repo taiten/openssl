@@ -496,15 +496,20 @@ WORK_STATE ossl_statem_server_post_work(SSL *s, WORK_STATE wst)
     case TLS_ST_SW_HELLO_REQ:
         if (statem_flush(s) != 1)
             return WORK_MORE_A;
-        ssl3_init_finished_mac(s);
+        if (!ssl3_init_finished_mac(s)) {
+            ossl_statem_set_error(s);
+            return WORK_ERROR;
+        }
         break;
 
     case DTLS_ST_SW_HELLO_VERIFY_REQUEST:
         if (statem_flush(s) != 1)
             return WORK_MORE_A;
         /* HelloVerifyRequest resets Finished MAC */
-        if (s->version != DTLS1_BAD_VER)
-            ssl3_init_finished_mac(s);
+        if (s->version != DTLS1_BAD_VER && !ssl3_init_finished_mac(s)) {
+            ossl_statem_set_error(s);
+            return WORK_ERROR;
+        }
         /*
          * The next message should be another ClientHello which we need to
          * treat like it was the first packet
@@ -2945,7 +2950,21 @@ int tls_construct_new_session_ticket(SSL *s)
      * all the work otherwise use generated values from parent ctx.
      */
     if (tctx->tlsext_ticket_key_cb) {
-        if (tctx->tlsext_ticket_key_cb(s, key_name, iv, ctx, hctx, 1) < 0)
+        /* if 0 is returned, write an empty ticket */
+        int ret = tctx->tlsext_ticket_key_cb(s, key_name, iv, ctx,
+                                             hctx, 1);
+
+        if (ret == 0) {
+            l2n(0, p); /* timeout */
+            s2n(0, p); /* length */
+            if (!ssl_set_handshake_header(s, SSL3_MT_NEWSESSION_TICKET, p - ssl_handshake_start(s)))
+                goto err;
+            OPENSSL_free(senc);
+            EVP_CIPHER_CTX_free(ctx);
+            HMAC_CTX_free(hctx);
+            return 1;
+        }
+        if (ret < 0)
             goto err;
         iv_len = EVP_CIPHER_CTX_iv_length(ctx);
     } else {
