@@ -1,3 +1,11 @@
+openssl (1.1.0~pre5-4) experimental; urgency=medium
+
+  * Update snapshot to commit c32bdbf171ce6650ef045ec47b5abe0de7c264db
+  * Remove utils-mkdir-p-check-if-dir-exists-also-after-mkdir-f.patch, applied
+    upstream
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sun, 26 Jun 2016 15:07:48 +0200
+
 openssl (1.1.0~pre5-3) experimental; urgency=medium
 
   [ Kurt Roeckx ]

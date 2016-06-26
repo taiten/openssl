@@ -8,4 +8,3 @@ no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
 #padlock_conf.patch
-utils-mkdir-p-check-if-dir-exists-also-after-mkdir-f.patch
