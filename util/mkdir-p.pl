@@ -35,7 +35,7 @@ sub do_mkdir_p {
 
   unless (mkdir($dir, 0777)) {
     if (-d $dir) {
-		 # We raced against another instance doing the same thing.
+      # We raced against another instance doing the same thing.
       return;
     }
     die "Cannot create directory $dir: $!\n";

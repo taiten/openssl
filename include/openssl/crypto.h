@@ -317,8 +317,6 @@ ossl_noreturn void OPENSSL_die(const char *assertion, const char *file, int line
 # define OPENSSL_assert(e) \
     (void)((e) ? 0 : (OPENSSL_die("assertion failed: " #e, OPENSSL_FILE, OPENSSL_LINE), 1))
 
-unsigned int *OPENSSL_ia32cap_loc(void);
-# define OPENSSL_ia32cap ((OPENSSL_ia32cap_loc())[0])
 int OPENSSL_isservice(void);
 
 int FIPS_mode(void);
@@ -380,8 +378,8 @@ void OPENSSL_thread_stop(void);
 /* Low-level control of initialization */
 OPENSSL_INIT_SETTINGS *OPENSSL_INIT_new(void);
 #ifndef OPENSSL_NO_STDIO
-int OPENSSL_INIT_set_config_filename(OPENSSL_INIT_SETTINGS *settings,
-                                     const char *config_file);
+int OPENSSL_INIT_set_config_appname(OPENSSL_INIT_SETTINGS *settings,
+                                    const char *config_file);
 #endif
 void OPENSSL_INIT_free(OPENSSL_INIT_SETTINGS *settings);
 

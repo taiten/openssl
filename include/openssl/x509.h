@@ -989,11 +989,11 @@ int X509_TRUST_get_count(void);
 X509_TRUST *X509_TRUST_get0(int idx);
 int X509_TRUST_get_by_id(int id);
 int X509_TRUST_add(int id, int flags, int (*ck) (X509_TRUST *, X509 *, int),
-                   char *name, int arg1, void *arg2);
+                   const char *name, int arg1, void *arg2);
 void X509_TRUST_cleanup(void);
-int X509_TRUST_get_flags(X509_TRUST *xp);
-char *X509_TRUST_get0_name(X509_TRUST *xp);
-int X509_TRUST_get_trust(X509_TRUST *xp);
+int X509_TRUST_get_flags(const X509_TRUST *xp);
+char *X509_TRUST_get0_name(const X509_TRUST *xp);
+int X509_TRUST_get_trust(const X509_TRUST *xp);
 
 /* BEGIN ERROR CODES */
 /*
@@ -1009,6 +1009,7 @@ void ERR_load_X509_strings(void);
 # define X509_F_ADD_CERT_DIR                              100
 # define X509_F_BUILD_CHAIN                               106
 # define X509_F_BY_FILE_CTRL                              101
+# define X509_F_CHECK_NAME_CONSTRAINTS                    149
 # define X509_F_CHECK_POLICY                              145
 # define X509_F_DANE_I2D                                  107
 # define X509_F_DIR_CTRL                                  102

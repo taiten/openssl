@@ -19,7 +19,7 @@
 IMPLEMENT_ASN1_FUNCTIONS(CMS_ContentInfo)
 IMPLEMENT_ASN1_PRINT_FUNCTION(CMS_ContentInfo)
 
-const ASN1_OBJECT *CMS_get0_type(CMS_ContentInfo *cms)
+const ASN1_OBJECT *CMS_get0_type(const CMS_ContentInfo *cms)
 {
     return cms->contentType;
 }
@@ -345,6 +345,8 @@ static STACK_OF(CMS_CertificateChoices)
         return &cms->d.signedData->certificates;
 
     case NID_pkcs7_enveloped:
+        if (cms->d.envelopedData->originatorInfo == NULL)
+            return NULL;
         return &cms->d.envelopedData->originatorInfo->certificates;
 
     default:
@@ -420,6 +422,8 @@ static STACK_OF(CMS_RevocationInfoChoice)
         return &cms->d.signedData->crls;
 
     case NID_pkcs7_enveloped:
+        if (cms->d.envelopedData->originatorInfo == NULL)
+            return NULL;
         return &cms->d.envelopedData->originatorInfo->crls;
 
     default:

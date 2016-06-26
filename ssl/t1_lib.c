@@ -15,7 +15,6 @@
 #include <openssl/ocsp.h>
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>
-#include <openssl/rand.h>
 #include <openssl/dh.h>
 #include <openssl/bn.h>
 #include "ssl_locl.h"
@@ -2521,8 +2520,7 @@ static int ssl_scan_serverhello_tlsext(SSL *s, PACKET *pkt, int *al)
      * an attack we should *always* see RI even on initial server hello
      * because the client doesn't see any renegotiation during an attack.
      * However this would mean we could not connect to any server which
-     * doesn't support RI so for the immediate future tolerate RI absence on
-     * initial connect only.
+     * doesn't support RI so for the immediate future tolerate RI absence
      */
     if (!renegotiate_seen && !(s->options & SSL_OP_LEGACY_SERVER_CONNECT)
         && !(s->options & SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION)) {
@@ -2650,7 +2648,7 @@ int tls1_set_server_sigalgs(SSL *s)
         /* Fatal error is no shared signature algorithms */
         if (!s->cert->shared_sigalgs) {
             SSLerr(SSL_F_TLS1_SET_SERVER_SIGALGS,
-                   SSL_R_NO_SHARED_SIGATURE_ALGORITHMS);
+                   SSL_R_NO_SHARED_SIGNATURE_ALGORITHMS);
             al = SSL_AD_ILLEGAL_PARAMETER;
             goto err;
         }

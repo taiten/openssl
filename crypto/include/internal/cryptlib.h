@@ -16,6 +16,7 @@
 # include "e_os.h"
 
 # ifdef OPENSSL_USE_APPLINK
+#  undef BIO_FLAGS_UPLINK
 #  define BIO_FLAGS_UPLINK 0x8000
 #  include "ms/uplink.h"
 # endif
@@ -24,7 +25,6 @@
 # include <openssl/buffer.h>
 # include <openssl/bio.h>
 # include <openssl/err.h>
-# include <openssl/opensslconf.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -68,6 +68,11 @@ extern int OPENSSL_NONPIC_relocated;
 void crypto_cleanup_all_ex_data_int(void);
 
 int openssl_strerror_r(int errnum, char *buf, size_t buflen);
+# if !defined(OPENSSL_NO_STDIO)
+FILE *openssl_fopen(const char *filename, const char *mode);
+# else
+void *openssl_fopen(const char *filename, const char *mode);
+# endif
 
 #ifdef  __cplusplus
 }

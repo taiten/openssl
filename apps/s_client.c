@@ -157,9 +157,9 @@ static unsigned int psk_client_cb(SSL *ssl, const char *hint, char *identity,
                                   unsigned char *psk,
                                   unsigned int max_psk_len)
 {
-    unsigned int psk_len = 0;
     int ret;
-    BIGNUM *bn = NULL;
+    long key_len;
+    unsigned char *key;
 
     if (c_debug)
         BIO_printf(bio_c_out, "psk_client_cb\n");
@@ -180,31 +180,29 @@ static unsigned int psk_client_cb(SSL *ssl, const char *hint, char *identity,
     if (c_debug)
         BIO_printf(bio_c_out, "created identity '%s' len=%d\n", identity,
                    ret);
-    ret = BN_hex2bn(&bn, psk_key);
-    if (!ret) {
-        BIO_printf(bio_err, "Could not convert PSK key '%s' to BIGNUM\n",
+
+    /* convert the PSK key to binary */
+    key = OPENSSL_hexstr2buf(psk_key, &key_len);
+    if (key == NULL) {
+        BIO_printf(bio_err, "Could not convert PSK key '%s' to buffer\n",
                    psk_key);
-        BN_free(bn);
         return 0;
     }
-
-    if ((unsigned int)BN_num_bytes(bn) > max_psk_len) {
+    if (key_len > max_psk_len) {
         BIO_printf(bio_err,
-                   "psk buffer of callback is too small (%d) for key (%d)\n",
-                   max_psk_len, BN_num_bytes(bn));
-        BN_free(bn);
+                   "psk buffer of callback is too small (%d) for key (%ld)\n",
+                   max_psk_len, key_len);
+        OPENSSL_free(key);
         return 0;
     }
 
-    psk_len = BN_bn2bin(bn, psk);
-    BN_free(bn);
-    if (psk_len == 0)
-        goto out_err;
+    memcpy(psk, key, key_len);
+    OPENSSL_free(key);
 
     if (c_debug)
-        BIO_printf(bio_c_out, "created PSK len=%d\n", psk_len);
+        BIO_printf(bio_c_out, "created PSK len=%ld\n", key_len);
 
-    return psk_len;
+    return key_len;
  out_err:
     if (c_debug)
         BIO_printf(bio_err, "Error in PSK client callback\n");
@@ -251,10 +249,10 @@ static int srp_Verify_N_and_g(const BIGNUM *N, const BIGNUM *g)
     BIGNUM *r = BN_new();
     int ret =
         g != NULL && N != NULL && bn_ctx != NULL && BN_is_odd(N) &&
-        BN_is_prime_ex(N, SRP_NUMBER_ITERATIONS_FOR_PRIME, bn_ctx, NULL) &&
+        BN_is_prime_ex(N, SRP_NUMBER_ITERATIONS_FOR_PRIME, bn_ctx, NULL) == 1 &&
         p != NULL && BN_rshift1(p, N) &&
         /* p = (N-1)/2 */
-        BN_is_prime_ex(p, SRP_NUMBER_ITERATIONS_FOR_PRIME, bn_ctx, NULL) &&
+        BN_is_prime_ex(p, SRP_NUMBER_ITERATIONS_FOR_PRIME, bn_ctx, NULL) == 1 &&
         r != NULL &&
         /* verify g^((N-1)/2) == -1 (mod N) */
         BN_mod_exp(r, g, p, N, bn_ctx) &&
@@ -770,6 +768,15 @@ static const OPT_PAIR services[] = {
  (o == OPT_4 || o == OPT_6 || o == OPT_HOST || o == OPT_PORT || o == OPT_CONNECT)
 #define IS_UNIX_FLAG(o) (o == OPT_UNIX)
 
+/* Free |*dest| and optionally set it to a copy of |source|. */
+static void freeandcopy(char **dest, const char *source)
+{
+    OPENSSL_free(*dest);
+    *dest = NULL;
+    if (source != NULL)
+        *dest = OPENSSL_strdup(source);
+}
+
 int s_client_main(int argc, char **argv)
 {
     BIO *sbio;
@@ -790,7 +797,7 @@ int s_client_main(int argc, char **argv)
     char *mbuf = NULL, *proxystr = NULL, *connectstr = NULL;
     char *cert_file = NULL, *key_file = NULL, *chain_file = NULL;
     char *chCApath = NULL, *chCAfile = NULL, *host = NULL;
-    char *port = BUF_strdup(PORT);
+    char *port = OPENSSL_strdup(PORT);
     char *inrand = NULL;
     char *passarg = NULL, *pass = NULL, *vfyCApath = NULL, *vfyCAfile = NULL;
     char *sess_in = NULL, *sess_out = NULL, *crl_file = NULL, *p;
@@ -809,6 +816,7 @@ int s_client_main(int argc, char **argv)
     int socket_family = AF_UNSPEC, socket_type = SOCK_STREAM;
     int starttls_proto = PROTO_OFF, crl_format = FORMAT_PEM, crl_download = 0;
     int write_tty, read_tty, write_ssl, read_ssl, tty_on, ssl_pending;
+    int at_eof = 0;
     int read_buf_len = 0;
     int fallback_scsv = 0;
     long randamt = 0;
@@ -921,15 +929,15 @@ int s_client_main(int argc, char **argv)
 #endif
         case OPT_HOST:
             connect_type = use_inet;
-            host = OPENSSL_strdup(opt_arg());
+            freeandcopy(&host, opt_arg());
             break;
         case OPT_PORT:
             connect_type = use_inet;
-            port = OPENSSL_strdup(opt_arg());
+            freeandcopy(&port, opt_arg());
             break;
         case OPT_CONNECT:
             connect_type = use_inet;
-            connectstr = opt_arg();
+            freeandcopy(&connectstr, opt_arg());
             break;
         case OPT_PROXY:
             proxystr = opt_arg();
@@ -939,7 +947,7 @@ int s_client_main(int argc, char **argv)
         case OPT_UNIX:
             connect_type = use_unix;
             socket_family = AF_UNIX;
-            host = OPENSSL_strdup(opt_arg());
+            freeandcopy(&host, opt_arg());
             break;
 #endif
         case OPT_XMPPHOST:
@@ -2114,7 +2122,12 @@ int s_client_main(int argc, char **argv)
         if (!ssl_pending) {
 #if !defined(OPENSSL_SYS_WINDOWS) && !defined(OPENSSL_SYS_MSDOS)
             if (tty_on) {
-                if (read_tty)
+                /*
+                 * Note that select() returns when read _would not block_,
+                 * and EOF satisfies that.  To avoid a CPU-hogging loop,
+                 * set the flag so we exit.
+                 */
+                if (read_tty && !at_eof)
                     openssl_fdset(fileno(stdin), &readfds);
                 if (write_tty)
                     openssl_fdset(fileno(stdout), &writefds);
@@ -2359,6 +2372,9 @@ int s_client_main(int argc, char **argv)
                 assert(lf_num == 0);
             } else
                 i = raw_read_stdin(cbuf, BUFSIZZ);
+
+            if (i == 0)
+                at_eof = 1;
 
             if ((!c_ign_eof) && ((i <= 0) || (cbuf[0] == 'Q' && cmdletters))) {
                 BIO_printf(bio_err, "DONE\n");
@@ -2617,7 +2633,8 @@ static void print_stuff(BIO *bio, SSL *s, int full)
 #endif
 
     SSL_SESSION_print(bio, SSL_get_session(s));
-    if (keymatexportlabel != NULL) {
+    if ((SSL_get_session(s) != NULL) &&
+        (keymatexportlabel != NULL)) {
         BIO_printf(bio, "Keying material exporter:\n");
         BIO_printf(bio, "    Label: '%s'\n", keymatexportlabel);
         BIO_printf(bio, "    Length: %i bytes\n", keymatexportlen);
@@ -2668,4 +2685,4 @@ static int ocsp_resp_cb(SSL *s, void *arg)
 }
 # endif
 
-#endif
+#endif  /* OPENSSL_NO_SOCK */

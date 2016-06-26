@@ -322,6 +322,8 @@ static int x509_name_canon(X509_NAME *a)
         if (tmpentry == NULL)
             goto err;
         tmpentry->object = OBJ_dup(entry->object);
+        if (tmpentry->object == NULL)
+            goto err;
         if (!asn1_string_canon(tmpentry->value, entry->value))
             goto err;
         if (!sk_X509_NAME_ENTRY_push(entries, tmpentry))
@@ -396,10 +398,10 @@ static int asn1_string_canon(ASN1_STRING *out, ASN1_STRING *in)
         len--;
     }
 
-    to = from + len - 1;
+    to = from + len;
 
     /* Ignore trailing spaces */
-    while ((len > 0) && !(*to & 0x80) && isspace(*to)) {
+    while ((len > 0) && !(to[-1] & 0x80) && isspace(to[-1])) {
         to--;
         len--;
     }

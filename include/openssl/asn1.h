@@ -553,8 +553,8 @@ int ASN1_BIT_STRING_check(const ASN1_BIT_STRING *a,
 
 int ASN1_BIT_STRING_name_print(BIO *out, ASN1_BIT_STRING *bs,
                                BIT_STRING_BITNAME *tbl, int indent);
-int ASN1_BIT_STRING_num_asc(char *name, BIT_STRING_BITNAME *tbl);
-int ASN1_BIT_STRING_set_asc(ASN1_BIT_STRING *bs, char *name, int value,
+int ASN1_BIT_STRING_num_asc(const char *name, BIT_STRING_BITNAME *tbl);
+int ASN1_BIT_STRING_set_asc(ASN1_BIT_STRING *bs, const char *name, int value,
                             BIT_STRING_BITNAME *tbl);
 
 DECLARE_ASN1_FUNCTIONS(ASN1_INTEGER)
@@ -752,7 +752,7 @@ int ASN1_parse_dump(BIO *bp, const unsigned char *pp, long len, int indent,
                     int dump);
 const char *ASN1_tag2str(int tag);
 
-/* Used to load and write netscape format cert */
+/* Used to load and write Netscape format cert */
 
 int ASN1_UNIVERSALSTRING_to_string(ASN1_UNIVERSALSTRING *s);
 
@@ -885,6 +885,7 @@ void ERR_load_ASN1_strings(void);
 # define ASN1_F_ASN1_D2I_READ_BIO                         107
 # define ASN1_F_ASN1_DIGEST                               184
 # define ASN1_F_ASN1_DO_ADB                               110
+# define ASN1_F_ASN1_DO_LOCK                              233
 # define ASN1_F_ASN1_DUP                                  111
 # define ASN1_F_ASN1_EX_C2I                               204
 # define ASN1_F_ASN1_FIND_END                             190

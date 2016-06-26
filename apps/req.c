@@ -768,7 +768,7 @@ int req_main(int argc, char **argv)
         fprintf(stdout, "Modulus=");
 #ifndef OPENSSL_NO_RSA
         if (EVP_PKEY_base_id(tpubkey) == EVP_PKEY_RSA) {
-            BIGNUM *n;
+            const BIGNUM *n;
             RSA_get0_key(EVP_PKEY_get0_RSA(tpubkey), &n, NULL, NULL);
             BN_print(out, n);
         } else
@@ -1109,12 +1109,12 @@ static int auto_info(X509_REQ *req, STACK_OF(CONF_VALUE) *dn_sk,
             }
         }
 #ifndef CHARSET_EBCDIC
-        plus_char = (*p == '+');
+        plus_char = (*type == '+');
 #else
-        plus_char = (*p == os_toascii['+']);
+        plus_char = (*type == os_toascii['+']);
 #endif
         if (plus_char) {
-            p++;
+            type++;
             mval = -1;
         } else
             mval = 0;

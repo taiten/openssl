@@ -27,7 +27,8 @@ typedef enum {
 } ssl_verify_callback_t;
 
 typedef enum {
-    SSL_TEST_SERVERNAME_SERVER1 = 0, /* Default */
+    SSL_TEST_SERVERNAME_NONE = 0, /* Default */
+    SSL_TEST_SERVERNAME_SERVER1,
     SSL_TEST_SERVERNAME_SERVER2
 } ssl_servername_t;
 
@@ -35,8 +36,13 @@ typedef enum {
     SSL_TEST_SESSION_TICKET_IGNORE = 0, /* Default */
     SSL_TEST_SESSION_TICKET_YES,
     SSL_TEST_SESSION_TICKET_NO,
-    SSL_TEST_SESSION_TICKET_BROKEN, /* Special test */
-} ssl_session_ticket_expected_t;
+    SSL_TEST_SESSION_TICKET_BROKEN /* Special test */
+} ssl_session_ticket_t;
+
+typedef enum {
+    SSL_TEST_METHOD_TLS = 0, /* Default */
+    SSL_TEST_METHOD_DTLS
+} ssl_test_method_t;
 
 typedef struct ssl_test_ctx {
     /* Test expectations. */
@@ -55,7 +61,9 @@ typedef struct ssl_test_ctx {
     ssl_verify_callback_t client_verify_callback;
     /* One of a number of predefined server names use by the client */
     ssl_servername_t servername;
-    ssl_session_ticket_expected_t session_ticket_expected;
+    ssl_session_ticket_t session_ticket_expected;
+    /* Whether the server/client CTX should use DTLS or TLS. */
+    ssl_test_method_t method;
 } SSL_TEST_CTX;
 
 const char *ssl_test_result_name(ssl_test_result_t result);
@@ -63,7 +71,8 @@ const char *ssl_alert_name(int alert);
 const char *ssl_protocol_name(int protocol);
 const char *ssl_verify_callback_name(ssl_verify_callback_t verify_callback);
 const char *ssl_servername_name(ssl_servername_t server);
-const char *ssl_session_ticket_expected_name(ssl_session_ticket_expected_t server);
+const char *ssl_session_ticket_name(ssl_session_ticket_t server);
+const char *ssl_test_method_name(ssl_test_method_t method);
 
 /*
  * Load the test case context from |conf|.

@@ -359,6 +359,7 @@ int ssl_get_new_session(SSL *s, int session)
         CRYPTO_THREAD_unlock(s->session_ctx->lock);
         CRYPTO_THREAD_unlock(s->lock);
         /* Choose a session ID */
+        memset(ss->session_id, 0, ss->session_id_length);
         tmp = ss->session_id_length;
         if (!cb(s, ss->session_id, &tmp)) {
             /* The callback failed */
@@ -471,6 +472,7 @@ int ssl_get_prev_session(SSL *s, const PACKET *ext, const PACKET *session_id)
         SSL_SESSION data;
         size_t local_len;
         data.ssl_version = s->version;
+        memset(data.session_id, 0, sizeof(data.session_id));
         if (!PACKET_copy_all(session_id, data.session_id,
                              sizeof(data.session_id),
                              &local_len)) {
@@ -774,28 +776,20 @@ int SSL_SESSION_up_ref(SSL_SESSION *ss)
 
 int SSL_set_session(SSL *s, SSL_SESSION *session)
 {
-    int ret = 0;
-    if (session != NULL) {
-        if (s->ctx->method != s->method) {
-            if (!SSL_set_ssl_method(s, s->ctx->method))
-                return (0);
-        }
-
-        SSL_SESSION_up_ref(session);
-        SSL_SESSION_free(s->session);
-        s->session = session;
-        s->verify_result = s->session->verify_result;
-        ret = 1;
-    } else {
-        SSL_SESSION_free(s->session);
-        s->session = NULL;
-        if (s->ctx->method != s->method) {
-            if (!SSL_set_ssl_method(s, s->ctx->method))
-                return (0);
-        }
-        ret = 1;
+    ssl_clear_bad_session(s);
+    if (s->ctx->method != s->method) {
+        if (!SSL_set_ssl_method(s, s->ctx->method))
+            return 0;
     }
-    return (ret);
+
+    if (session != NULL) {
+        SSL_SESSION_up_ref(session);
+        s->verify_result = session->verify_result;
+    }
+    SSL_SESSION_free(s->session);
+    s->session = session;
+
+    return 1;
 }
 
 long SSL_SESSION_set_timeout(SSL_SESSION *s, long t)

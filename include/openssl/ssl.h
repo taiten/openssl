@@ -2113,6 +2113,7 @@ void ERR_load_SSL_strings(void);
 # define SSL_F_SSL_DANE_ENABLE                            395
 # define SSL_F_SSL_DO_CONFIG                              391
 # define SSL_F_SSL_DO_HANDSHAKE                           180
+# define SSL_F_SSL_DUP_CA_LIST                            408
 # define SSL_F_SSL_ENABLE_CT                              402
 # define SSL_F_SSL_GET_NEW_SESSION                        181
 # define SSL_F_SSL_GET_PREV_SESSION                       217
@@ -2335,7 +2336,7 @@ void ERR_load_SSL_strings(void);
 # define SSL_R_NO_RENEGOTIATION                           339
 # define SSL_R_NO_REQUIRED_DIGEST                         324
 # define SSL_R_NO_SHARED_CIPHER                           193
-# define SSL_R_NO_SHARED_SIGATURE_ALGORITHMS              376
+# define SSL_R_NO_SHARED_SIGNATURE_ALGORITHMS             376
 # define SSL_R_NO_SRTP_PROFILES                           359
 # define SSL_R_NO_VALID_SCTS                              216
 # define SSL_R_NO_VERIFY_COOKIE_CALLBACK                  403

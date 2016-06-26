@@ -77,6 +77,7 @@ DEPS={- join(" ", map { (my $x = $_) =~ s|\.o$|$depext|; $x; }
                   grep { $unified_info{sources}->{$_}->[0] =~ /\.c$/ }
                   keys %{$unified_info{sources}}); -}
 {- output_on() if $disabled{makedepend}; "" -}
+GENERATED_MANDATORY={- join(" ", @{$unified_info{depends}->{""}} ) -}
 GENERATED={- join(" ",
                   ( map { (my $x = $_) =~ s|\.[sS]$|\.asm|; $x }
                     grep { defined $unified_info{generate}->{$_} }
@@ -144,19 +145,23 @@ PROCESSOR= {- $config{processor} -}
 
 # The main targets ###################################################
 
-all: configdata.pm build_libs_nodep build_engines_nodep build_apps_nodep depend
+all: build_generated \
+     build_libs_nodep build_engines_nodep build_apps_nodep depend
 
-build_libs: configdata.pm build_libs_nodep depend
+build_libs: build_generated build_libs_nodep depend
 build_libs_nodep: $(LIBS)
-build_engines: configdata.pm build_engines_nodep depend
+build_engines: build_generated build_engines_nodep depend
 build_engines_nodep: $(ENGINES)
-build_apps: configdata.pm build_apps_nodep depend
+build_apps: build_generated build_apps_nodep depend
 build_apps_nodep: $(PROGRAMS) $(SCRIPTS)
-build_tests: configdata.pm build_tests_nodep depend
+build_tests: build_generated build_tests_nodep depend
 build_tests_nodep: $(TESTPROGS)
 
+build_generated: $(GENERATED_MANDATORY)
+
 test: tests
-tests: build_tests_nodep build_apps_nodep build_engines_nodep depend
+tests: build_generated \
+       build_tests_nodep build_apps_nodep build_engines_nodep depend
 	@rem {- output_off() if $disabled{tests}; "" -}
 	set SRCTOP=$(SRCDIR)
 	set BLDTOP=$(BLDDIR)
@@ -167,9 +172,12 @@ tests: build_tests_nodep build_apps_nodep build_engines_nodep depend
 	@rem {- output_on() if !$disabled{tests}; "" -}
 
 list-tests:
-	@set TOP=$(SRCDIR)
-	@set PERL=$(PERL)
+	@rem {- output_off() if $disabled{tests}; "" -}
+	@set SRCTOP=$(SRCDIR)
 	@"$(PERL)" "$(SRCDIR)\test\run_tests.pl" list
+	@rem {- if ($disabled{tests}) { output_on(); } else { output_off(); } "" -}
+	@echo "Tests are not supported with your chosen Configure options"
+	@rem {- output_on() if !$disabled{tests}; "" -}
 
 install: install_sw install_ssldirs install_docs
 
@@ -184,7 +192,7 @@ libclean:
 
 clean: libclean
 	-del /Q /F $(PROGRAMS) $(TESTPROGS) $(ENGINES) $(SCRIPTS)
-	-del /Q /S /F $(GENERATED)
+	-del /Q /F $(GENERATED)
 	-del /Q /S /F *.d
 	-del /Q /S /F *.obj
 	-del /Q /S /F *.pdb
@@ -196,6 +204,10 @@ clean: libclean
 	-del /Q /S /F apps\*.manifest
 	-del /Q /S /F test\*.manifest
 
+distclean: clean
+	-del /Q /F configdata.pm
+	-del /Q /F makefile
+
 depend:
 
 # Install helper targets #############################################
@@ -204,11 +216,9 @@ install_sw: all install_dev install_engines install_runtime
 
 uninstall_sw: uninstall_runtime uninstall_engines uninstall_dev
 
-install_docs:
-        "$(PERL)" "$(SRCDIR)\util\process_docs.pl" \
-                "--destdir=$(DESTDIR)$(INSTALLTOP)\html" --type=html
+install_docs: install_html_docs
 
-uninstall_docs:
+uninstall_docs: uninstall_html_docs
 
 install_ssldirs:
 	@"$(PERL)" "$(SRCDIR)\util\mkdir-p.pl" "$(DESTDIR)$(OPENSSLDIR)\certs"
@@ -265,9 +275,15 @@ install_runtime:
 
 uninstall_runtime:
 
+install_html_docs:
+        "$(PERL)" "$(SRCDIR)\util\process_docs.pl" \
+                "--destdir=$(DESTDIR)$(INSTALLTOP)\html" --type=html
+
+uninstall_html_docs:
+
 # Building targets ###################################################
 
-configdata.pm: "{- $config{build_file_template} -}" "$(SRCDIR)\Configure"
+configdata.pm: "{- $config{build_file_template} -}" "$(SRCDIR)\Configurations\common.tmpl" "$(SRCDIR)\Configure" {- join(" ", map { '"'.$_.'"' } @{$config{build_infos}}) -}
 	@echo "Detected changed: $?"
 	@echo "Reconfiguring..."
 	"$(PERL)" "$(SRCDIR)\Configure" reconf
@@ -301,10 +317,21 @@ configdata.pm: "{- $config{build_file_template} -}" "$(SRCDIR)\Configure"
           '"'.join('" "', @{$args{generator_deps}}, @{$args{deps}}).'"' : '';
 
       if ($target !~ /\.asm$/) {
-          return <<"EOF";
+          if ($args{generator}->[0] =~ m|^.*\.in$|) {
+              my $dofile = abs2rel(rel2abs(catfile($config{sourcedir},
+                                                   "util", "dofile.pl")),
+                                   rel2abs($config{builddir}));
+              return <<"EOF";
+$target: "$args{generator}->[0]" $deps
+	"\$(PERL)" "-I\$(BLDDIR)" -Mconfigdata "$dofile" \\
+	    "-o$target{build_file}" $generator > \$@
+EOF
+	  } else {
+              return <<"EOF";
 $target: "$args{generator}->[0]" $deps
 	"\$(PERL)"$generator_incs $generator > \$@
 EOF
+	  }
       } else {
           if ($args{generator}->[0] =~ /\.pl$/) {
               $generator = '"$(PERL)"'.$generator_incs.' '.$generator;

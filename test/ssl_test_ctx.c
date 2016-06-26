@@ -113,6 +113,8 @@ static const test_enum ssl_protocols[] = {
      {"TLSv1.1", TLS1_1_VERSION},
      {"TLSv1", TLS1_VERSION},
      {"SSLv3", SSL3_VERSION},
+     {"DTLSv1", DTLS1_VERSION},
+     {"DTLSv1.2", DTLS1_2_VERSION},
 };
 
 __owur static int parse_protocol(SSL_TEST_CTX *test_ctx, const char *value)
@@ -159,6 +161,7 @@ const char *ssl_verify_callback_name(ssl_verify_callback_t callback)
 /**************/
 
 static const test_enum ssl_servername[] = {
+    {"None", SSL_TEST_SERVERNAME_NONE},
     {"server1", SSL_TEST_SERVERNAME_SERVER1},
     {"server2", SSL_TEST_SERVERNAME_SERVER2},
 };
@@ -185,18 +188,17 @@ const char *ssl_servername_name(ssl_servername_t server)
 /* SessionTicketExpected */
 /*************************/
 
-static const test_enum ssl_session_ticket_expected[] = {
+static const test_enum ssl_session_ticket[] = {
     {"Ignore", SSL_TEST_SESSION_TICKET_IGNORE},
     {"Yes", SSL_TEST_SESSION_TICKET_YES},
     {"No", SSL_TEST_SESSION_TICKET_NO},
     {"Broken", SSL_TEST_SESSION_TICKET_BROKEN},
 };
 
-__owur static int parse_session_ticket_expected(SSL_TEST_CTX *test_ctx,
-                                                const char *value)
+__owur static int parse_session_ticket(SSL_TEST_CTX *test_ctx, const char *value)
 {
     int ret_value;
-    if (!parse_enum(ssl_session_ticket_expected, OSSL_NELEM(ssl_session_ticket_expected),
+    if (!parse_enum(ssl_session_ticket, OSSL_NELEM(ssl_session_ticket),
                     &ret_value, value)) {
         return 0;
     }
@@ -204,11 +206,36 @@ __owur static int parse_session_ticket_expected(SSL_TEST_CTX *test_ctx,
     return 1;
 }
 
-const char *ssl_session_ticket_expected_name(ssl_session_ticket_expected_t server)
+const char *ssl_session_ticket_name(ssl_session_ticket_t server)
 {
-    return enum_name(ssl_session_ticket_expected,
-                     OSSL_NELEM(ssl_session_ticket_expected),
+    return enum_name(ssl_session_ticket,
+                     OSSL_NELEM(ssl_session_ticket),
                      server);
+}
+
+/***********************/
+/* Method.             */
+/***********************/
+
+static const test_enum ssl_test_methods[] = {
+    {"TLS", SSL_TEST_METHOD_TLS},
+    {"DTLS", SSL_TEST_METHOD_DTLS},
+};
+
+__owur static int parse_test_method(SSL_TEST_CTX *test_ctx, const char *value)
+{
+    int ret_value;
+    if (!parse_enum(ssl_test_methods, OSSL_NELEM(ssl_test_methods),
+                    &ret_value, value)) {
+        return 0;
+    }
+    test_ctx->method = ret_value;
+    return 1;
+}
+
+const char *ssl_test_method_name(ssl_test_method_t method)
+{
+    return enum_name(ssl_test_methods, OSSL_NELEM(ssl_test_methods), method);
 }
 
 /*************************************************************/
@@ -227,7 +254,8 @@ static const ssl_test_ctx_option ssl_test_ctx_options[] = {
     { "Protocol", &parse_protocol },
     { "ClientVerifyCallback", &parse_client_verify_callback },
     { "ServerName", &parse_servername },
-    { "SessionTicketExpected", &parse_session_ticket_expected },
+    { "SessionTicketExpected", &parse_session_ticket },
+    { "Method", &parse_test_method },
 };
 
 

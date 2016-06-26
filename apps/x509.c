@@ -606,9 +606,9 @@ int x509_main(int argc, char **argv)
     if (num) {
         for (i = 1; i <= num; i++) {
             if (issuer == i) {
-                print_name(out, "issuer= ", X509_get_issuer_name(x), nmflag);
+                print_name(out, "issuer=", X509_get_issuer_name(x), nmflag);
             } else if (subject == i) {
-                print_name(out, "subject= ",
+                print_name(out, "subject=",
                            X509_get_subject_name(x), nmflag);
             } else if (serial == i) {
                 BIO_printf(out, "serial=");
@@ -684,14 +684,14 @@ int x509_main(int argc, char **argv)
                 BIO_printf(out, "Modulus=");
 #ifndef OPENSSL_NO_RSA
                 if (EVP_PKEY_id(pkey) == EVP_PKEY_RSA) {
-                    BIGNUM *n;
+                    const BIGNUM *n;
                     RSA_get0_key(EVP_PKEY_get0_RSA(pkey), &n, NULL, NULL);
                     BN_print(out, n);
                 } else
 #endif
 #ifndef OPENSSL_NO_DSA
                 if (EVP_PKEY_id(pkey) == EVP_PKEY_DSA) {
-                    BIGNUM *dsapub = NULL;
+                    const BIGNUM *dsapub = NULL;
                     DSA_get0_key(EVP_PKEY_get0_DSA(pkey), &dsapub, NULL);
                     BN_print(out, dsapub);
                 } else
@@ -1088,7 +1088,7 @@ static int sign(X509 *x, EVP_PKEY *pkey, int days, int clrext,
 static int purpose_print(BIO *bio, X509 *cert, X509_PURPOSE *pt)
 {
     int id, i, idret;
-    char *pname;
+    const char *pname;
     id = X509_PURPOSE_get_id(pt);
     pname = X509_PURPOSE_get0_name(pt);
     for (i = 0; i < 2; i++) {
