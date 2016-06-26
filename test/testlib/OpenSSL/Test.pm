@@ -1,3 +1,10 @@
+# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+#
+# Licensed under the OpenSSL license (the "License").  You may not use
+# this file except in compliance with the License.  You can obtain a copy
+# in the file LICENSE in the source distribution or at
+# https://www.openssl.org/source/license.html
+
 package OpenSSL::Test;
 
 use strict;
@@ -346,6 +353,18 @@ sub run {
     my $r = 0;
     my $e = 0;
 
+    # In non-verbose, we want to shut up the command interpreter, in case
+    # it has something to complain about.  On VMS, it might complain both
+    # on stdout and stderr
+    my $save_STDOUT;
+    my $save_STDERR;
+    if ($ENV{HARNESS_ACTIVE} && !$ENV{HARNESS_VERBOSE}) {
+        open $save_STDOUT, '>&', \*STDOUT or die "Can't dup STDOUT: $!";
+        open $save_STDERR, '>&', \*STDERR or die "Can't dup STDERR: $!";
+        open STDOUT, ">", devnull();
+        open STDERR, ">", devnull();
+    }
+
     # The dance we do with $? is the same dance the Unix shells appear to
     # do.  For example, a program that gets aborted (and therefore signals
     # SIGABRT = 6) will appear to exit with the code 134.  We mimic this
@@ -357,6 +376,13 @@ sub run {
 	system("$prefix$cmd");
 	$e = ($? & 0x7f) ? ($? & 0x7f)|0x80 : ($? >> 8);
 	$r = $hooks{exit_checker}->($e);
+    }
+
+    if ($ENV{HARNESS_ACTIVE} && !$ENV{HARNESS_VERBOSE}) {
+        close STDOUT;
+        close STDERR;
+        open STDOUT, '>&', $save_STDOUT or die "Can't restore STDOUT: $!";
+        open STDERR, '>&', $save_STDERR or die "Can't restore STDERR: $!";
     }
 
     print STDERR "$prefix$display_cmd => $e\n"
@@ -728,8 +754,8 @@ sub __exeext {
 sub __test_file {
     BAIL_OUT("Must run setup() first") if (! $test_name);
 
-    my $f = pop . __exeext();
-    $f = catfile($directories{BLDTEST},@_,$f);
+    my $f = pop;
+    $f = catfile($directories{BLDTEST},@_,$f . __exeext());
     $f = catfile($directories{SRCTEST},@_,$f) unless -x $f;
     return $f;
 }
@@ -746,8 +772,8 @@ sub __perltest_file {
 sub __apps_file {
     BAIL_OUT("Must run setup() first") if (! $test_name);
 
-    my $f = pop . __exeext();
-    $f = catfile($directories{BLDAPPS},@_,$f);
+    my $f = pop;
+    $f = catfile($directories{BLDAPPS},@_,$f . __exeext());
     $f = catfile($directories{SRCAPPS},@_,$f) unless -x $f;
     return $f;
 }
@@ -795,12 +821,10 @@ sub __cwd {
 	mkpath($dir);
     }
 
-    # Should we just bail out here as well?  I'm unsure.
-    return undef unless chdir($dir);
-
-    if ($opts{cleanup}) {
-	rmtree(".", { safe => 0, keep_root => 1 });
-    }
+    # We are recalculating the directories we keep track of, but need to save
+    # away the result for after having moved into the new directory.
+    my %tmp_directories = ();
+    my %tmp_ENV = ();
 
     # For each of these directory variables, figure out where they are relative
     # to the directory we want to move to if they aren't absolute (if they are,
@@ -809,7 +833,7 @@ sub __cwd {
     foreach (@dirtags) {
 	if (!file_name_is_absolute($directories{$_})) {
 	    my $newpath = abs2rel(rel2abs($directories{$_}), rel2abs($dir));
-	    $directories{$_} = $newpath;
+	    $tmp_directories{$_} = $newpath;
 	}
     }
 
@@ -819,8 +843,25 @@ sub __cwd {
     foreach (@direnv) {
 	if (!file_name_is_absolute($ENV{$_})) {
 	    my $newpath = abs2rel(rel2abs($ENV{$_}), rel2abs($dir));
-	    $ENV{$_} = $newpath;
+	    $tmp_ENV{$_} = $newpath;
 	}
+    }
+
+    # Should we just bail out here as well?  I'm unsure.
+    return undef unless chdir($dir);
+
+    if ($opts{cleanup}) {
+	rmtree(".", { safe => 0, keep_root => 1 });
+    }
+
+    # We put back new values carefully.  Doing the obvious
+    # %directories = ( %tmp_irectories )
+    # will clear out any value that happens to be an absolute path
+    foreach (keys %tmp_directories) {
+        $directories{$_} = $tmp_directories{$_};
+    }
+    foreach (keys %tmp_ENV) {
+        $ENV{$_} = $tmp_ENV{$_};
     }
 
     if ($debug) {

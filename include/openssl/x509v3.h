@@ -1,60 +1,12 @@
 /*
- * Written by Dr Stephen N Henson (steve@openssl.org) for the OpenSSL project
- * 1999.
+ * Copyright 1999-2016 The OpenSSL Project Authors. All Rights Reserved.
+ *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 1999-2004 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 #ifndef HEADER_X509V3_H
 # define HEADER_X509V3_H
 
@@ -122,8 +74,8 @@ struct v3_ext_method {
 };
 
 typedef struct X509V3_CONF_METHOD_st {
-    char *(*get_string) (void *db, char *section, char *value);
-    STACK_OF(CONF_VALUE) *(*get_section) (void *db, char *section);
+    char *(*get_string) (void *db, const char *section, const char *value);
+    STACK_OF(CONF_VALUE) *(*get_section) (void *db, const char *section);
     void (*free_string) (void *db, char *string);
     void (*free_section) (void *db, STACK_OF(CONF_VALUE) *section);
 } X509V3_CONF_METHOD;
@@ -529,7 +481,7 @@ STACK_OF(CONF_VALUE) *i2v_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
                                           STACK_OF(CONF_VALUE) *extlist);
 char *i2s_ASN1_IA5STRING(X509V3_EXT_METHOD *method, ASN1_IA5STRING *ia5);
 ASN1_IA5STRING *s2i_ASN1_IA5STRING(X509V3_EXT_METHOD *method,
-                                   X509V3_CTX *ctx, char *str);
+                                   X509V3_CTX *ctx, const char *str);
 
 STACK_OF(CONF_VALUE) *i2v_GENERAL_NAME(X509V3_EXT_METHOD *method,
                                        GENERAL_NAME *gen,
@@ -597,8 +549,8 @@ DECLARE_ASN1_ITEM(POLICY_CONSTRAINTS)
 
 GENERAL_NAME *a2i_GENERAL_NAME(GENERAL_NAME *out,
                                const X509V3_EXT_METHOD *method,
-                               X509V3_CTX *ctx, int gen_type, char *value,
-                               int is_nc);
+                               X509V3_CTX *ctx, int gen_type, 
+                               const char *value, int is_nc);
 
 # ifdef HEADER_CONF_H
 GENERAL_NAME *v2i_GENERAL_NAME(const X509V3_EXT_METHOD *method,
@@ -610,31 +562,31 @@ GENERAL_NAME *v2i_GENERAL_NAME_ex(GENERAL_NAME *out,
 void X509V3_conf_free(CONF_VALUE *val);
 
 X509_EXTENSION *X509V3_EXT_nconf_nid(CONF *conf, X509V3_CTX *ctx, int ext_nid,
-                                     char *value);
-X509_EXTENSION *X509V3_EXT_nconf(CONF *conf, X509V3_CTX *ctx, char *name,
-                                 char *value);
-int X509V3_EXT_add_nconf_sk(CONF *conf, X509V3_CTX *ctx, char *section,
+                                     const char *value);
+X509_EXTENSION *X509V3_EXT_nconf(CONF *conf, X509V3_CTX *ctx, const char *name,
+                                 const char *value);
+int X509V3_EXT_add_nconf_sk(CONF *conf, X509V3_CTX *ctx, const char *section,
                             STACK_OF(X509_EXTENSION) **sk);
-int X509V3_EXT_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
+int X509V3_EXT_add_nconf(CONF *conf, X509V3_CTX *ctx, const char *section,
                          X509 *cert);
-int X509V3_EXT_REQ_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
+int X509V3_EXT_REQ_add_nconf(CONF *conf, X509V3_CTX *ctx, const char *section,
                              X509_REQ *req);
-int X509V3_EXT_CRL_add_nconf(CONF *conf, X509V3_CTX *ctx, char *section,
+int X509V3_EXT_CRL_add_nconf(CONF *conf, X509V3_CTX *ctx, const char *section,
                              X509_CRL *crl);
 
 X509_EXTENSION *X509V3_EXT_conf_nid(LHASH_OF(CONF_VALUE) *conf,
                                     X509V3_CTX *ctx, int ext_nid,
-                                    char *value);
+                                    const char *value);
 X509_EXTENSION *X509V3_EXT_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                                char *name, char *value);
+                                const char *name, const char *value);
 int X509V3_EXT_add_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                        char *section, X509 *cert);
+                        const char *section, X509 *cert);
 int X509V3_EXT_REQ_add_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                            char *section, X509_REQ *req);
+                            const char *section, X509_REQ *req);
 int X509V3_EXT_CRL_add_conf(LHASH_OF(CONF_VALUE) *conf, X509V3_CTX *ctx,
-                            char *section, X509_CRL *crl);
+                            const char *section, X509_CRL *crl);
 
-int X509V3_add_value_bool_nf(char *name, int asn1_bool,
+int X509V3_add_value_bool_nf(const char *name, int asn1_bool,
                              STACK_OF(CONF_VALUE) **extlist);
 int X509V3_get_value_bool(CONF_VALUE *value, int *asn1_bool);
 int X509V3_get_value_int(CONF_VALUE *value, ASN1_INTEGER **aint);
@@ -642,8 +594,8 @@ void X509V3_set_nconf(X509V3_CTX *ctx, CONF *conf);
 void X509V3_set_conf_lhash(X509V3_CTX *ctx, LHASH_OF(CONF_VALUE) *lhash);
 # endif
 
-char *X509V3_get_string(X509V3_CTX *ctx, char *name, char *section);
-STACK_OF(CONF_VALUE) *X509V3_get_section(X509V3_CTX *ctx, char *section);
+char *X509V3_get_string(X509V3_CTX *ctx, const char *name, const char *section);
+STACK_OF(CONF_VALUE) *X509V3_get_section(X509V3_CTX *ctx, const char *section);
 void X509V3_string_free(X509V3_CTX *ctx, char *str);
 void X509V3_section_free(X509V3_CTX *ctx, STACK_OF(CONF_VALUE) *section);
 void X509V3_set_ctx(X509V3_CTX *ctx, X509 *issuer, X509 *subject,
@@ -658,7 +610,7 @@ int X509V3_add_value_bool(const char *name, int asn1_bool,
 int X509V3_add_value_int(const char *name, ASN1_INTEGER *aint,
                          STACK_OF(CONF_VALUE) **extlist);
 char *i2s_ASN1_INTEGER(X509V3_EXT_METHOD *meth, ASN1_INTEGER *aint);
-ASN1_INTEGER *s2i_ASN1_INTEGER(X509V3_EXT_METHOD *meth, char *value);
+ASN1_INTEGER *s2i_ASN1_INTEGER(X509V3_EXT_METHOD *meth, const char *value);
 char *i2s_ASN1_ENUMERATED(X509V3_EXT_METHOD *meth, ASN1_ENUMERATED *aint);
 char *i2s_ASN1_ENUMERATED_TABLE(X509V3_EXT_METHOD *meth,
                                 ASN1_ENUMERATED *aint);
@@ -710,16 +662,16 @@ const ASN1_OCTET_STRING *X509_get0_subject_key_id(X509 *x);
 
 int X509_PURPOSE_get_count(void);
 X509_PURPOSE *X509_PURPOSE_get0(int idx);
-int X509_PURPOSE_get_by_sname(char *sname);
+int X509_PURPOSE_get_by_sname(const char *sname);
 int X509_PURPOSE_get_by_id(int id);
 int X509_PURPOSE_add(int id, int trust, int flags,
                      int (*ck) (const X509_PURPOSE *, const X509 *, int),
-                     char *name, char *sname, void *arg);
-char *X509_PURPOSE_get0_name(X509_PURPOSE *xp);
-char *X509_PURPOSE_get0_sname(X509_PURPOSE *xp);
-int X509_PURPOSE_get_trust(X509_PURPOSE *xp);
+                     const char *name, const char *sname, void *arg);
+char *X509_PURPOSE_get0_name(const X509_PURPOSE *xp);
+char *X509_PURPOSE_get0_sname(const X509_PURPOSE *xp);
+int X509_PURPOSE_get_trust(const X509_PURPOSE *xp);
 void X509_PURPOSE_cleanup(void);
-int X509_PURPOSE_get_id(X509_PURPOSE *);
+int X509_PURPOSE_get_id(const X509_PURPOSE *);
 
 STACK_OF(OPENSSL_STRING) *X509_get1_email(X509 *x);
 STACK_OF(OPENSSL_STRING) *X509_REQ_get1_email(X509_REQ *x);
@@ -758,7 +710,6 @@ int X509_check_ip_asc(X509 *x, const char *ipasc, unsigned int flags);
 
 ASN1_OCTET_STRING *a2i_IPADDRESS(const char *ipasc);
 ASN1_OCTET_STRING *a2i_IPADDRESS_NC(const char *ipasc);
-int a2i_ipadd(unsigned char *ipout, const char *ipasc);
 int X509V3_NAME_from_section(X509_NAME *nm, STACK_OF(CONF_VALUE) *dn_sk,
                              unsigned long chtype);
 
@@ -916,6 +867,7 @@ int X509v3_addr_validate_resource_set(STACK_OF(X509) *chain,
  * The following lines are auto generated by the script mkerr.pl. Any changes
  * made after this point may be overwritten when the script is next run.
  */
+
 void ERR_load_X509V3_strings(void);
 
 /* Error codes for the X509V3 functions. */
@@ -928,10 +880,8 @@ void ERR_load_X509V3_strings(void);
 # define X509V3_F_COPY_EMAIL                              122
 # define X509V3_F_COPY_ISSUER                             123
 # define X509V3_F_DO_DIRNAME                              144
-# define X509V3_F_DO_EXT_CONF                             124
 # define X509V3_F_DO_EXT_I2D                              135
 # define X509V3_F_DO_EXT_NCONF                            151
-# define X509V3_F_DO_I2V_NAME_CONSTRAINTS                 148
 # define X509V3_F_GNAMES_FROM_SECTNAME                    156
 # define X509V3_F_I2S_ASN1_ENUMERATED                     121
 # define X509V3_F_I2S_ASN1_IA5STRING                      149
@@ -946,7 +896,6 @@ void ERR_load_X509V3_strings(void);
 # define X509V3_F_S2I_ASN1_IA5STRING                      100
 # define X509V3_F_S2I_ASN1_INTEGER                        108
 # define X509V3_F_S2I_ASN1_OCTET_STRING                   112
-# define X509V3_F_S2I_ASN1_SKEY_ID                        114
 # define X509V3_F_S2I_SKEY_ID                             115
 # define X509V3_F_SET_DIST_POINT_NAME                     158
 # define X509V3_F_SXNET_ADD_ID_ASC                        125
@@ -976,7 +925,6 @@ void ERR_load_X509V3_strings(void);
 # define X509V3_F_X509V3_ADD_VALUE                        105
 # define X509V3_F_X509V3_EXT_ADD                          104
 # define X509V3_F_X509V3_EXT_ADD_ALIAS                    106
-# define X509V3_F_X509V3_EXT_CONF                         107
 # define X509V3_F_X509V3_EXT_I2D                          136
 # define X509V3_F_X509V3_EXT_NCONF                        152
 # define X509V3_F_X509V3_GET_SECTION                      142
@@ -1036,13 +984,11 @@ void ERR_load_X509V3_strings(void);
 # define X509V3_R_NO_PROXY_CERT_POLICY_LANGUAGE_DEFINED   154
 # define X509V3_R_NO_PUBLIC_KEY                           114
 # define X509V3_R_NO_SUBJECT_DETAILS                      125
-# define X509V3_R_ODD_NUMBER_OF_DIGITS                    112
 # define X509V3_R_OPERATION_NOT_DEFINED                   148
 # define X509V3_R_OTHERNAME_ERROR                         147
 # define X509V3_R_POLICY_LANGUAGE_ALREADY_DEFINED         155
 # define X509V3_R_POLICY_PATH_LENGTH                      156
 # define X509V3_R_POLICY_PATH_LENGTH_ALREADY_DEFINED      157
-# define X509V3_R_POLICY_SYNTAX_NOT_CURRENTLY_SUPPORTED   158
 # define X509V3_R_POLICY_WHEN_PROXY_LANGUAGE_REQUIRES_NO_POLICY 159
 # define X509V3_R_SECTION_NOT_FOUND                       150
 # define X509V3_R_UNABLE_TO_GET_ISSUER_DETAILS            122
@@ -1055,7 +1001,7 @@ void ERR_load_X509V3_strings(void);
 # define X509V3_R_UNSUPPORTED_TYPE                        167
 # define X509V3_R_USER_TOO_LONG                           132
 
-#ifdef  __cplusplus
+# ifdef  __cplusplus
 }
-#endif
+# endif
 #endif

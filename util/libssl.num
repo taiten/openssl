@@ -7,7 +7,6 @@ SSL_copy_session_id                     6	1_1_0	EXIST::FUNCTION:
 SSL_CTX_set_srp_password                7	1_1_0	EXIST::FUNCTION:SRP
 SSL_shutdown                            8	1_1_0	EXIST::FUNCTION:
 SSL_CTX_set_msg_callback                9	1_1_0	EXIST::FUNCTION:
-SSL_COMP_free_compression_methods       10	1_1_0	NOEXIST::FUNCTION:
 SSL_SESSION_get0_ticket                 11	1_1_0	EXIST::FUNCTION:
 SSL_get1_supported_ciphers              12	1_1_0	EXIST::FUNCTION:
 SSL_state_string_long                   13	1_1_0	EXIST::FUNCTION:
@@ -394,3 +393,6 @@ SSL_enable_ct                           393	1_1_0	EXIST::FUNCTION:CT
 SSL_CTX_enable_ct                       394	1_1_0	EXIST::FUNCTION:CT
 SSL_CTX_get_ciphers                     395	1_1_0	EXIST::FUNCTION:
 SSL_SESSION_get0_hostname               396	1_1_0	EXIST::FUNCTION:
+SSL_client_version                      397	1_1_0	EXIST::FUNCTION:
+SSL_SESSION_get_protocol_version        398	1_1_0	EXIST::FUNCTION:
+SSL_is_dtls                             399	1_1_0	EXIST::FUNCTION:

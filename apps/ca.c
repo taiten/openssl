@@ -1,58 +1,10 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 /* The PPKI stuff has been donated by Jeff Barber <jeffb@issl.atl.hp.com> */
@@ -181,9 +133,7 @@ char *make_revocation_str(int rev_type, char *rev_arg);
 int make_revoked(X509_REVOKED *rev, const char *str);
 static int old_entry_print(ASN1_OBJECT *obj, ASN1_STRING *str);
 
-static CONF *conf = NULL;
 static CONF *extconf = NULL;
-static char *section = NULL;
 static int preserve = 0;
 static int msie_hack = 0;
 
@@ -220,7 +170,7 @@ OPTIONS ca_options[] = {
     {"policy", OPT_POLICY, 's', "The CA 'policy' to support"},
     {"keyfile", OPT_KEYFILE, 's', "Private key"},
     {"keyform", OPT_KEYFORM, 'f', "Private key file format (PEM or ENGINE)"},
-    {"passin", OPT_PASSIN, 's'},
+    {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
     {"key", OPT_KEY, 's', "Key to decode the private key if it is encrypted"},
     {"cert", OPT_CERT, '<', "The CA cert"},
     {"selfsign", OPT_SELFSIGN, '-',
@@ -228,17 +178,17 @@ OPTIONS ca_options[] = {
     {"in", OPT_IN, '<', "The input PEM encoded cert request(s)"},
     {"out", OPT_OUT, '>', "Where to put the output file(s)"},
     {"outdir", OPT_OUTDIR, '/', "Where to put output cert"},
-    {"sigopt", OPT_SIGOPT, 's'},
-    {"notext", OPT_NOTEXT, '-'},
+    {"sigopt", OPT_SIGOPT, 's', "Signature parameter in n:v form"},
+    {"notext", OPT_NOTEXT, '-', "Do not print the generated certificate"},
     {"batch", OPT_BATCH, '-', "Don't ask questions"},
     {"preserveDN", OPT_PRESERVEDN, '-', "Don't re-order the DN"},
     {"noemailDN", OPT_NOEMAILDN, '-', "Don't add the EMAIL field to the DN"},
     {"gencrl", OPT_GENCRL, '-', "Generate a new CRL"},
     {"msie_hack", OPT_MSIE_HACK, '-',
      "msie modifications to handle all those universal strings"},
-    {"crldays", OPT_CRLDAYS, 'p', "Days is when the next CRL is due"},
-    {"crlhours", OPT_CRLHOURS, 'p', "Hours is when the next CRL is due"},
-    {"crlsec", OPT_CRLSEC, 'p'},
+    {"crldays", OPT_CRLDAYS, 'p', "Days until the next CRL is due"},
+    {"crlhours", OPT_CRLHOURS, 'p', "Hours until the next CRL is due"},
+    {"crlsec", OPT_CRLSEC, 'p', "Seconds until the next CRL is due"},
     {"infiles", OPT_INFILES, '-', "The last argument, requests to process"},
     {"ss_cert", OPT_SS_CERT, '<', "File contains a self signed cert to sign"},
     {"spkac", OPT_SPKAC, '<',
@@ -268,6 +218,7 @@ OPTIONS ca_options[] = {
 
 int ca_main(int argc, char **argv)
 {
+    CONF *conf = NULL;
     ENGINE *e = NULL;
     BIGNUM *crlnumber = NULL, *serial = NULL;
     EVP_PKEY *pkey = NULL;
@@ -281,7 +232,7 @@ int ca_main(int argc, char **argv)
     STACK_OF(X509) *cert_sk = NULL;
     X509_CRL *crl = NULL;
     const EVP_MD *dgst = NULL;
-    char *configfile = default_config_file;
+    char *configfile = default_config_file, *section = NULL;
     char *md = NULL, *policy = NULL, *keyfile = NULL;
     char *certfile = NULL, *crl_ext = NULL, *crlnumberfile = NULL;
     char *infile = NULL, *spkac_file = NULL, *ss_cert_file = NULL;
@@ -289,7 +240,7 @@ int ca_main(int argc, char **argv)
     char *outdir = NULL, *outfile = NULL, *rev_arg = NULL, *ser_status = NULL;
     char *serialfile = NULL, *startdate = NULL, *subj = NULL;
     char *prog, *enddate = NULL, *tmp_email_dn = NULL;
-    char *dbfile = NULL, *f, *randfile = NULL, *tofree = NULL;
+    char *dbfile = NULL, *f, *randfile = NULL;
     char buf[3][BSIZE];
     char *const *pp;
     const char *p;
@@ -304,46 +255,41 @@ int ca_main(int argc, char **argv)
     X509_REVOKED *r = NULL;
     OPTION_CHOICE o;
 
-    conf = NULL;
-    section = NULL;
-    preserve = 0;
-    msie_hack = 0;
-
     prog = opt_init(argc, argv, ca_options);
     while ((o = opt_next()) != OPT_EOF) {
         switch (o) {
-            case OPT_EOF:
-            case OPT_ERR:
+        case OPT_EOF:
+        case OPT_ERR:
 opthelp:
-                BIO_printf(bio_err, "%s: Use -help for summary.\n", prog);
-                goto end;
-            case OPT_HELP:
-                opt_help(ca_options);
-                ret = 0;
-                goto end;
-            case OPT_IN:
-                req = 1;
-                infile = opt_arg();
-                break;
-            case OPT_OUT:
-                outfile = opt_arg();
-                break;
-            case OPT_VERBOSE:
-                verbose = 1;
-                break;
-            case OPT_CONFIG:
-                configfile = opt_arg();
-                break;
-            case OPT_NAME:
-                section = opt_arg();
-                break;
-            case OPT_SUBJ:
-                subj = opt_arg();
-                /* preserve=1; */
-                break;
-            case OPT_UTF8:
-                chtype = MBSTRING_UTF8;
-                break;
+            BIO_printf(bio_err, "%s: Use -help for summary.\n", prog);
+            goto end;
+        case OPT_HELP:
+            opt_help(ca_options);
+            ret = 0;
+            goto end;
+        case OPT_IN:
+            req = 1;
+            infile = opt_arg();
+            break;
+        case OPT_OUT:
+            outfile = opt_arg();
+            break;
+        case OPT_VERBOSE:
+            verbose = 1;
+            break;
+        case OPT_CONFIG:
+            configfile = opt_arg();
+            break;
+        case OPT_NAME:
+            section = opt_arg();
+            break;
+        case OPT_SUBJ:
+            subj = opt_arg();
+            /* preserve=1; */
+            break;
+        case OPT_UTF8:
+            chtype = MBSTRING_UTF8;
+            break;
         case OPT_CREATE_SERIAL:
             create_ser = 1;
             break;
@@ -481,13 +427,11 @@ end_of_options:
     argv = opt_rest();
 
     BIO_printf(bio_err, "Using configuration from %s\n", configfile);
-    /* We already loaded the default config file */
-    if (configfile != default_config_file) {
-        if ((conf = app_load_config(configfile)) == NULL)
-            goto end;
-        if (!app_load_modules(conf))
-            goto end;
-    }
+
+    if ((conf = app_load_config(configfile)) == NULL)
+        goto end;
+    if (configfile != default_config_file && !app_load_modules(conf))
+        goto end;
 
     /* Lets get the config section we are using */
     if (section == NULL) {
@@ -552,7 +496,7 @@ end_of_options:
     } else
         ERR_clear_error();
 
-        /*****************************************************************/
+    /*****************************************************************/
     /* report status of cert with serial number given on command line */
     if (ser_status) {
         if ((dbfile = NCONF_get_string(conf, section, ENV_DATABASE)) == NULL) {
@@ -571,7 +515,7 @@ end_of_options:
         goto end;
     }
 
-        /*****************************************************************/
+    /*****************************************************************/
     /* we definitely need a private key, so let's get it */
 
     if ((keyfile == NULL) && ((keyfile = NCONF_get_string(conf,
@@ -596,7 +540,7 @@ end_of_options:
         goto end;
     }
 
-        /*****************************************************************/
+    /*****************************************************************/
     /* we need a certificate */
     if (!selfsign || spkac_file || ss_cert_file || gencrl) {
         if ((certfile == NULL)
@@ -664,7 +608,7 @@ end_of_options:
     } else
         ERR_clear_error();
 
-        /*****************************************************************/
+    /*****************************************************************/
     /* lookup where to write new certificates */
     if ((outdir == NULL) && (req)) {
 
@@ -690,7 +634,7 @@ end_of_options:
 #endif
     }
 
-        /*****************************************************************/
+    /*****************************************************************/
     /* we need to load the database file */
     if ((dbfile = NCONF_get_string(conf, section, ENV_DATABASE)) == NULL) {
         lookup_fail(section, ENV_DATABASE);
@@ -748,7 +692,7 @@ end_of_options:
     if (!index_index(db))
         goto end;
 
-        /*****************************************************************/
+    /*****************************************************************/
     /* Update the db file for expired certificates */
     if (doupdatedb) {
         if (verbose)
@@ -1116,7 +1060,7 @@ end_of_options:
         }
     }
 
-        /*****************************************************************/
+    /*****************************************************************/
     if (gencrl) {
         int crl_v2 = 0;
         if (!crl_ext) {
@@ -1257,7 +1201,7 @@ end_of_options:
                 goto end;
 
     }
-        /*****************************************************************/
+    /*****************************************************************/
     if (dorevoke) {
         if (infile == NULL) {
             BIO_printf(bio_err, "no input files\n");
@@ -1283,10 +1227,9 @@ end_of_options:
             BIO_printf(bio_err, "Data Base Updated\n");
         }
     }
-        /*****************************************************************/
+    /*****************************************************************/
     ret = 0;
  end:
-    OPENSSL_free(tofree);
     BIO_free_all(Cout);
     BIO_free_all(Sout);
     BIO_free_all(out);

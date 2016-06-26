@@ -59,6 +59,24 @@ The test section supports the following options:
 * Protocol - expected negotiated protocol. One of
   SSLv3, TLSv1, TLSv1.1, TLSv1.2.
 
+* ClientVerifyCallback - the client's custom certificate verify callback.
+  Used to test callback behaviour. One of
+  - AcceptAll - accepts all certificates.
+  - RejectAll - rejects all certificates.
+
+* Method - the method to test. One of DTLS or TLS.
+
+* ServerName - the server the client should attempt to connect to. One of
+  - None - do not use SNI (default)
+  - server1 - the initial context
+  - server2 - the secondary context
+
+* SessionTicketExpected - whether or not a session ticket is expected
+  - Ignore - do not check for a session ticket (default)
+  - Yes - a session ticket is expected
+  - No - a session ticket is not expected
+  - Broken - a special test case where the session ticket callback does not initialize crypto
+
 ## Configuring the client and server
 
 The client and server configurations can be any valid `SSL_CTX`
@@ -72,6 +90,10 @@ server => {
     "MinProtocol" => "TLSv1",
 }
 ```
+
+A server2 section may optionally be defined to configure a secondary
+context that is selected via the ServerName test option. If the server2
+section is not configured, then the configuration matches server.
 
 ### Default server and client configurations
 

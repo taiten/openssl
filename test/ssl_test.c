@@ -1,14 +1,14 @@
 /*
  * Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL licenses, (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- * or in the file LICENSE in the source distribution.
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <openssl/conf.h>
 #include <openssl/err.h>
@@ -44,8 +44,8 @@ static int check_result(HANDSHAKE_RESULT result, SSL_TEST_CTX *test_ctx)
 {
     if (result.result != test_ctx->expected_result) {
         fprintf(stderr, "ExpectedResult mismatch: expected %s, got %s.\n",
-                ssl_test_result_t_name(test_ctx->expected_result),
-                ssl_test_result_t_name(result.result));
+                ssl_test_result_name(test_ctx->expected_result),
+                ssl_test_result_name(result.result));
         return 0;
     }
     return 1;
@@ -123,6 +123,34 @@ static int check_protocol(HANDSHAKE_RESULT result, SSL_TEST_CTX *test_ctx)
     return 1;
 }
 
+static int check_servername(HANDSHAKE_RESULT result, SSL_TEST_CTX *test_ctx)
+{
+    if (test_ctx->servername != SSL_TEST_SERVERNAME_NONE
+        && result.servername != test_ctx->servername) {
+        fprintf(stderr, "Client ServerName mismatch, expected %s, got %s\n.",
+                ssl_servername_name(test_ctx->servername),
+                ssl_servername_name(result.servername));
+        return 0;
+    }
+    return 1;
+}
+
+static int check_session_ticket(HANDSHAKE_RESULT result, SSL_TEST_CTX *test_ctx)
+{
+    if (test_ctx->session_ticket_expected == SSL_TEST_SESSION_TICKET_IGNORE)
+        return 1;
+    if (test_ctx->session_ticket_expected == SSL_TEST_SESSION_TICKET_BROKEN &&
+        result.session_ticket == SSL_TEST_SESSION_TICKET_NO)
+        return 1;
+    if (result.session_ticket != test_ctx->session_ticket_expected) {
+        fprintf(stderr, "Client SessionTicketExpected mismatch, expected %s, got %s\n.",
+                ssl_session_ticket_name(test_ctx->session_ticket_expected),
+                ssl_session_ticket_name(result.session_ticket));
+        return 0;
+    }
+    return 1;
+}
+
 /*
  * This could be further simplified by constructing an expected
  * HANDSHAKE_RESULT, and implementing comparison methods for
@@ -133,40 +161,63 @@ static int check_test(HANDSHAKE_RESULT result, SSL_TEST_CTX *test_ctx)
     int ret = 1;
     ret &= check_result(result, test_ctx);
     ret &= check_alerts(result, test_ctx);
-    if (result.result == SSL_TEST_SUCCESS)
+    if (result.result == SSL_TEST_SUCCESS) {
         ret &= check_protocol(result, test_ctx);
+        ret &= check_servername(result, test_ctx);
+        ret &= check_session_ticket(result, test_ctx);
+        ret &= (result.session_ticket_do_not_call == 0);
+    }
     return ret;
 }
 
 static int execute_test(SSL_TEST_FIXTURE fixture)
 {
     int ret = 0;
-    SSL_CTX *server_ctx = NULL, *client_ctx = NULL;
+    SSL_CTX *server_ctx = NULL, *server2_ctx = NULL, *client_ctx = NULL;
     SSL_TEST_CTX *test_ctx = NULL;
     HANDSHAKE_RESULT result;
-
-    server_ctx = SSL_CTX_new(TLS_server_method());
-    client_ctx = SSL_CTX_new(TLS_client_method());
-    OPENSSL_assert(server_ctx != NULL && client_ctx != NULL);
-
-    OPENSSL_assert(CONF_modules_load(conf, fixture.test_app, 0) > 0);
-
-    if (!SSL_CTX_config(server_ctx, "server")
-       || !SSL_CTX_config(client_ctx, "client")) {
-        goto err;
-    }
+    const char *server2;
 
     test_ctx = SSL_TEST_CTX_create(conf, fixture.test_app);
     if (test_ctx == NULL)
         goto err;
 
-    result = do_handshake(server_ctx, client_ctx);
+    /* Use ServerName to detect if we're testing SNI. */
+    server2 = (test_ctx->servername != SSL_TEST_SERVERNAME_NONE) ? "server2"
+        : "server";
+
+#ifndef OPENSSL_NO_DTLS
+    if (test_ctx->method == SSL_TEST_METHOD_DTLS) {
+        server_ctx = SSL_CTX_new(DTLS_server_method());
+        server2_ctx = SSL_CTX_new(DTLS_server_method());
+        client_ctx = SSL_CTX_new(DTLS_client_method());
+    }
+#endif
+    if (test_ctx->method == SSL_TEST_METHOD_TLS) {
+        server_ctx = SSL_CTX_new(TLS_server_method());
+        server2_ctx = SSL_CTX_new(TLS_server_method());
+        client_ctx = SSL_CTX_new(TLS_client_method());
+    }
+
+    OPENSSL_assert(server_ctx != NULL && server2_ctx != NULL &&
+                   client_ctx != NULL);
+
+    OPENSSL_assert(CONF_modules_load(conf, fixture.test_app, 0) > 0);
+
+    if (!SSL_CTX_config(server_ctx, "server")
+        || !SSL_CTX_config(server2_ctx, server2)
+        || !SSL_CTX_config(client_ctx, "client")) {
+        goto err;
+    }
+
+    result = do_handshake(server_ctx, server2_ctx, client_ctx, test_ctx);
 
     ret = check_test(result, test_ctx);
 
 err:
     CONF_modules_unload(0);
     SSL_CTX_free(server_ctx);
+    SSL_CTX_free(server2_ctx);
     SSL_CTX_free(client_ctx);
     SSL_TEST_CTX_free(test_ctx);
     if (ret != 1)

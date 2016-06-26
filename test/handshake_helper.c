@@ -1,16 +1,16 @@
 /*
  * Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL licenses, (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- * or in the file LICENSE in the source distribution.
  */
 
 #include <string.h>
 
 #include <openssl/bio.h>
+#include <openssl/x509_vfy.h>
 #include <openssl/ssl.h>
 
 #include "handshake_helper.h"
@@ -23,11 +23,12 @@
 typedef struct handshake_ex_data {
     int alert_sent;
     int alert_received;
+    int session_ticket_do_not_call;
 } HANDSHAKE_EX_DATA;
 
 static int ex_data_idx;
 
-static void info_callback(const SSL *s, int where, int ret)
+static void info_cb(const SSL *s, int where, int ret)
 {
     if (where & SSL_CB_ALERT) {
         HANDSHAKE_EX_DATA *ex_data =
@@ -39,6 +40,98 @@ static void info_callback(const SSL *s, int where, int ret)
         }
     }
 }
+
+static int servername_cb(SSL *s, int *ad, void *arg)
+{
+    const char *servername = SSL_get_servername(s, TLSEXT_NAMETYPE_host_name);
+    if (servername != NULL && !strcmp(servername, "server2")) {
+        SSL_CTX *new_ctx = (SSL_CTX*)arg;
+        SSL_set_SSL_CTX(s, new_ctx);
+        /*
+         * Copy over all the SSL_CTX options - reasonable behavior
+         * allows testing of cases where the options between two
+         * contexts differ/conflict
+         */
+        SSL_clear_options(s, 0xFFFFFFFFL);
+        SSL_set_options(s, SSL_CTX_get_options(new_ctx));
+    }
+    return SSL_TLSEXT_ERR_OK;
+}
+
+static int verify_reject_cb(X509_STORE_CTX *ctx, void *arg) {
+    X509_STORE_CTX_set_error(ctx, X509_V_ERR_APPLICATION_VERIFICATION);
+    return 0;
+}
+
+static int verify_accept_cb(X509_STORE_CTX *ctx, void *arg) {
+    return 1;
+}
+
+static int broken_session_ticket_cb(SSL* s, unsigned char* key_name, unsigned char *iv,
+                                    EVP_CIPHER_CTX *ctx, HMAC_CTX *hctx, int enc)
+{
+    return 0;
+}
+
+static int do_not_call_session_ticket_cb(SSL* s, unsigned char* key_name,
+                                         unsigned char *iv,
+                                         EVP_CIPHER_CTX *ctx,
+                                         HMAC_CTX *hctx, int enc)
+{
+    HANDSHAKE_EX_DATA *ex_data =
+        (HANDSHAKE_EX_DATA*)(SSL_get_ex_data(s, ex_data_idx));
+    ex_data->session_ticket_do_not_call = 1;
+    return 0;
+}
+
+/*
+ * Configure callbacks and other properties that can't be set directly
+ * in the server/client CONF.
+ */
+static void configure_handshake_ctx(SSL_CTX *server_ctx, SSL_CTX *server2_ctx,
+                                    SSL_CTX *client_ctx,
+                                    const SSL_TEST_CTX *test_ctx)
+{
+    switch (test_ctx->client_verify_callback) {
+    case SSL_TEST_VERIFY_ACCEPT_ALL:
+        SSL_CTX_set_cert_verify_callback(client_ctx, &verify_accept_cb,
+                                         NULL);
+        break;
+    case SSL_TEST_VERIFY_REJECT_ALL:
+        SSL_CTX_set_cert_verify_callback(client_ctx, &verify_reject_cb,
+                                         NULL);
+        break;
+    default:
+        break;
+    }
+
+    /* link the two contexts for SNI purposes */
+    SSL_CTX_set_tlsext_servername_callback(server_ctx, servername_cb);
+    SSL_CTX_set_tlsext_servername_arg(server_ctx, server2_ctx);
+    /*
+     * The initial_ctx/session_ctx always handles the encrypt/decrypt of the
+     * session ticket. This ticket_key callback is assigned to the second
+     * session (assigned via SNI), and should never be invoked
+     */
+    SSL_CTX_set_tlsext_ticket_key_cb(server2_ctx, do_not_call_session_ticket_cb);
+
+    if (test_ctx->session_ticket_expected == SSL_TEST_SESSION_TICKET_BROKEN) {
+        SSL_CTX_set_tlsext_ticket_key_cb(server_ctx, broken_session_ticket_cb);
+    }
+}
+
+/*
+ * Configure callbacks and other properties that can't be set directly
+ * in the server/client CONF.
+ */
+static void configure_handshake_ssl(SSL *server, SSL *client,
+                                    const SSL_TEST_CTX *test_ctx)
+{
+    if (test_ctx->servername != SSL_TEST_SERVERNAME_NONE)
+        SSL_set_tlsext_host_name(client,
+                                 ssl_servername_name(test_ctx->servername));
+}
+
 
 typedef enum {
     PEER_SUCCESS,
@@ -139,7 +232,8 @@ static handshake_status_t handshake_status(peer_status_t last_status,
     return INTERNAL_ERROR;
 }
 
-HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx)
+HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *server2_ctx,
+                              SSL_CTX *client_ctx, const SSL_TEST_CTX *test_ctx)
 {
     SSL *server, *client;
     BIO *client_to_server, *server_to_client;
@@ -148,10 +242,17 @@ HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx)
     int client_turn = 1;
     peer_status_t client_status = PEER_RETRY, server_status = PEER_RETRY;
     handshake_status_t status = HANDSHAKE_RETRY;
+    unsigned char* tick = NULL;
+    size_t len = 0;
+    SSL_SESSION* sess = NULL;
+
+    configure_handshake_ctx(server_ctx, server2_ctx, client_ctx, test_ctx);
 
     server = SSL_new(server_ctx);
     client = SSL_new(client_ctx);
     OPENSSL_assert(server != NULL && client != NULL);
+
+    configure_handshake_ssl(server, client, test_ctx);
 
     memset(&server_ex_data, 0, sizeof(server_ex_data));
     memset(&client_ex_data, 0, sizeof(client_ex_data));
@@ -184,8 +285,8 @@ HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx)
     OPENSSL_assert(SSL_set_ex_data(client, ex_data_idx,
                                    &client_ex_data) == 1);
 
-    SSL_set_info_callback(server, &info_callback);
-    SSL_set_info_callback(client, &info_callback);
+    SSL_set_info_callback(server, &info_cb);
+    SSL_set_info_callback(client, &info_cb);
 
     /*
      * Half-duplex handshake loop.
@@ -232,6 +333,16 @@ HANDSHAKE_RESULT do_handshake(SSL_CTX *server_ctx, SSL_CTX *client_ctx)
     ret.client_alert_received = server_ex_data.alert_received;
     ret.server_protocol = SSL_version(server);
     ret.client_protocol = SSL_version(client);
+    ret.servername = ((SSL_get_SSL_CTX(server) == server_ctx)
+                      ? SSL_TEST_SERVERNAME_SERVER1
+                      : SSL_TEST_SERVERNAME_SERVER2);
+    if ((sess = SSL_get0_session(client)) != NULL)
+        SSL_SESSION_get0_ticket(sess, &tick, &len);
+    if (tick == NULL || len == 0)
+        ret.session_ticket = SSL_TEST_SESSION_TICKET_NO;
+    else
+        ret.session_ticket = SSL_TEST_SESSION_TICKET_YES;
+    ret.session_ticket_do_not_call = server_ex_data.session_ticket_do_not_call;
 
     SSL_free(server);
     SSL_free(client);

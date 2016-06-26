@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-BIO_s_bio, BIO_make_bio_pair, BIO_destroy_bio_pair, BIO_shutdown_wr, 
+BIO_s_bio, BIO_make_bio_pair, BIO_destroy_bio_pair, BIO_shutdown_wr,
 BIO_set_write_buf_size, BIO_get_write_buf_size, BIO_new_bio_pair,
 BIO_get_write_guarantee, BIO_ctrl_get_write_guarantee, BIO_get_read_request,
 BIO_ctrl_get_read_request, BIO_ctrl_reset_read_request - BIO pair BIO
@@ -65,7 +65,7 @@ up any half of the pair will automatically destroy the association.
 BIO_shutdown_wr() is used to close down a BIO B<b>. After this call no further
 writes on BIO B<b> are allowed (they will return an error). Reads on the other
 half of the pair will return any pending data or EOF when all pending data has
-been read. 
+been read.
 
 BIO_set_write_buf_size() sets the write buffer size of BIO B<b> to B<size>.
 If the size is not initialized a default value is used. This is currently
@@ -120,6 +120,9 @@ the application then waits for data to be available on the underlying transport
 before flushing the write buffer it will never succeed because the request was
 never sent!
 
+BIO_eof() is true if no data is in the peer BIO and the peer BIO has been
+shutdown.
+
 =head1 RETURN VALUES
 
 BIO_new_bio_pair() returns 1 on success, with the new BIOs available in
@@ -156,7 +159,7 @@ without having to go through the SSL-interface.
    socket
 
   ...
-  SSL_free(ssl);		/* implicitly frees internal_bio */
+  SSL_free(ssl);                /* implicitly frees internal_bio */
   BIO_free(network_bio);
   ...
 
@@ -182,5 +185,14 @@ the peer might be waiting for the data before being able to continue.
 
 L<SSL_set_bio(3)>, L<ssl(3)>, L<bio(3)>,
 L<BIO_should_retry(3)>, L<BIO_read(3)>
+
+=head1 COPYRIGHT
+
+Copyright 2000-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+Licensed under the OpenSSL license (the "License").  You may not use
+this file except in compliance with the License.  You can obtain a copy
+in the file LICENSE in the source distribution or at
+L<https://www.openssl.org/source/license.html>.
 
 =cut
