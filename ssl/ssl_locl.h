@@ -1,112 +1,12 @@
-/* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
- * All rights reserved.
+/*
+ * Copyright 1995-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * This package is an SSL implementation written
- * by Eric Young (eay@cryptsoft.com).
- * The implementation was written so as to conform with Netscapes SSL.
- *
- * This library is free for commercial and non-commercial use as long as
- * the following conditions are aheared to.  The following conditions
- * apply to all code found in this distribution, be it the RC4, RSA,
- * lhash, DES, etc., code; not just the SSL code.  The SSL documentation
- * included with this distribution is covered by the same copyright terms
- * except that the holder is Tim Hudson (tjh@cryptsoft.com).
- *
- * Copyright remains Eric Young's, and as such any Copyright notices in
- * the code are not to be removed.
- * If this package is used in a product, Eric Young should be given attribution
- * as the author of the parts of the library used.
- * This can be in the form of a textual message at program startup or
- * in documentation (online or textual) provided with the package.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *    "This product includes cryptographic software written by
- *     Eric Young (eay@cryptsoft.com)"
- *    The word 'cryptographic' can be left out if the rouines from the library
- *    being used are not cryptographic related :-).
- * 4. If you include any Windows specific code (or a derivative thereof) from
- *    the apps directory (application code) you must include an acknowledgement:
- *    "This product includes software written by Tim Hudson (tjh@cryptsoft.com)"
- *
- * THIS SOFTWARE IS PROVIDED BY ERIC YOUNG ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * The licence and distribution terms for any publically available version or
- * derivative of this code cannot be changed.  i.e. this code cannot simply be
- * copied and put under another distribution licence
- * [including the GNU Public Licence.]
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
-/* ====================================================================
- * Copyright (c) 1998-2007 The OpenSSL Project.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    openssl-core@openssl.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.openssl.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
- */
+
 /* ====================================================================
  * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
  * ECC cipher suite support in OpenSSL originally developed by
@@ -147,6 +47,9 @@
 # include <errno.h>
 
 # include "e_os.h"
+# if defined(__unix) || defined(__unix__)
+#  include <sys/time.h>  /* struct timeval for DTLS */
+# endif
 
 # include <openssl/buffer.h>
 # include <openssl/comp.h>
@@ -453,12 +356,14 @@
 # define SSL_CLIENT_USE_TLS1_2_CIPHERS(s)        \
     ((!SSL_IS_DTLS(s) && s->client_version >= TLS1_2_VERSION) || \
      (SSL_IS_DTLS(s) && DTLS_VERSION_GE(s->client_version, DTLS1_2_VERSION)))
+/*
+ * Determine if a client should send signature algorithms extension:
+ * as with TLS1.2 cipher we can't rely on method flags.
+ */
+# define SSL_CLIENT_USE_SIGALGS(s)        \
+    SSL_CLIENT_USE_TLS1_2_CIPHERS(s)
 
-# ifdef TLSEXT_TYPE_encrypt_then_mac
 #  define SSL_USE_ETM(s) (s->s3->flags & TLS1_FLAGS_ENCRYPT_THEN_MAC)
-# else
-#  define SSL_USE_ETM(s) (0)
-# endif
 
 /* Mostly for SSLv3 */
 # define SSL_PKEY_RSA_ENC        0
@@ -677,6 +582,8 @@ DEFINE_LHASH_OF(SSL_SESSION);
 /* Needed in ssl_cert.c */
 DEFINE_LHASH_OF(X509_NAME);
 
+#define TLSEXT_KEYNAME_LENGTH 16
+
 struct ssl_ctx_st {
     const SSL_METHOD *method;
     STACK_OF(SSL_CIPHER) *cipher_list;
@@ -848,9 +755,9 @@ struct ssl_ctx_st {
     int (*tlsext_servername_callback) (SSL *, int *, void *);
     void *tlsext_servername_arg;
     /* RFC 4507 session ticket keys */
-    unsigned char tlsext_tick_key_name[16];
-    unsigned char tlsext_tick_hmac_key[16];
-    unsigned char tlsext_tick_aes_key[16];
+    unsigned char tlsext_tick_key_name[TLSEXT_KEYNAME_LENGTH];
+    unsigned char tlsext_tick_hmac_key[32];
+    unsigned char tlsext_tick_aes_key[32];
     /* Callback to support customisation of ticket key setting */
     int (*tlsext_ticket_key_cb) (SSL *ssl,
                                  unsigned char *name, unsigned char *iv,
@@ -944,6 +851,10 @@ struct ssl_ctx_st {
     size_t tlsext_ellipticcurvelist_length;
     unsigned char *tlsext_ellipticcurvelist;
 #  endif                        /* OPENSSL_NO_EC */
+
+    /* ext status type used for CSR extension (OCSP Stapling) */
+    int tlsext_status_type;
+
     CRYPTO_RWLOCK *lock;
 };
 
@@ -1872,7 +1783,7 @@ const SSL_METHOD *func_name(void)  \
         }
 
 struct openssl_ssl_test_functions {
-    int (*p_ssl_init_wbio_buffer) (SSL *s, int push);
+    int (*p_ssl_init_wbio_buffer) (SSL *s);
     int (*p_ssl3_setup_buffers) (SSL *s);
 # ifndef OPENSSL_NO_HEARTBEATS
     int (*p_dtls1_process_heartbeat) (SSL *s,
@@ -1948,7 +1859,7 @@ __owur EVP_PKEY *ssl_dh_to_pkey(DH *dh);
 
 __owur const SSL_CIPHER *ssl3_get_cipher_by_char(const unsigned char *p);
 __owur int ssl3_put_cipher_by_char(const SSL_CIPHER *c, unsigned char *p);
-void ssl3_init_finished_mac(SSL *s);
+int ssl3_init_finished_mac(SSL *s);
 __owur int ssl3_setup_key_block(SSL *s);
 __owur int ssl3_change_cipher_state(SSL *s, int which);
 void ssl3_cleanup_key_block(SSL *s);
@@ -2048,7 +1959,7 @@ __owur int dtls1_shutdown(SSL *s);
 
 __owur int dtls1_dispatch_alert(SSL *s);
 
-__owur int ssl_init_wbio_buffer(SSL *s, int push);
+__owur int ssl_init_wbio_buffer(SSL *s);
 void ssl_free_wbio_buffer(SSL *s);
 
 __owur int tls1_change_cipher_state(SSL *s, int which);

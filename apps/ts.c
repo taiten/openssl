@@ -1,59 +1,10 @@
 /*
- * Written by Zoltan Glozik (zglozik@stones.com) for the OpenSSL project
- * 2002.
- */
-/* ====================================================================
- * Copyright (c) 2001 The OpenSSL Project.  All rights reserved.
+ * Copyright 2006-2016 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. All advertising materials mentioning features or use of this
- *    software must display the following acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit. (http://www.OpenSSL.org/)"
- *
- * 4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
- *    endorse or promote products derived from this software without
- *    prior written permission. For written permission, please contact
- *    licensing@OpenSSL.org.
- *
- * 5. Products derived from this software may not be called "OpenSSL"
- *    nor may "OpenSSL" appear in their names without prior written
- *    permission of the OpenSSL Project.
- *
- * 6. Redistributions of any form whatsoever must retain the following
- *    acknowledgment:
- *    "This product includes software developed by the OpenSSL Project
- *    for use in the OpenSSL Toolkit (http://www.OpenSSL.org/)"
- *
- * THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
- * EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- * ====================================================================
- *
- * This product includes cryptographic software written by Eric Young
- * (eay@cryptsoft.com).  This product includes software written by Tim
- * Hudson (tjh@cryptsoft.com).
- *
+ * Licensed under the OpenSSL license (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://www.openssl.org/source/license.html
  */
 
 #include <openssl/opensslconf.h>
@@ -154,7 +105,7 @@ OPTIONS ts_options[] = {
     {"text", OPT_TEXT, '-', "Output text (not DER)"},
     {"reply", OPT_REPLY, '-', "Generate a TS reply"},
     {"queryfile", OPT_QUERYFILE, '<', "File containing a TS query"},
-    {"passin", OPT_PASSIN, 's'},
+    {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
     {"inkey", OPT_INKEY, '<', "File with private key for reply"},
     {"signer", OPT_SIGNER, 's'},
     {"chain", OPT_CHAIN, '<', "File with signer CA chain"},
@@ -187,9 +138,9 @@ static char* opt_helplist[] = {
     "          [-chain certs_file.pem] [-tspolicy oid]",
     "          [-in file] [-token_in] [-out file] [-token_out]",
 # ifndef OPENSSL_NO_ENGINE
-    "          [-text]",
-# else
     "          [-text] [-engine id]",
+# else
+    "          [-text]",
 # endif
     "  or",
     "ts -verify -CApath dir -CAfile file.pem -untrusted file.pem",
@@ -319,9 +270,7 @@ int ts_main(int argc, char **argv)
             break;
         }
     }
-    argc = opt_num_rest();
-    argv = opt_rest();
-    if (mode == OPT_ERR || argc != 0)
+    if (mode == OPT_ERR || opt_num_rest() != 0)
         goto opthelp;
 
     /* Seed the random number generator if it is going to be used. */
@@ -341,7 +290,7 @@ int ts_main(int argc, char **argv)
     }
 
     conf = load_config_file(configfile);
-    if (!app_load_modules(conf))
+    if (configfile != default_config_file && !app_load_modules(conf))
         goto end;
 
     /* Check parameter consistency and execute the appropriate function. */
@@ -374,7 +323,7 @@ int ts_main(int argc, char **argv)
         if ((in == NULL) || !EXACTLY_ONE(queryfile, data, digest))
             goto opthelp;
         ret = !verify_command(data, digest, queryfile, in, token_in,
-                              CApath, CAfile, untrusted, 
+                              CApath, CAfile, untrusted,
                               vpmtouched ? vpm : NULL);
     }
 
@@ -1015,7 +964,7 @@ static X509_STORE *create_cert_store(char *CApath, char *CAfile, X509_VERIFY_PAR
         }
     }
 
-    if (vpm != NULL) 
+    if (vpm != NULL)
         X509_STORE_set1_param(cert_ctx, vpm);
 
     return cert_ctx;
@@ -1029,4 +978,4 @@ static int verify_cb(int ok, X509_STORE_CTX *ctx)
 {
     return ok;
 }
-#endif
+#endif  /* ndef OPENSSL_NO_TS */
