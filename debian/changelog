@@ -1,3 +1,9 @@
+openssl (1.1.0~pre5-5) experimental; urgency=medium
+
+  * Update snapshot to commit fe964f0c88f6780fd30b26e306484b981b0a8480
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Sat, 02 Jul 2016 14:54:51 +0200
+
 openssl (1.1.0~pre5-4) experimental; urgency=medium
 
   * Update snapshot to commit c32bdbf171ce6650ef045ec47b5abe0de7c264db
