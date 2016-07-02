@@ -245,7 +245,7 @@ my $default_ranlib;
 $config{fips}=0;
 
 # Top level directories to build
-$config{dirs} = [ "crypto", "ssl", "engines", "apps", "test", "tools" ];
+$config{dirs} = [ "crypto", "ssl", "engines", "apps", "test", "tools", "fuzz" ];
 # crypto/ subdirectories to build
 $config{sdirs} = [
     "objects",
@@ -1046,12 +1046,7 @@ if ($disabled{"dynamic-engine"}) {
 }
 
 unless ($disabled{"fuzz-libfuzzer"}) {
-    push @{$config{dirs}}, "fuzz";
     $config{cflags} .= "-fsanitize-coverage=edge,indirect-calls ";
-}
-
-unless ($disabled{"fuzz-afl"}) {
-    push @{$config{dirs}}, "fuzz";
 }
 
 unless ($disabled{asan}) {
@@ -1337,6 +1332,9 @@ if ($builder eq "unified") {
     }
 
     my @build_infos = ( [ ".", "build.info" ] );
+    push @build_infos, [ "fuzz", "build.info.fuzz" ]
+        unless $disabled{"fuzz-afl"} && $disabled{"fuzz-libfuzzer"};
+
     foreach (@{$config{dirs}}) {
         push @build_infos, [ $_, "build.info" ]
             if (-f catfile($srcdir, $_, "build.info"));
@@ -1715,8 +1713,8 @@ EOF
                 # sure it can get included
                 if ($dest ne "" && $d =~ /\.(h|pm)$/) {
                     my $i = dirname($d);
-                    push @{$unified_info{includes}->{$ddest}}, $i
-                        unless grep { $_ eq $i } @{$unified_info{includes}->{$ddest}};
+                    push @{$unified_info{includes}->{$ddest}->{source}}, $i
+                        unless grep { $_ eq $i } @{$unified_info{includes}->{$ddest}->{source}};
                 }
             }
         }
@@ -1734,9 +1732,12 @@ EOF
                 }
             }
             foreach (@{$includes{$dest}}) {
-                my $i = cleandir($sourced, $_, $blddir);
-                push @{$unified_info{includes}->{$ddest}}, $i
-                    unless grep { $_ eq $i } @{$unified_info{includes}->{$ddest}};
+                my $is = cleandir($sourced, $_, $blddir);
+                my $ib = cleandir($buildd, $_, $blddir);
+                push @{$unified_info{includes}->{$ddest}->{source}}, $is
+                    unless grep { $_ eq $is } @{$unified_info{includes}->{$ddest}->{source}};
+                push @{$unified_info{includes}->{$ddest}->{build}}, $ib
+                    unless grep { $_ eq $ib } @{$unified_info{includes}->{$ddest}->{build}};
             }
         }
     }
@@ -1751,6 +1752,22 @@ EOF
         foreach my $l2 (sort keys %{$unified_info{$l1}}) {
             $unified_info{$l1}->{$l2} =
                 [ sort keys %{$unified_info{$l1}->{$l2}} ];
+        }
+    }
+    # Includes
+    foreach my $dest (sort keys %{$unified_info{includes}}) {
+        if (defined($unified_info{includes}->{$dest}->{build})) {
+            my @source_includes =
+                ( @{$unified_info{includes}->{$dest}->{source}} );
+            $unified_info{includes}->{$dest} =
+                [ @{$unified_info{includes}->{$dest}->{build}} ];
+            foreach my $inc (@source_includes) {
+                push @{$unified_info{includes}->{$dest}}, $inc
+                    unless grep { $_ eq $inc } @{$unified_info{includes}->{$dest}};
+            }
+        } else {
+            $unified_info{includes}->{$dest} =
+                [ @{$unified_info{includes}->{$dest}->{source}} ];
         }
     }
 }

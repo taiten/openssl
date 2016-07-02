@@ -549,7 +549,7 @@ DECLARE_ASN1_ITEM(POLICY_CONSTRAINTS)
 
 GENERAL_NAME *a2i_GENERAL_NAME(GENERAL_NAME *out,
                                const X509V3_EXT_METHOD *method,
-                               X509V3_CTX *ctx, int gen_type, 
+                               X509V3_CTX *ctx, int gen_type,
                                const char *value, int is_nc);
 
 # ifdef HEADER_CONF_H
@@ -631,7 +631,7 @@ X509_EXTENSION *X509V3_EXT_i2d(int ext_nid, int crit, void *ext_struc);
 int X509V3_add1_i2d(STACK_OF(X509_EXTENSION) **x, int nid, void *value,
                     int crit, unsigned long flags);
 
-#if OPENSSL_API_COMPAT < 0x00101000L
+#if OPENSSL_API_COMPAT < 0x10100000L
 /* The new declarations are in crypto.h, but the old ones were here. */
 # define hex_to_string OPENSSL_buf2hexstr
 # define string_to_hex OPENSSL_hexstr2buf

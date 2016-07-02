@@ -90,7 +90,7 @@ int BN_get_flags(const BIGNUM *b, int n);
  */
 void BN_with_flags(BIGNUM *dest, const BIGNUM *b, int flags);
 
-/* Wrapper function to make using BN_GENCB easier,  */
+/* Wrapper function to make using BN_GENCB easier */
 int BN_GENCB_call(BN_GENCB *cb, int a, int b);
 
 BN_GENCB *BN_GENCB_new(void);
@@ -469,7 +469,7 @@ BIGNUM *BN_get_rfc3526_prime_4096(BIGNUM *bn);
 BIGNUM *BN_get_rfc3526_prime_6144(BIGNUM *bn);
 BIGNUM *BN_get_rfc3526_prime_8192(BIGNUM *bn);
 
-# if OPENSSL_API_COMPAT < 0x00101000L
+# if OPENSSL_API_COMPAT < 0x10100000L
 #  define get_rfc2409_prime_768 BN_get_rfc2409_prime_768
 #  define get_rfc2409_prime_1024 BN_get_rfc2409_prime_1024
 #  define get_rfc3526_prime_1536 BN_get_rfc3526_prime_1536

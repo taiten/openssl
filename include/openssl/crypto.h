@@ -215,11 +215,21 @@ void *CRYPTO_get_ex_data(const CRYPTO_EX_DATA *ad, int idx);
  * On the other hand, the locking callbacks are no longer used.  Consequently,
  * the callback management functions can be safely replaced with no-op macros.
  */
-#  define CRYPTO_num_locks()            (0)
+#  define CRYPTO_num_locks()            (1)
 #  define CRYPTO_set_locking_callback(func)
 #  define CRYPTO_get_locking_callback()         (NULL)
 #  define CRYPTO_set_add_lock_callback(func)
 #  define CRYPTO_get_add_lock_callback()        (NULL)
+
+/*
+ * These defines where used in combination with the old locking callbacks,
+ * they are not called anymore, but old code that's not called might still
+ * use them.
+ */
+#  define CRYPTO_LOCK             1
+#  define CRYPTO_UNLOCK           2
+#  define CRYPTO_READ             4
+#  define CRYPTO_WRITE            8
 
 /* This structure is no longer used */
 typedef struct crypto_threadid_st {

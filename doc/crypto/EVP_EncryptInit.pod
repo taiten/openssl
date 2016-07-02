@@ -16,7 +16,7 @@ EVP_CIPHER_CTX_nid, EVP_CIPHER_CTX_block_size, EVP_CIPHER_CTX_key_length,
 EVP_CIPHER_CTX_iv_length, EVP_CIPHER_CTX_get_app_data,
 EVP_CIPHER_CTX_set_app_data, EVP_CIPHER_CTX_type, EVP_CIPHER_CTX_flags,
 EVP_CIPHER_CTX_mode, EVP_CIPHER_param_to_asn1, EVP_CIPHER_asn1_to_param,
-EVP_CIPHER_CTX_set_padding,  EVP_enc_null, EVP_des_cbc, EVP_des_ecb,
+EVP_CIPHER_CTX_set_padding, EVP_enc_null, EVP_des_cbc, EVP_des_ecb,
 EVP_des_cfb, EVP_des_ofb, EVP_des_ede_cbc, EVP_des_ede, EVP_des_ede_ofb,
 EVP_des_ede_cfb, EVP_des_ede3_cbc, EVP_des_ede3, EVP_des_ede3_ofb,
 EVP_des_ede3_cfb, EVP_desx_cbc, EVP_rc4, EVP_rc4_40, EVP_idea_cbc,
@@ -137,7 +137,9 @@ multiple times to encrypt successive blocks of data. The amount
 of data written depends on the block alignment of the encrypted data:
 as a result the amount of data written may be anything from zero bytes
 to (inl + cipher_block_size - 1) so B<out> should contain sufficient
-room. The actual number of bytes written is placed in B<outl>.
+room. The actual number of bytes written is placed in B<outl>. It also
+checks if B<in> and B<out> are partially overlapping, and if they are
+0 is returned to indicate failure.
 
 If padding is enabled (the default) then EVP_EncryptFinal_ex() encrypts
 the "final" data, that is any data that remains in a partial block.
@@ -325,11 +327,11 @@ AES with a 256-bit key in CBC, ECB, CFB and OFB modes respectively.
 
 DES in CBC, ECB, CFB and OFB modes respectively.
 
-=item EVP_des_ede_cbc(), EVP_des_ede(), EVP_des_ede_ofb(),  EVP_des_ede_cfb()
+=item EVP_des_ede_cbc(), EVP_des_ede(), EVP_des_ede_ofb(), EVP_des_ede_cfb()
 
 Two key triple DES in CBC, ECB, CFB and OFB modes respectively.
 
-=item EVP_des_ede3_cbc(), EVP_des_ede3(), EVP_des_ede3_ofb(),  EVP_des_ede3_cfb()
+=item EVP_des_ede3_cbc(), EVP_des_ede3(), EVP_des_ede3_ofb(), EVP_des_ede3_cfb()
 
 Three key triple DES in CBC, ECB, CFB and OFB modes respectively.
 

@@ -109,7 +109,7 @@ then the old sensitive data will not be overwritten; rather, a block of
 
 OPENSSL_strdup(), OPENSSL_strndup() and OPENSSL_memdup() are like the
 equivalent C functions, except that memory is allocated by calling the
-OPENSSL_malloc() and should be releaed by calling OPENSSL_free().
+OPENSSL_malloc() and should be released by calling OPENSSL_free().
 
 OPENSSL_strlcpy(),
 OPENSSL_strlcat() and OPENSSL_strnlen() are equivalents of the common C
