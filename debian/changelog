@@ -1,3 +1,16 @@
+openssl (1.1.0~pre6-1) experimental; urgency=medium
+
+  [ Sebastian Andrzej Siewior ]
+  * drop engines-path.patch. Upstream uses a 1.1 suffixes now.
+
+  [ Kurt Roeckx ]
+  * New upstream version
+  * Drop upstream snapshot
+  * Update symbols file
+  * Use some https instead of http URLs
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 04 Aug 2016 18:33:24 +0200
+
 openssl (1.1.0~pre5-5) experimental; urgency=medium
 
   * Update snapshot to commit fe964f0c88f6780fd30b26e306484b981b0a8480
