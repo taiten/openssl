@@ -3882,7 +3882,10 @@ int ssl3_renegotiate_check(SSL *s)
  */
 long ssl_get_algorithm2(SSL *s)
 {
-    long alg2 = s->s3->tmp.new_cipher->algorithm2;
+    long alg2;
+    if (s->s3 == NULL || s->s3->tmp.new_cipher == NULL)
+        return -1;
+    alg2 = s->s3->tmp.new_cipher->algorithm2;
     if (s->method->ssl3_enc->enc_flags & SSL_ENC_FLAG_SHA256_PRF) {
         if (alg2 == (SSL_HANDSHAKE_MAC_DEFAULT | TLS1_PRF))
             return SSL_HANDSHAKE_MAC_SHA256 | TLS1_PRF_SHA256;
@@ -3919,9 +3922,9 @@ int ssl_fill_hello_random(SSL *s, int server, unsigned char *result, int len)
 int ssl_generate_master_secret(SSL *s, unsigned char *pms, size_t pmslen,
                                int free_pms)
 {
-#ifndef OPENSSL_NO_PSK
     unsigned long alg_k = s->s3->tmp.new_cipher->algorithm_mkey;
     if (alg_k & SSL_PSK) {
+#ifndef OPENSSL_NO_PSK
         unsigned char *pskpms, *t;
         size_t psklen = s->s3->tmp.psklen;
         size_t pskpmslen;
@@ -3955,15 +3958,19 @@ int ssl_generate_master_secret(SSL *s, unsigned char *pms, size_t pmslen,
                                                         s->session->master_key,
                                                         pskpms, pskpmslen);
         OPENSSL_clear_free(pskpms, pskpmslen);
-    } else
+#else
+        /* Should never happen */
+        s->session->master_key_length = 0;
+        goto err;
 #endif
+    } else {
         s->session->master_key_length =
             s->method->ssl3_enc->generate_master_secret(s,
                                                         s->session->master_key,
                                                         pms, pmslen);
-#ifndef OPENSSL_NO_PSK
-    err:
-#endif
+    }
+
+ err:
     if (pms) {
         if (free_pms)
             OPENSSL_clear_free(pms, pmslen);

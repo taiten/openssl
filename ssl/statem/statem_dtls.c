@@ -182,7 +182,7 @@ int dtls1_do_write(SSL *s, int type)
             }
         }
 
-        used_len = BIO_wpending(SSL_get_wbio(s)) + DTLS1_RT_HEADER_LENGTH
+        used_len = BIO_wpending(s->wbio) + DTLS1_RT_HEADER_LENGTH
             + mac_size + blocksize;
         if (s->d1->mtu > used_len)
             curr_mtu = s->d1->mtu - used_len;
@@ -193,7 +193,7 @@ int dtls1_do_write(SSL *s, int type)
             /*
              * grr.. we could get an error if MTU picked was wrong
              */
-            ret = BIO_flush(SSL_get_wbio(s));
+            ret = BIO_flush(s->wbio);
             if (ret <= 0) {
                 s->rwstate = SSL_WRITING;
                 return ret;
@@ -294,7 +294,8 @@ int dtls1_do_write(SSL *s, int type)
                     xlen = ret - DTLS1_HM_HEADER_LENGTH;
                 }
 
-                ssl3_finish_mac(s, p, xlen);
+                if (!ssl3_finish_mac(s, p, xlen))
+                    return -1;
             }
 
             if (ret == s->init_num) {
@@ -375,7 +376,8 @@ int dtls_get_message(SSL *s, int *mt, unsigned long *len)
         msg_len += DTLS1_HM_HEADER_LENGTH;
     }
 
-    ssl3_finish_mac(s, p, msg_len);
+    if (!ssl3_finish_mac(s, p, msg_len))
+        return 0;
     if (s->msg_callback)
         s->msg_callback(0, s->version, SSL3_RT_HANDSHAKE,
                         p, msg_len, s, s->msg_callback_arg);
@@ -726,7 +728,7 @@ static int dtls_get_reassembled_message(SSL *s, long *len)
         *len = i;
         return 0;
     }
-    if(recvd_type == SSL3_RT_CHANGE_CIPHER_SPEC) {
+    if (recvd_type == SSL3_RT_CHANGE_CIPHER_SPEC) {
         if (wire[0] != SSL3_MT_CCS) {
             al = SSL_AD_UNEXPECTED_MESSAGE;
             SSLerr(SSL_F_DTLS_GET_REASSEMBLED_MESSAGE,
@@ -1118,7 +1120,7 @@ dtls1_retransmit_message(SSL *s, unsigned short seq, int *found)
 
     s->d1->retransmitting = 0;
 
-    (void)BIO_flush(SSL_get_wbio(s));
+    (void)BIO_flush(s->wbio);
     return ret;
 }
 

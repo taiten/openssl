@@ -175,8 +175,6 @@ struct x509_st {
  */
 struct x509_store_ctx_st {      /* X509_STORE_CTX */
     X509_STORE *ctx;
-    /* used when looking up certs */
-    int current_method;
     /* The following are set by the caller */
     /* The cert to check */
     X509 *cert;
@@ -204,6 +202,7 @@ struct x509_store_ctx_st {      /* X509_STORE_CTX */
     int (*check_crl) (X509_STORE_CTX *ctx, X509_CRL *crl);
     /* Check certificate against CRL */
     int (*cert_crl) (X509_STORE_CTX *ctx, X509_CRL *crl, X509 *x);
+    /* Check policy status of the chain */
     int (*check_policy) (X509_STORE_CTX *ctx);
     STACK_OF(X509) *(*lookup_certs) (X509_STORE_CTX *ctx, X509_NAME *nm);
     STACK_OF(X509_CRL) *(*lookup_crls) (X509_STORE_CTX *ctx, X509_NAME *nm);

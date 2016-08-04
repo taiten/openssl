@@ -101,6 +101,7 @@ void DSA_free(DSA *r);
 /* "up" the DSA object's reference count */
 int DSA_up_ref(DSA *r);
 int DSA_size(const DSA *);
+int DSA_bits(const DSA *d);
 int DSA_security_bits(const DSA *d);
         /* next 4 return -1 on error */
 int DSA_sign_setup(DSA *dsa, BN_CTX *ctx_in, BIGNUM **kinvp, BIGNUM **rp);
@@ -233,7 +234,7 @@ int DSA_meth_set_keygen(DSA_METHOD *dsam, int (*keygen) (DSA *));
  * made after this point may be overwritten when the script is next run.
  */
 
-void ERR_load_DSA_strings(void);
+int ERR_load_DSA_strings(void);
 
 /* Error codes for the DSA functions. */
 
@@ -256,6 +257,7 @@ void ERR_load_DSA_strings(void);
 # define DSA_F_DSA_PUB_ENCODE                             118
 # define DSA_F_DSA_SIGN                                   106
 # define DSA_F_DSA_SIGN_SETUP                             107
+# define DSA_F_DSA_SIG_NEW                                102
 # define DSA_F_OLD_DSA_PRIV_DECODE                        122
 # define DSA_F_PKEY_DSA_CTRL                              120
 # define DSA_F_PKEY_DSA_KEYGEN                            121

@@ -43,13 +43,39 @@ sub print_templates {
     # Add the implicit base configuration.
     foreach my $test (@ssltests::tests) {
         $test->{"server"} = { (%ssltests::base_server, %{$test->{"server"}}) };
-	# Do not emit an empty "server2" section.
-	if (defined $test->{"server2"}) {
+        if (defined $test->{"server2"}) {
             $test->{"server2"} = { (%ssltests::base_server, %{$test->{"server2"}}) };
         } else {
+            if (defined $test->{"test"}->{"ServerNameCallback"}) {
+                # Default is the same as server.
+                $test->{"reuse_server2"} = 1;
+            }
+            # Do not emit an empty/duplicate "server2" section.
             $test->{"server2"} = { };
         }
+        if (defined $test->{"resume_server"}) {
+            $test->{"resume_server"} = { (%ssltests::base_server, %{$test->{"resume_server"}}) };
+        } else {
+            if (defined $test->{"test"}->{"HandshakeMode"} &&
+                 $test->{"test"}->{"HandshakeMode"} eq "Resume") {
+                # Default is the same as server.
+                $test->{"reuse_resume_server"} = 1;
+            }
+            # Do not emit an empty/duplicate "resume-server" section.
+            $test->{"resume_server"} = { };
+        }
         $test->{"client"} = { (%ssltests::base_client, %{$test->{"client"}}) };
+        if (defined $test->{"resume_client"}) {
+            $test->{"resume_client"} = { (%ssltests::base_client, %{$test->{"resume_client"}}) };
+        } else {
+            if (defined $test->{"test"}->{"HandshakeMode"} &&
+                 $test->{"test"}->{"HandshakeMode"} eq "Resume") {
+                # Default is the same as client.
+                $test->{"reuse_resume_client"} = 1;
+            }
+            # Do not emit an empty/duplicate "resume-client" section.
+            $test->{"resume_client"} = { };
+        }
     }
 
     # ssl_test expects to find a

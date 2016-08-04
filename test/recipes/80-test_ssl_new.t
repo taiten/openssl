@@ -26,9 +26,12 @@ map { s/;.*// } @conf_srcs if $^O eq "VMS";
 my @conf_files = map { basename($_) } @conf_srcs;
 map { s/\.in// } @conf_files;
 
-# 02-protocol-version.conf test and 05-dtls-protocol-version.conf results
-# depend on the configuration of enabled protocols. We only verify generated
-# sources in the default configuration.
+# We hard-code the number of tests to double-check that the globbing above
+# finds all files as expected.
+plan tests => 11;  # = scalar @conf_srcs
+
+# Some test results depend on the configuration of enabled protocols. We only
+# verify generated sources in the default configuration.
 my $is_default_tls = (disabled("ssl3") && !disabled("tls1") &&
                       !disabled("tls1_1") && !disabled("tls1_2"));
 
@@ -36,28 +39,32 @@ my $is_default_dtls = (!disabled("dtls1") && !disabled("dtls1_2"));
 
 my $no_tls = alldisabled(available_protocols("tls"));
 my $no_dtls = alldisabled(available_protocols("dtls"));
+my $no_npn = disabled("nextprotoneg");
 
 my %conf_dependent_tests = (
   "02-protocol-version.conf" => !$is_default_tls,
-  "05-dtls-protocol-version.conf" => !$is_default_dtls,
+  "04-client_auth.conf" => !$is_default_tls,
+  "07-dtls-protocol-version.conf" => !$is_default_dtls,
+  "10-resumption.conf" => !$is_default_tls,
+  "11-dtls_resumption.conf" => !$is_default_dtls,
 );
 
 # Default is $no_tls but some tests have different skip conditions.
 my %skip = (
-  "05-dtls-protocol-version.conf" => $no_dtls,
+  "07-dtls-protocol-version.conf" => $no_dtls,
+  "08-npn.conf" => $no_tls || $no_npn,
+  "09-alpn.conf" => $no_tls || $no_npn,
+  "10-resumption.conf" => disabled("tls1_1") || disabled("tls1_2"),
+  "11-dtls_resumption.conf" => disabled("dtls1") || disabled("dtls1_2"),
 );
 
 foreach my $conf (@conf_files) {
     subtest "Test configuration $conf" => sub {
         test_conf($conf,
                   $conf_dependent_tests{$conf} || $^O eq "VMS" ?  0 : 1,
-                  $skip{$conf} || $no_tls);
+                  defined($skip{$conf}) ? $skip{$conf} : $no_tls);
     }
 }
-
-# We hard-code the number of tests to double-check that the globbing above
-# finds all files as expected.
-plan tests => 7;  # = scalar @conf_srcs
 
 sub test_conf {
     plan tests => 3;

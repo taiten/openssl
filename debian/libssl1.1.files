@@ -1,3 +1,3 @@
 usr/lib/*/*.so.*.*
 usr/lib/*/*/*.so.*.*
-usr/lib/*/openssl-1.1/engines
+usr/lib/*/engines-*

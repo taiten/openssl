@@ -27,11 +27,6 @@
 extern "C" {
 # endif
 
-# ifdef WIN32
-/* Under Win32 this is defined in wincrypt.h */
-#  undef X509_NAME
-# endif
-
 # include <openssl/x509.h>
 # include <openssl/x509v3.h>
 
@@ -160,8 +155,6 @@ int i2d_ESS_SIGNING_CERT(const ESS_SIGNING_CERT *a, unsigned char **pp);
 ESS_SIGNING_CERT *d2i_ESS_SIGNING_CERT(ESS_SIGNING_CERT **a,
                                        const unsigned char **pp, long length);
 ESS_SIGNING_CERT *ESS_SIGNING_CERT_dup(ESS_SIGNING_CERT *a);
-
-void ERR_load_TS_strings(void);
 
 int TS_REQ_set_version(TS_REQ *a, long version);
 long TS_REQ_get_version(const TS_REQ *a);
@@ -537,7 +530,7 @@ int TS_CONF_set_ess_cert_id_chain(CONF *conf, const char *section,
  * made after this point may be overwritten when the script is next run.
  */
 
-void ERR_load_TS_strings(void);
+int ERR_load_TS_strings(void);
 
 /* Error codes for the TS functions. */
 

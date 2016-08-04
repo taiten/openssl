@@ -497,7 +497,7 @@ static int check_bitlen_rsa(RSA *rsa, int ispub, unsigned int *pmagic)
     int nbyte, hnbyte, bitlen;
     const BIGNUM *e;
 
-    RSA_get0_key(rsa, &e, NULL, NULL);
+    RSA_get0_key(rsa, NULL, &e, NULL);
     if (BN_num_bits(e) > 32)
         goto badkey;
     bitlen = RSA_bits(rsa);
@@ -539,7 +539,7 @@ static void write_rsa(unsigned char **out, RSA *rsa, int ispub)
 
     nbyte = RSA_size(rsa);
     hnbyte = (RSA_bits(rsa) + 15) >> 4;
-    RSA_get0_key(rsa, &e, &n, &d);
+    RSA_get0_key(rsa, &n, &e, &d);
     write_lebn(out, e, 4);
     write_lebn(out, n, -1);
     if (ispub)
@@ -759,7 +759,7 @@ static int i2b_PVK(unsigned char **out, EVP_PKEY *pk, int enclevel,
                    pem_password_cb *cb, void *u)
 {
     int outlen = 24, pklen;
-    unsigned char *p = NULL, *salt = NULL;
+    unsigned char *p = NULL, *start = NULL, *salt = NULL;
     EVP_CIPHER_CTX *cctx = NULL;
     if (enclevel)
         outlen += PVK_SALTLEN;
@@ -772,7 +772,7 @@ static int i2b_PVK(unsigned char **out, EVP_PKEY *pk, int enclevel,
     if (*out != NULL) {
         p = *out;
     } else {
-        p = OPENSSL_malloc(outlen);
+        start = p = OPENSSL_malloc(outlen);
         if (p == NULL) {
             PEMerr(PEM_F_I2B_PVK, ERR_R_MALLOC_FAILURE);
             return -1;
@@ -829,14 +829,14 @@ static int i2b_PVK(unsigned char **out, EVP_PKEY *pk, int enclevel,
     EVP_CIPHER_CTX_free(cctx);
 
     if (*out == NULL)
-        *out = p;
+        *out = start;
 
     return outlen;
 
  error:
     EVP_CIPHER_CTX_free(cctx);
     if (*out == NULL)
-        OPENSSL_free(p);
+        OPENSSL_free(start);
     return -1;
 }
 

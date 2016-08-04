@@ -1,7 +1,5 @@
-openssl_snapshot.patch
 config-hurd.patch
 debian-targets.patch
-engines-path.patch
 man-section.patch
 no-rpath.patch
 no-symbolic.patch

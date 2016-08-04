@@ -71,7 +71,8 @@ build-stamp:
 		mv libcrypto.so* libssl.so* $$opt/; \
 		$(MAKE) -f Makefile clean; \
 	done
-	./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
+	# Debian Perl policy 5.1 (Script Magic)
+	HASHBANGPERL=/usr/bin/perl ./Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
 	#$(MAKE) -f Makefile depend
 	ln -sf apps/openssl.pod crypto/crypto.pod ssl/ssl.pod doc/
 #	$(MAKE) -f Makefile linux-shared

@@ -174,7 +174,7 @@ SSL_SESSION *ssl_session_dup(SSL_SESSION *src, int ticket)
     }
 #endif
 
-    if(src->ciphers != NULL) {
+    if (src->ciphers != NULL) {
         dest->ciphers = sk_SSL_CIPHER_dup(src->ciphers);
         if (dest->ciphers == NULL)
             goto err;
@@ -210,7 +210,7 @@ SSL_SESSION *ssl_session_dup(SSL_SESSION *src, int ticket)
 
     if (ticket != 0) {
         dest->tlsext_tick = OPENSSL_memdup(src->tlsext_tick, src->tlsext_ticklen);
-        if(dest->tlsext_tick == NULL)
+        if (dest->tlsext_tick == NULL)
             goto err;
     } else {
         dest->tlsext_tick_lifetime_hint = 0;
@@ -708,16 +708,16 @@ static int remove_session_lock(SSL_CTX *ctx, SSL_SESSION *c, int lck)
             r = lh_SSL_SESSION_delete(ctx->sessions, c);
             SSL_SESSION_list_remove(ctx, c);
         }
+        c->not_resumable = 1;
 
         if (lck)
             CRYPTO_THREAD_unlock(ctx->lock);
 
-        if (ret) {
-            r->not_resumable = 1;
-            if (ctx->remove_session_cb != NULL)
-                ctx->remove_session_cb(ctx, r);
+        if (ret)
             SSL_SESSION_free(r);
-        }
+
+        if (ctx->remove_session_cb != NULL)
+            ctx->remove_session_cb(ctx, c);
     } else
         ret = 0;
     return (ret);

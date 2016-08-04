@@ -173,7 +173,7 @@ typedef void CRYPTO_EX_new (void *parent, void *ptr, CRYPTO_EX_DATA *ad,
                            int idx, long argl, void *argp);
 typedef void CRYPTO_EX_free (void *parent, void *ptr, CRYPTO_EX_DATA *ad,
                              int idx, long argl, void *argp);
-typedef int CRYPTO_EX_dup (CRYPTO_EX_DATA *to, CRYPTO_EX_DATA *from,
+typedef int CRYPTO_EX_dup (CRYPTO_EX_DATA *to, const CRYPTO_EX_DATA *from,
                            void *srcp, int idx, long argl, void *argp);
 __owur int CRYPTO_get_ex_new_index(int class_index, long argl, void *argp,
                             CRYPTO_EX_new *new_func, CRYPTO_EX_dup *dup_func,
@@ -187,7 +187,7 @@ int CRYPTO_free_ex_index(int class_index, int idx);
  */
 int CRYPTO_new_ex_data(int class_index, void *obj, CRYPTO_EX_DATA *ad);
 int CRYPTO_dup_ex_data(int class_index, CRYPTO_EX_DATA *to,
-                       CRYPTO_EX_DATA *from);
+                       const CRYPTO_EX_DATA *from);
 
 void CRYPTO_free_ex_data(int class_index, void *obj, CRYPTO_EX_DATA *ad);
 
@@ -387,33 +387,37 @@ void OPENSSL_thread_stop(void);
 
 /* Low-level control of initialization */
 OPENSSL_INIT_SETTINGS *OPENSSL_INIT_new(void);
-#ifndef OPENSSL_NO_STDIO
+# ifndef OPENSSL_NO_STDIO
 int OPENSSL_INIT_set_config_appname(OPENSSL_INIT_SETTINGS *settings,
                                     const char *config_file);
-#endif
+# endif
 void OPENSSL_INIT_free(OPENSSL_INIT_SETTINGS *settings);
 
-# if !defined(OPENSSL_THREADS) || defined(CRYPTO_TDEBUG)
-typedef unsigned int CRYPTO_ONCE;
-typedef unsigned int CRYPTO_THREAD_LOCAL;
-typedef unsigned int CRYPTO_THREAD_ID;
-
-#  define CRYPTO_ONCE_STATIC_INIT 0
-# elif defined(OPENSSL_SYS_WINDOWS)
-#  include <windows.h>
+# if defined(OPENSSL_THREADS) && !defined(CRYPTO_TDEBUG)
+#  if defined(_WIN32)
+#   if defined(BASETYPES) || defined(_WINDEF_H)
+/* application has to include <windows.h> in order to use this */
 typedef DWORD CRYPTO_THREAD_LOCAL;
 typedef DWORD CRYPTO_THREAD_ID;
 
 typedef LONG CRYPTO_ONCE;
-#  define CRYPTO_ONCE_STATIC_INIT 0
-
-# else
-#  include <pthread.h>
+#    define CRYPTO_ONCE_STATIC_INIT 0
+#   endif
+#  else
+#   include <pthread.h>
 typedef pthread_once_t CRYPTO_ONCE;
 typedef pthread_key_t CRYPTO_THREAD_LOCAL;
 typedef pthread_t CRYPTO_THREAD_ID;
 
-#  define CRYPTO_ONCE_STATIC_INIT PTHREAD_ONCE_INIT
+#   define CRYPTO_ONCE_STATIC_INIT PTHREAD_ONCE_INIT
+#  endif
+# endif
+
+# if !defined(CRYPTO_ONCE_STATIC_INIT)
+typedef unsigned int CRYPTO_ONCE;
+typedef unsigned int CRYPTO_THREAD_LOCAL;
+typedef unsigned int CRYPTO_THREAD_ID;
+#  define CRYPTO_ONCE_STATIC_INIT 0
 # endif
 
 int CRYPTO_THREAD_run_once(CRYPTO_ONCE *once, void (*init)(void));
@@ -432,7 +436,7 @@ int CRYPTO_THREAD_compare_id(CRYPTO_THREAD_ID a, CRYPTO_THREAD_ID b);
  * made after this point may be overwritten when the script is next run.
  */
 
-void ERR_load_CRYPTO_strings(void);
+int ERR_load_CRYPTO_strings(void);
 
 /* Error codes for the CRYPTO functions. */
 

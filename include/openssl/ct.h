@@ -419,10 +419,11 @@ CTLOG *CTLOG_new(EVP_PKEY *public_key, const char *name);
 CTLOG *CTLOG_new_null(void);
 
 /*
- * Creates a new CT log instance with the given base64 public_key and |name|.
+ * Creates a new CT |ct_log| instance with the given base64 public_key and |name|.
  * Should be deleted by the caller using CTLOG_free when no longer needed.
  */
-CTLOG *CTLOG_new_from_base64(const char *pkey_base64, const char *name);
+int CTLOG_new_from_base64(CTLOG ** ct_log,
+                          const char *pkey_base64, const char *name);
 
 /*
  * Deletes a CT log instance and its fields.
@@ -480,7 +481,7 @@ __owur int CTLOG_STORE_load_default_file(CTLOG_STORE *store);
  * made after this point may be overwritten when the script is next run.
  */
 
-void ERR_load_CT_strings(void);
+int ERR_load_CT_strings(void);
 
 /* Error codes for the CT functions. */
 
@@ -491,6 +492,8 @@ void ERR_load_CT_strings(void);
 # define CT_F_CTLOG_NEW_NULL                              120
 # define CT_F_CTLOG_STORE_LOAD_CTX_NEW                    122
 # define CT_F_CTLOG_STORE_LOAD_FILE                       123
+# define CT_F_CTLOG_STORE_LOAD_LOG                        130
+# define CT_F_CTLOG_STORE_NEW                             131
 # define CT_F_CT_BASE64_DECODE                            124
 # define CT_F_CT_POLICY_EVAL_CTX_NEW                      133
 # define CT_F_CT_V1_LOG_ID_FROM_PKEY                      125

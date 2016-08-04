@@ -89,7 +89,7 @@
 #define REV_KEY_COMPROMISE      3 /* Value is cert key compromise time */
 #define REV_CA_COMPROMISE       4 /* Value is CA key compromise time */
 
-static void lookup_fail(const char *name, const char *tag);
+static char *lookup_conf(const CONF *conf, const char *group, const char *tag);
 static int certify(X509 **xret, char *infile, EVP_PKEY *pkey, X509 *x509,
                    const EVP_MD *dgst, STACK_OF(OPENSSL_STRING) *sigopts,
                    STACK_OF(CONF_VALUE) *policy, CA_DB *db,
@@ -239,7 +239,7 @@ int ca_main(int argc, char **argv)
     char *extensions = NULL, *extfile = NULL, *key = NULL, *passinarg = NULL;
     char *outdir = NULL, *outfile = NULL, *rev_arg = NULL, *ser_status = NULL;
     char *serialfile = NULL, *startdate = NULL, *subj = NULL;
-    char *prog, *enddate = NULL, *tmp_email_dn = NULL;
+    char *prog, *enddate = NULL;
     char *dbfile = NULL, *f, *randfile = NULL;
     char buf[3][BSIZE];
     char *const *pp;
@@ -434,13 +434,9 @@ end_of_options:
         goto end;
 
     /* Lets get the config section we are using */
-    if (section == NULL) {
-        section = NCONF_get_string(conf, BASE_SECTION, ENV_DEFAULT_CA);
-        if (section == NULL) {
-            lookup_fail(BASE_SECTION, ENV_DEFAULT_CA);
-            goto end;
-        }
-    }
+    if (section == NULL
+        && (section = lookup_conf(conf, BASE_SECTION, ENV_DEFAULT_CA)) == NULL)
+        goto end;
 
     if (conf != NULL) {
         p = NCONF_get_string(conf, NULL, "oid_file");
@@ -499,10 +495,10 @@ end_of_options:
     /*****************************************************************/
     /* report status of cert with serial number given on command line */
     if (ser_status) {
-        if ((dbfile = NCONF_get_string(conf, section, ENV_DATABASE)) == NULL) {
-            lookup_fail(section, ENV_DATABASE);
+        dbfile = lookup_conf(conf, section, ENV_DATABASE);
+        if (dbfile  == NULL)
             goto end;
-        }
+
         db = load_index(dbfile, &db_attr);
         if (db == NULL)
             goto end;
@@ -518,13 +514,10 @@ end_of_options:
     /*****************************************************************/
     /* we definitely need a private key, so let's get it */
 
-    if ((keyfile == NULL) && ((keyfile = NCONF_get_string(conf,
-                                                          section,
-                                                          ENV_PRIVATE_KEY)) ==
-                              NULL)) {
-        lookup_fail(section, ENV_PRIVATE_KEY);
+    if (keyfile == NULL
+        && (keyfile = lookup_conf(conf, section, ENV_PRIVATE_KEY)) == NULL)
         goto end;
-    }
+
     if (!key) {
         free_key = 1;
         if (!app_passwd(passinarg, NULL, &key, NULL)) {
@@ -543,13 +536,10 @@ end_of_options:
     /*****************************************************************/
     /* we need a certificate */
     if (!selfsign || spkac_file || ss_cert_file || gencrl) {
-        if ((certfile == NULL)
-            && ((certfile = NCONF_get_string(conf,
-                                             section,
-                                             ENV_CERTIFICATE)) == NULL)) {
-            lookup_fail(section, ENV_CERTIFICATE);
+        if (certfile == NULL
+            && (certfile = lookup_conf(conf, section, ENV_CERTIFICATE)) == NULL)
             goto end;
-        }
+
         x509 = load_cert(certfile, FORMAT_PEM, "CA certificate");
         if (x509 == NULL)
             goto end;
@@ -612,8 +602,8 @@ end_of_options:
     /* lookup where to write new certificates */
     if ((outdir == NULL) && (req)) {
 
-        if ((outdir = NCONF_get_string(conf, section, ENV_NEW_CERTS_DIR))
-            == NULL) {
+        outdir = NCONF_get_string(conf, section, ENV_NEW_CERTS_DIR);
+        if (outdir == NULL) {
             BIO_printf(bio_err,
                        "there needs to be defined a directory for new certificate to be placed in\n");
             goto end;
@@ -636,10 +626,10 @@ end_of_options:
 
     /*****************************************************************/
     /* we need to load the database file */
-    if ((dbfile = NCONF_get_string(conf, section, ENV_DATABASE)) == NULL) {
-        lookup_fail(section, ENV_DATABASE);
+    dbfile = lookup_conf(conf, section, ENV_DATABASE);
+    if (dbfile == NULL)
         goto end;
-    }
+
     db = load_index(dbfile, &db_attr);
     if (db == NULL)
         goto end;
@@ -731,10 +721,11 @@ end_of_options:
                        extfile);
 
         /* We can have sections in the ext file */
-        if (!extensions
-            && !(extensions =
-                 NCONF_get_string(extconf, "default", "extensions")))
-            extensions = "default";
+        if (extensions == NULL) {
+            extensions = NCONF_get_string(extconf, "default", "extensions");
+            if (extensions == NULL)
+                extensions = "default";
+        }
     }
 
     /*****************************************************************/
@@ -745,12 +736,9 @@ end_of_options:
             goto end;
     }
 
-    if ((md == NULL) && ((md = NCONF_get_string(conf,
-                                                section,
-                                                ENV_DEFAULT_MD)) == NULL)) {
-        lookup_fail(section, ENV_DEFAULT_MD);
+    if (md == NULL
+        && (md = lookup_conf(conf, section, ENV_DEFAULT_MD)) == NULL)
         goto end;
-    }
 
     if (strcmp(md, "default") == 0) {
         int def_nid;
@@ -766,31 +754,26 @@ end_of_options:
     }
 
     if (req) {
-        if ((email_dn == 1) && ((tmp_email_dn = NCONF_get_string(conf,
-                                                                 section,
-                                                                 ENV_DEFAULT_EMAIL_DN))
-                                != NULL)) {
-            if (strcmp(tmp_email_dn, "no") == 0)
+        if (email_dn == 1) {
+            char *tmp_email_dn = NULL;
+
+            tmp_email_dn = NCONF_get_string(conf, section, ENV_DEFAULT_EMAIL_DN);
+            if (tmp_email_dn != NULL && strcmp(tmp_email_dn, "no") == 0)
                 email_dn = 0;
         }
         if (verbose)
             BIO_printf(bio_err, "message digest is %s\n",
                        OBJ_nid2ln(EVP_MD_type(dgst)));
-        if ((policy == NULL) && ((policy = NCONF_get_string(conf,
-                                                            section,
-                                                            ENV_POLICY)) ==
-                                 NULL)) {
-            lookup_fail(section, ENV_POLICY);
+        if (policy == NULL
+            && (policy = lookup_conf(conf, section, ENV_POLICY)) == NULL)
             goto end;
-        }
+
         if (verbose)
             BIO_printf(bio_err, "policy is %s\n", policy);
 
-        if ((serialfile = NCONF_get_string(conf, section, ENV_SERIAL))
-            == NULL) {
-            lookup_fail(section, ENV_SERIAL);
+        serialfile = lookup_conf(conf, section, ENV_SERIAL);
+        if (serialfile == NULL)
             goto end;
-        }
 
         if (!extconf) {
             /*
@@ -1253,9 +1236,12 @@ end_of_options:
     return (ret);
 }
 
-static void lookup_fail(const char *name, const char *tag)
+static char *lookup_conf(const CONF *conf, const char *section, const char *tag)
 {
-    BIO_printf(bio_err, "variable lookup failed for %s::%s\n", name, tag);
+    char *entry = NCONF_get_string(conf, section, tag);
+    if (entry == NULL)
+        BIO_printf(bio_err, "variable lookup failed for %s::%s\n", section, tag);
+    return entry;
 }
 
 static int certify(X509 **xret, char *infile, EVP_PKEY *pkey, X509 *x509,
@@ -1388,7 +1374,7 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
 {
     X509_NAME *name = NULL, *CAname = NULL, *subject = NULL, *dn_subject =
         NULL;
-    ASN1_UTCTIME *tm, *tmptm;
+    ASN1_UTCTIME *tm;
     ASN1_STRING *str, *str2;
     ASN1_OBJECT *obj;
     X509 *ret = NULL;
@@ -1402,12 +1388,6 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
     OPENSSL_STRING *irow = NULL;
     OPENSSL_STRING *rrow = NULL;
     char buf[25];
-
-    tmptm = ASN1_UTCTIME_new();
-    if (tmptm == NULL) {
-        BIO_printf(bio_err, "malloc error\n");
-        return (0);
-    }
 
     for (i = 0; i < DB_NUMBER; i++)
         row[i] = NULL;
@@ -1544,7 +1524,8 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
                 j = X509_NAME_get_index_by_OBJ(CAname, obj, last2);
                 if ((j < 0) && (last2 == -1)) {
                     BIO_printf(bio_err,
-                               "The %s field does not exist in the CA certificate,\nthe 'policy' is misconfigured\n",
+                               "The %s field does not exist in the CA certificate,\n"
+                               "the 'policy' is misconfigured\n",
                                cv->name);
                     goto end;
                 }
@@ -1558,7 +1539,8 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
                 }
                 if (j < 0) {
                     BIO_printf(bio_err,
-                               "The %s field needed to be the same in the\nCA certificate (%s) and the request (%s)\n",
+                               "The %s field is different between\n"
+                               "CA certificate (%s) and the request (%s)\n",
                                cv->name,
                                ((str2 == NULL) ? "NULL" : (char *)str2->data),
                                ((str == NULL) ? "NULL" : (char *)str->data));
@@ -1877,7 +1859,6 @@ static int do_body(X509 **xret, EVP_PKEY *pkey, X509 *x509,
     X509_NAME_free(subject);
     if (dn_subject != subject)
         X509_NAME_free(dn_subject);
-    ASN1_UTCTIME_free(tmptm);
     if (ok <= 0)
         X509_free(ret);
     else
@@ -2137,27 +2118,28 @@ static int get_certificate_status(const char *serial, CA_DB *db)
 {
     char *row[DB_NUMBER], **rrow;
     int ok = -1, i;
+    size_t serial_len = strlen(serial);
 
     /* Free Resources */
     for (i = 0; i < DB_NUMBER; i++)
         row[i] = NULL;
 
     /* Malloc needed char spaces */
-    row[DB_serial] = app_malloc(strlen(serial) + 2, "row serial#");
+    row[DB_serial] = app_malloc(serial_len + 2, "row serial#");
 
-    if (strlen(serial) % 2) {
+    if (serial_len % 2) {
         /*
          * Set the first char to 0
          */ ;
         row[DB_serial][0] = '0';
 
         /* Copy String from serial to row[DB_serial] */
-        memcpy(row[DB_serial] + 1, serial, strlen(serial));
-        row[DB_serial][strlen(serial) + 1] = '\0';
+        memcpy(row[DB_serial] + 1, serial, serial_len);
+        row[DB_serial][serial_len + 1] = '\0';
     } else {
         /* Copy String from serial to row[DB_serial] */
-        memcpy(row[DB_serial], serial, strlen(serial));
-        row[DB_serial][strlen(serial)] = '\0';
+        memcpy(row[DB_serial], serial, serial_len);
+        row[DB_serial][serial_len] = '\0';
     }
 
     /* Make it Upper Case */
@@ -2213,7 +2195,7 @@ static int do_updatedb(CA_DB *db)
 
     /* get actual time and make a string */
     a_tm = X509_gmtime_adj(a_tm, 0);
-    a_tm_s = (char *)app_malloc(a_tm->length + 1, "time string");
+    a_tm_s = app_malloc(a_tm->length + 1, "time string");
 
     memcpy(a_tm_s, a_tm->data, a_tm->length);
     a_tm_s[a_tm->length] = '\0';

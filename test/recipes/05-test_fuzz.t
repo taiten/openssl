@@ -11,10 +11,17 @@ use warnings;
 
 use if $^O ne "VMS", 'File::Glob' => qw/glob/;
 use OpenSSL::Test qw/:DEFAULT srctop_file/;
+use OpenSSL::Test::Utils;
 
 setup("test_fuzz");
 
-my @fuzzers = ('asn1', 'asn1parse', 'bignum', 'bndiv', 'cms', 'conf', 'crl', 'ct', 'server', 'x509');
+my @fuzzers = ('asn1', 'asn1parse', 'bignum', 'bndiv', 'conf', 'crl', 'server', 'x509');
+if (!disabled("cms")) {
+    push @fuzzers, 'cms';
+}
+if (!disabled("ct")) {
+    push @fuzzers, 'ct';
+}
 plan tests => scalar @fuzzers;
 
 foreach my $f (@fuzzers) {

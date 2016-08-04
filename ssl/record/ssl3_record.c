@@ -160,12 +160,18 @@ int ssl3_get_record(SSL *s)
 
             /*
              * Check whether this is a regular record or an SSLv2 style record.
-             * The latter is only used in an initial ClientHello for old
-             * clients. We check s->read_hash and s->enc_read_ctx to ensure this
-             * does not apply during renegotiation
+             * The latter can only be used in the first record of an initial
+             * ClientHello for old clients. Initial ClientHello means
+             * s->first_packet is set and s->server is true. The first record
+             * means we've not received any data so far (s->init_num == 0) and
+             * have had no empty records. We check s->read_hash and
+             * s->enc_read_ctx to ensure this does not apply during
+             * renegotiation.
              */
-            if (s->first_packet && s->server && !s->read_hash
-                    && !s->enc_read_ctx
+            if (s->first_packet && s->server
+                    && s->init_num == 0
+                    && RECORD_LAYER_get_empty_record_count(&s->rlayer) == 0
+                    && s->read_hash == NULL && s->enc_read_ctx == NULL
                     && (p[0] & 0x80) && (p[2] == SSL2_MT_CLIENT_HELLO)) {
                 /*
                  *  SSLv2 style record
@@ -291,7 +297,7 @@ int ssl3_get_record(SSL *s)
          * or s->packet_length == SSL2_RT_HEADER_LENGTH + rr->length
          * and we have that many bytes in s->packet
          */
-        if(rr[num_recs].rec_version == SSL2_VERSION) {
+        if (rr[num_recs].rec_version == SSL2_VERSION) {
             rr[num_recs].input =
                 &(RECORD_LAYER_get_packet(&s->rlayer)[SSL2_RT_HEADER_LENGTH]);
         } else {
@@ -703,8 +709,8 @@ int tls1_enc(SSL *s, SSL3_RECORD *recs, unsigned int n_recs, int send)
         bs = EVP_CIPHER_block_size(EVP_CIPHER_CTX_cipher(ds));
 
         if (n_recs > 1) {
-            if(!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ds))
-                                  & EVP_CIPH_FLAG_PIPELINE)) {
+            if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ds))
+                                    & EVP_CIPH_FLAG_PIPELINE)) {
                 /*
                  * We shouldn't have been called with pipeline data if the
                  * cipher doesn't support pipelining
@@ -777,7 +783,7 @@ int tls1_enc(SSL *s, SSL3_RECORD *recs, unsigned int n_recs, int send)
             unsigned char *data[SSL_MAX_PIPELINES];
 
             /* Set the output buffers */
-            for(ctr = 0; ctr < n_recs; ctr++) {
+            for (ctr = 0; ctr < n_recs; ctr++) {
                 data[ctr] = recs[ctr].data;
             }
             if (EVP_CIPHER_CTX_ctrl(ds, EVP_CTRL_SET_PIPELINE_OUTPUT_BUFS,
@@ -785,7 +791,7 @@ int tls1_enc(SSL *s, SSL3_RECORD *recs, unsigned int n_recs, int send)
                 SSLerr(SSL_F_TLS1_ENC, SSL_R_PIPELINE_FAILURE);
             }
             /* Set the input buffers */
-            for(ctr = 0; ctr < n_recs; ctr++) {
+            for (ctr = 0; ctr < n_recs; ctr++) {
                 data[ctr] = recs[ctr].input;
             }
             if (EVP_CIPHER_CTX_ctrl(ds, EVP_CTRL_SET_PIPELINE_INPUT_BUFS,
@@ -1015,9 +1021,12 @@ int tls1_mac(SSL *ssl, SSL3_RECORD *rec, unsigned char *md, int send)
             return -1;
         }
         if (!send && !SSL_USE_ETM(ssl) && FIPS_mode())
-            tls_fips_digest_extra(ssl->enc_read_ctx,
-                                  mac_ctx, rec->input,
-                                  rec->length, rec->orig_len);
+            if (!tls_fips_digest_extra(ssl->enc_read_ctx,
+                                       mac_ctx, rec->input,
+                                       rec->length, rec->orig_len)) {
+                EVP_MD_CTX_free(hmac);
+                return -1;
+        }
     }
 
     EVP_MD_CTX_free(hmac);

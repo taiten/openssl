@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "e_os.h"
 #include "ssl_test_ctx.h"
@@ -88,7 +89,50 @@ static int SSL_TEST_CTX_equal(SSL_TEST_CTX *ctx, SSL_TEST_CTX *ctx2)
                 ssl_session_ticket_name(ctx2->session_ticket_expected));
         return 0;
     }
+#ifndef OPENSSL_NO_NEXTPROTONEG
+    if (!strings_equal("ClientNPNProtocols", ctx->client_npn_protocols,
+                       ctx2->client_npn_protocols))
+        return 0;
+    if (ctx->method != ctx2->method) {
+        fprintf(stderr, "Method mismatch: %s vs %s.\n",
+                ssl_test_method_name(ctx->method),
+                ssl_test_method_name(ctx2->method));
+        return 0;
+    }
+    if (!strings_equal("ServerNPNProtocols", ctx->server_npn_protocols,
+                       ctx2->server_npn_protocols))
+        return 0;
+    if (!strings_equal("Server2NPNProtocols", ctx->server_npn_protocols,
+                       ctx2->server_npn_protocols))
+        return 0;
+    if (!strings_equal("ExpectedNPNProtocol", ctx->expected_npn_protocol,
+                       ctx2->expected_npn_protocol))
+        return 0;
+    if (!strings_equal("ClientALPNProtocols", ctx->client_alpn_protocols,
+                       ctx2->client_alpn_protocols))
+        return 0;
 
+    if (!strings_equal("ServerALPNProtocols", ctx->server_alpn_protocols,
+                       ctx2->server_alpn_protocols))
+        return 0;
+    if (!strings_equal("Server2ALPNProtocols", ctx->server_alpn_protocols,
+                       ctx2->server_alpn_protocols))
+        return 0;
+    if (!strings_equal("ExpectedALPNProtocol", ctx->expected_alpn_protocol,
+                       ctx2->expected_alpn_protocol))
+        return 0;
+#endif
+    if (ctx->handshake_mode != ctx2->handshake_mode) {
+        fprintf(stderr, "HandshakeMode mismatch: %s vs %s.\n",
+                ssl_handshake_mode_name(ctx->handshake_mode),
+                ssl_handshake_mode_name(ctx2->handshake_mode));
+        return 0;
+    }
+    if (ctx->resumption_expected != ctx2->resumption_expected) {
+        fprintf(stderr, "ResumptionExpected mismatch: %d vs %d.\n",
+                ctx->resumption_expected, ctx2->resumption_expected);
+        return 0;
+    }
     return 1;
 }
 
@@ -172,6 +216,14 @@ static int test_good_configuration()
         SSL_TEST_SERVERNAME_IGNORE_MISMATCH;
     fixture.expected_ctx->session_ticket_expected = SSL_TEST_SESSION_TICKET_YES;
     fixture.expected_ctx->method = SSL_TEST_METHOD_DTLS;
+#ifndef OPENSSL_NO_NEXTPROTONEG
+    fixture.expected_ctx->client_npn_protocols = OPENSSL_strdup("foo,bar");
+    fixture.expected_ctx->server2_alpn_protocols = OPENSSL_strdup("baz");
+    OPENSSL_assert(fixture.expected_ctx->client_npn_protocols != NULL);
+    OPENSSL_assert(fixture.expected_ctx->server2_alpn_protocols != NULL);
+#endif
+    fixture.expected_ctx->handshake_mode = SSL_TEST_HANDSHAKE_RESUME;
+    fixture.expected_ctx->resumption_expected = 1;
     EXECUTE_SSL_TEST_CTX_TEST();
 }
 
@@ -185,6 +237,8 @@ static const char *bad_configurations[] = {
     "ssltest_unknown_servername_callback",
     "ssltest_unknown_session_ticket_expected",
     "ssltest_unknown_method",
+    "ssltest_unknown_handshake_mode",
+    "ssltest_unknown_resumption_expected",
 };
 
 static int test_bad_configuration(int idx)

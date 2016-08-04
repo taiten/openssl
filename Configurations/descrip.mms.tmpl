@@ -9,6 +9,9 @@
   our $osslprefix = 'OSSL$';
   (our $osslprefix_q = $osslprefix) =~ s/\$/\\\$/;
 
+  our $sover = sprintf "%02d%02d", $config{shlib_major}, $config{shlib_minor};
+  our $osslver = sprintf "%02d%02d", split(/\./, $config{version});
+
   our $sourcedir = $config{sourcedir};
   our $builddir = $config{builddir};
   sub sourcefile {
@@ -40,8 +43,7 @@
   # Because we need to make two computations of these data,
   # we store them in arrays for reuse
   our @shlibs = map { $unified_info{sharednames}->{$_} || () } @{$unified_info{libraries}};
-  our @programs = grep { !m|^\[\.test\]| } @{$unified_info{programs}};
-  our @testprogs = grep { m|^\[\.test\]| } @{$unified_info{programs}};
+  our @install_shlibs = map { $unified_info{sharednames}->{$_} || () } @{$unified_info{install}->{libraries}};
   our @generated = ( ( map { (my $x = $_) =~ s|\.S$|\.s|; $x }
                        grep { defined $unified_info{generate}->{$_} }
                        map { @{$unified_info{sources}->{$_}} }
@@ -115,8 +117,7 @@ DEP_EXT=.D
 LIBS={- join(", ", map { "-\n\t".$_.".OLB" } @{$unified_info{libraries}}) -}
 SHLIBS={- join(", ", map { "-\n\t".$_.".EXE" } @shlibs) -}
 ENGINES={- join(", ", map { "-\n\t".$_.".EXE" } @{$unified_info{engines}}) -}
-PROGRAMS={- join(", ", map { "-\n\t".$_.".EXE" } @programs) -}
-TESTPROGS={- join(", ", map { "-\n\t".$_.".EXE" } @testprogs) -}
+PROGRAMS={- join(", ", map { "-\n\t".$_.".EXE" } @{$unified_info{programs}}) -}
 SCRIPTS={- join(", ", map { "-\n\t".$_ } @{$unified_info{scripts}}) -}
 {- output_off() if $disabled{makedepend}; "" -}
 DEPS={- our @deps = map { (my $x = $_) =~ s|\.o$|\$(DEP_EXT)|; $x; }
@@ -127,6 +128,10 @@ DEPS={- our @deps = map { (my $x = $_) =~ s|\.o$|\$(DEP_EXT)|; $x; }
 GENERATED_MANDATORY={- join(", ", map { "-\n\t".$_ } @{$unified_info{depends}->{""}} ) -}
 GENERATED={- join(", ", map { "-\n\t".$_ } @generated) -}
 
+INSTALL_LIBS={- join(", ", map { "-\n\t".$_.".OLB" } @{$unified_info{install}->{libraries}}) -}
+INSTALL_SHLIBS={- join(", ", map { "-\n\t".$_.".EXE" } @install_shlibs) -}
+INSTALL_ENGINES={- join(", ", map { "-\n\t".$_.".EXE" } @{$unified_info{install}->{engines}}) -}
+INSTALL_PROGRAMS={- join(", ", map { "-\n\t".$_.".EXE" } @{$unified_info{install}->{programs}}) -}
 {- output_off() if $disabled{apps}; "" -}
 BIN_SCRIPTS=[.tools]c_rehash.pl
 MISC_SCRIPTS=[.apps]CA.pl, [.apps]tsget.pl
@@ -141,20 +146,21 @@ MISC_SCRIPTS=[.apps]CA.pl, [.apps]tsget.pl
 DESTDIR=
 
 # Do not edit this manually. Use Configure --prefix=DIR to change this!
-INSTALLTOP={- (my $x = $config{version}) =~ s|\.|_|g;
-              our $installtop =
-                  catdir($config{prefix}) || "SYS\$COMMON:[OPENSSL-$x]";
+INSTALLTOP={- our $installtop =
+                  catdir($config{prefix}) || "SYS\$COMMON:[OPENSSL]";
               $installtop -}
 SYSTARTUP={- catdir($installtop, '[.SYS$STARTUP]'); -}
 # This is the standard central area to store certificates, private keys...
 OPENSSLDIR={- catdir($config{openssldir}) ||
               $config{prefix} ? catdir($config{prefix},"COMMON")
                               : "SYS\$COMMON:[OPENSSL-COMMON]" -}
-# Where installed engines reside
-ENGINESDIR={- $osslprefix -}ENGINES:
+# The same, but for C
+OPENSSLDIR_C={- $osslprefix -}DATAROOT:[000000]
+# Where installed engines reside, for C
+ENGINESDIR_C={- $osslprefix -}ENGINES{- $sover.$target{pointer_size} -}:
 
 CC= {- $target{cc} -}
-CFLAGS= /DEFINE=({- join(",", @{$target{defines}}, @{$config{defines}},"OPENSSLDIR=\"\"\"\$(OPENSSLDIR)\"\"\"","ENGINESDIR=\"\"\"\$(ENGINESDIR)\"\"\"") -}) {- $target{cflags} -} {- $config{cflags} -}
+CFLAGS= /DEFINE=({- join(",", @{$target{defines}}, @{$config{defines}},"OPENSSLDIR=\"\"\"\$(OPENSSLDIR_C)\"\"\"","ENGINESDIR=\"\"\"\$(ENGINESDIR_C)\"\"\"") -}) {- $target{cflags} -} {- $config{cflags} -}
 CFLAGS_Q=$(CFLAGS)
 DEPFLAG= /DEFINE=({- join(",", @{$config{depdefines}}) -})
 LDFLAGS= {- $target{lflags} -}
@@ -236,22 +242,22 @@ NODEBUG=@
 # The main targets ###################################################
 
 all : build_generated, -
-      build_libs_nodep, build_engines_nodep, build_apps_nodep, -
+      build_libs_nodep, build_engines_nodep, build_programs_nodep, -
       depend
 
 build_libs : build_generated, build_libs_nodep, depend
-build_libs_nodep : $(LIBS)
+build_libs_nodep : $(LIBS), $(SHLIBS)
 build_engines : build_generated, build_engines_nodep, depend
 build_engines_nodep : $(ENGINES)
-build_apps : build_generated, build_apps_nodep, depend
-build_apps_nodep : $(PROGRAMS), $(SCRIPTS)
-build_tests : build_generated, build_tests_nodep, depend
-build_tests_nodep : $(TESTPROGS)
+build_programs : build_generated, build_programs_nodep, depend
+build_programs_nodep : $(PROGRAMS), $(SCRIPTS)
 
 build_generated : $(GENERATED_MANDATORY)
 
-test tests : build_generated, -
-             build_apps_nodep, build_engines_nodep, build_tests_nodep, -
+# Kept around for backward compatibility
+build_apps build_tests : build_programs
+
+test tests : build_generated, build_programs_nodep, build_engines_nodep, -
              depend
         @ ! {- output_off() if $disabled{tests}; "" -}
         SET DEFAULT [.test]{- move("test") -}
@@ -284,8 +290,8 @@ install : install_sw install_ssldirs install_docs
         @ IF "$(DESTDIR)" .EQS. "" THEN -
              PIPE ( WRITE SYS$OUTPUT "Installation complete" ; -
                     WRITE SYS$OUTPUT "" ; -
-                    WRITE SYS$OUTPUT "Run @$(INSTALLTOP)openssl_startup to set up logical names" ; -
-                    WRITE SYS$OUTPUT "then run @$(INSTALLTOP)openssl_setup to define commands" ; -
+                    WRITE SYS$OUTPUT "Run @$(SYSTARTUP)openssl_startup{- $osslver -} to set up logical names" ; -
+                    WRITE SYS$OUTPUT "then run @$(SYSTARTUP)openssl_utils{- $osslver -} to define commands" ; -
                     WRITE SYS$OUTPUT "" )
         @ IF "$(DESTDIR)" .NES. "" THEN -
              PIPE ( WRITE SYS$OUTPUT "Staging installation complete" ; -
@@ -298,21 +304,23 @@ install : install_sw install_ssldirs install_docs
                     WRITE SYS$OUTPUT "ends up in $(OPENSSLDIR)" ; -
                     WRITE SYS$OUTPUT "" ; -
                     WRITE SYS$OUTPUT "When in its final destination," ; -
-                    WRITE SYS$OUTPUT "Run @$(SYSTARTUP)openssl_startup to set up logical names" ; -
-                    WRITE SYS$OUTPUT "then run @$(SYSTARTUP)openssl_utils to define commands" ; -
+                    WRITE SYS$OUTPUT "Run @$(SYSTARTUP)openssl_startup{- $osslver -} to set up logical names" ; -
+                    WRITE SYS$OUTPUT "then run @$(SYSTARTUP)openssl_utils{- $osslver -} to define commands" ; -
                     WRITE SYS$OUTPUT "" )
+
+check_install :
+        spawn/nolog @ossl_installroot:[SYSTEST]openssl_ivp{- $osslver -}.com
 
 uninstall : uninstall_docs uninstall_sw
 
 # Because VMS wants the generation number (or *) to delete files, we can't
-# use $(LIBS), $(PROGRAMS), $(GENERATED), $(ENGINES) and $(TESTPROGS) directly.
+# use $(LIBS), $(PROGRAMS), $(GENERATED) and $(ENGINES)directly.
 libclean :
         {- join("\n\t", map { "- DELETE $_.OLB;*" } @{$unified_info{libraries}}) || "@ !" -}
         {- join("\n\t", map { "- DELETE $_.EXE;*,$_.MAP;*,$_.OPT;*" } @shlibs) || "@ !" -}
 
 clean : libclean
-        {- join("\n\t", map { "- DELETE $_.EXE;*,$_.OPT;*" } @programs) || "@ !" -}
-        {- join("\n\t", map { "- DELETE $_.EXE;*,$_.OPT;*" } @testprogs) || "@ !" -}
+        {- join("\n\t", map { "- DELETE $_.EXE;*,$_.OPT;*" } @{$unified_info{programs}}) || "@ !" -}
         {- join("\n\t", map { "- DELETE $_.EXE;*,$_.OPT;*" } @{$unified_info{engines}}) || "@ !" -}
         {- join("\n\t", map { "- DELETE $_;*" } @{$unified_info{scripts}}) || "@ !" -}
         {- join("\n\t", map { "- DELETE $_;*" } @generated) || "@ !" -}
@@ -345,9 +353,13 @@ descrip.mms : FORCE
 
 # Install helper targets #############################################
 
-install_sw : all install_dev install_engines install_runtime install_startup
+install_sw : all install_shared _install_dev_ns -
+             install_engines _install_runtime_ns -
+             install_startup install_ivp
 
-uninstall_sw : uninstall_dev uninstall_engines uninstall_runtime uninstall_startup
+uninstall_sw : uninstall_shared _uninstall_dev_ns -
+               uninstall_engines _uninstall_runtime_ns -
+               uninstall_startup uninstall_ivp
 
 install_docs : install_html_docs
 
@@ -363,58 +375,69 @@ install_ssldirs : check_INSTALLTOP
                 CREATE/DIR/PROT=(S:RWED,O:RWE,G,W) OSSL_DATAROOT:[MISC]
         COPY/PROT=W:RE $(MISC_SCRIPTS) OSSL_DATAROOT:[MISC]
         @ ! Install configuration file
-        COPY/PROT=W:RE {- sourcefile("apps", "openssl-vms.cnf") -} -
-                ossl_dataroot:[000000]openssl.cnf
+        COPY/PROT=W:R {- sourcefile("apps", "openssl-vms.cnf") -} -
+                ossl_dataroot:[000000]openssl.cnf-dist
+        IF F$SEARCH("OSSL_DATAROOT:[000000]openssl.cnf") .EQS. "" THEN -
+                COPY/PROT=W:R {- sourcefile("apps", "openssl-vms.cnf") -} -
+                        ossl_dataroot:[000000]openssl.cnf
 
-install_dev : check_INSTALLTOP
+install_shared : check_INSTALLTOP
+        @ {- output_off() if $disabled{shared}; "" -} !
+        @ WRITE SYS$OUTPUT "*** Installing shareable images"
+        @ ! Install shared (runtime) libraries
+        - CREATE/DIR ossl_installroot:[LIB.'arch']
+        {- join("\n        ",
+                map { "COPY/PROT=W:R $_.EXE ossl_installroot:[LIB.'arch']" }
+                @install_shlibs) -}
+        @ {- output_on() if $disabled{shared}; "" -} !
+
+_install_dev_ns : check_INSTALLTOP
         @ WRITE SYS$OUTPUT "*** Installing development files"
         @ ! Install header files
         - CREATE/DIR ossl_installroot:[include.openssl]
         COPY/PROT=W:R openssl:*.h ossl_installroot:[include.openssl]
-        @ ! Install libraries
+        @ ! Install static (development) libraries
         - CREATE/DIR ossl_installroot:[LIB.'arch']
         {- join("\n        ",
                 map { "COPY/PROT=W:R $_.OLB ossl_installroot:[LIB.'arch']" }
-                @{$unified_info{libraries}}) -}
-        @ {- output_off() if $disabled{shared}; "" -} !
-        {- join("\n        ",
-                map { "COPY/PROT=W:RE $_.EXE ossl_installroot:[LIB.'arch']" }
-                map { $unified_info{sharednames}->{$_} || () }
-                @{$unified_info{libraries}}) -}
-        @ {- output_on() if $disabled{shared}; "" -} !
+                @{$unified_info{install}->{libraries}}) -}
 
-install_runtime : check_INSTALLTOP
-        @ ! {- output_off() if $disabled{apps}; "" -}
-        @ WRITE SYS$OUTPUT "*** Installing runtime files"
+install_dev : install_shared _install_dev_ns
+
+_install_runtime_ns : check_INSTALLTOP
         @ ! Install the main program
         - CREATE/DIR ossl_installroot:[EXE.'arch']
-        COPY/PROT=W:RE [.APPS]openssl.EXE ossl_installroot:[EXE.'arch']
+        COPY/PROT=W:RE [.APPS]openssl.EXE -
+                ossl_installroot:[EXE.'arch']openssl{- $osslver -}.EXE
         @ ! Install scripts
-        - CREATE/DIR ossl_installroot:[EXE]
         COPY/PROT=W:RE $(BIN_SCRIPTS) ossl_installroot:[EXE]
         @ ! {- output_on() if $disabled{apps}; "" -}
+
+install_runtime : install_shared _install_runtime_ns
 
 install_engines : check_INSTALLTOP
         @ {- output_off() unless scalar @{$unified_info{engines}}; "" -} !
         @ WRITE SYS$OUTPUT "*** Installing engines"
-        - CREATE/DIR ossl_installroot:[ENGINES.'arch']
+        - CREATE/DIR ossl_installroot:[ENGINES{- $sover.$target{pointer_size} -}.'arch']
         {- join("\n        ",
-                map { "COPY/PROT=W:RE $_.EXE ossl_installroot:[ENGINES.'arch']" }
-                grep(!m|ossltest$|i, @{$unified_info{engines}})) -}
+                map { "COPY/PROT=W:RE $_.EXE ossl_installroot:[ENGINES$sover$target{pointer_size}.'arch']" }
+                @{$unified_info{install}->{engines}}) -}
         @ {- output_on() unless scalar @{$unified_info{engines}}; "" -} !
 
 install_startup : [.VMS]openssl_startup.com [.VMS]openssl_shutdown.com -
-                 check_INSTALLTOP
+                 [.VMS]openssl_utils.com, check_INSTALLTOP
         - CREATE/DIR ossl_installroot:[SYS$STARTUP]
-        COPY/PROT=W:RE -
-                [.VMS]openssl_startup.com,openssl_startup.com -
-                ossl_installroot:[SYS$STARTUP]
-        COPY/PROT=W:RE -
-                [.VMS]openssl_startup.com,openssl_shutdown.com -
-                ossl_installroot:[SYS$STARTUP]
-        COPY/PROT=W:RE -
-                {- sourcefile("VMS", "openssl_utils.com") -} -
-                ossl_installroot:[SYS$STARTUP]
+        COPY/PROT=W:RE [.VMS]openssl_startup.com -
+                ossl_installroot:[SYS$STARTUP]openssl_startup{- $osslver -}.com
+        COPY/PROT=W:RE [.VMS]openssl_shutdown.com -
+                ossl_installroot:[SYS$STARTUP]openssl_shutdown{- $osslver -}.com
+        COPY/PROT=W:RE [.VMS]openssl_utils.com -
+                ossl_installroot:[SYS$STARTUP]openssl_utils{- $osslver -}.com
+
+install_ivp : [.VMS]openssl_ivp.com check_INSTALLTOP
+        - CREATE/DIR ossl_installroot:[SYSTEST]
+        COPY/PROT=W:RE [.VMS]openssl_ivp.com -
+                ossl_installroot:[SYSTEST]openssl_ivp{- $osslver -}.com
 
 [.VMS]openssl_startup.com : vmsconfig.pm {- sourcefile("VMS", "openssl_startup.com.in") -}
         - CREATE/DIR [.VMS]
@@ -422,11 +445,23 @@ install_startup : [.VMS]openssl_startup.com [.VMS]openssl_shutdown.com -
                 {- sourcefile("VMS", "openssl_startup.com.in") -} -
                 > [.VMS]openssl_startup.com
 
+[.VMS]openssl_utils.com : vmsconfig.pm {- sourcefile("VMS", "openssl_utils.com.in") -}
+        - CREATE/DIR [.VMS]
+        $(PERL) "-I." "-Mvmsconfig" {- sourcefile("util", "dofile.pl") -} -
+                {- sourcefile("VMS", "openssl_utils.com.in") -} -
+                > [.VMS]openssl_utils.com
+
 [.VMS]openssl_shutdown.com : vmsconfig.pm {- sourcefile("VMS", "openssl_shutdown.com.in") -}
         - CREATE/DIR [.VMS]
         $(PERL) "-I." "-Mvmsconfig" {- sourcefile("util", "dofile.pl") -} -
                 {- sourcefile("VMS", "openssl_shutdown.com.in") -} -
                 > [.VMS]openssl_shutdown.com
+
+[.VMS]openssl_ivp.com : vmsconfig.pm {- sourcefile("VMS", "openssl_ivp.com.in") -}
+        - CREATE/DIR [.VMS]
+        $(PERL) "-I." "-Mvmsconfig" {- sourcefile("util", "dofile.pl") -} -
+                {- sourcefile("VMS", "openssl_ivp.com.in") -} -
+                > [.VMS]openssl_ivp.com
 
 vmsconfig.pm : configdata.pm
         OPEN/WRITE/SHARE=READ CONFIG []vmsconfig.pm
@@ -436,18 +471,14 @@ vmsconfig.pm : configdata.pm
         WRITE CONFIG "our @ISA = qw(Exporter);"
         WRITE CONFIG "our @EXPORT = qw(%config %target %withargs %unified_info %disabled);"
         WRITE CONFIG "our %config = ("
-        WRITE CONFIG "  target => '{- $config{target} -}',"
-        WRITE CONFIG "  version => '$(MAJOR).$(MINOR)',"
+        WRITE CONFIG "  target => '","{- $config{target} -}","',"
+        WRITE CONFIG "  version => '","{- $config{version} -}","',"
+        WRITE CONFIG "  shlib_major => '","{- $config{shlib_major} -}","',"
+        WRITE CONFIG "  shlib_minor => '","{- $config{shlib_minor} -}","',"
         WRITE CONFIG "  no_shared => '","{- $disabled{shared} -}","',"
         WRITE CONFIG "  INSTALLTOP => '$(INSTALLTOP)',"
         WRITE CONFIG "  OPENSSLDIR => '$(OPENSSLDIR)',"
-        WRITE CONFIG "  pointersize => '","{- $target{pointersize} -}","',"
-        WRITE CONFIG "  shared_libs => ["
-        {- $disabled{shared}
-           ? "\@ !"
-           : join("\n        ", map { "WRITE CONFIG \"    '$_'," } map { $unified_info{sharednames}->{$_} || () } @{$unified_info{libraries}})
-        -}
-        WRITE CONFIG "  ],"
+        WRITE CONFIG "  pointer_size => '","{- $target{pointer_size} -}","',"
         WRITE CONFIG ");"
         WRITE CONFIG "our %target = ();"
         WRITE CONFIG "our %disabled = ();"
@@ -457,8 +488,10 @@ vmsconfig.pm : configdata.pm
         CLOSE CONFIG
 
 install_html_docs : check_INSTALLTOP
-        @ $(PERL) {- sourcefile("util", "process_docs.pl") -} -
-                --destdir=ossl_installroot:[HTML] --type=html
+        sourcedir = F$PARSE("{- $sourcedir -}A.;","[]") - "]A.;" + ".DOC]"
+        $(PERL) {- sourcefile("util", "process_docs.pl") -} -
+                --sourcedir='sourcedir' --destdir=ossl_installroot:[HTML] -
+                --type=html
 
 check_INSTALLTOP :
         @ IF "$(INSTALLTOP)" .EQS. "" THEN -
@@ -583,7 +616,7 @@ EOF
       my $shlib = $args{shlib};
       my $libd = dirname($lib);
       my $libn = basename($lib);
-      (my $mkdef_key = $libn) =~ s/^${osslprefix_q}lib//i;
+      (my $mkdef_key = $libn) =~ s/^${osslprefix_q}lib([^0-9]*)\d*/$1/i;
       my @deps = map {
           $disabled{shared} ? $_.".OLB"
               : $unified_info{sharednames}->{$_}.".EXE"; } @{$args{deps}};
@@ -671,7 +704,7 @@ EOF
                                     @{$args{objs}}));
       return <<"EOF";
 $lib.OLB : $objs
-        LIBRARY/CREATE/OBJECT $lib
+        LIBRARY/CREATE/OBJECT $lib.OLB
         $fill_lib
         - PURGE $lib.OLB
 EOF

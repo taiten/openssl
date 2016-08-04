@@ -95,22 +95,22 @@ int X509_CRL_up_ref(X509_CRL *crl)
     return ((i > 1) ? 1 : 0);
 }
 
-long X509_CRL_get_version(X509_CRL *crl)
+long X509_CRL_get_version(const X509_CRL *crl)
 {
     return ASN1_INTEGER_get(crl->crl.version);
 }
 
-ASN1_TIME *X509_CRL_get_lastUpdate(X509_CRL *crl)
+ASN1_TIME *X509_CRL_get_lastUpdate(const X509_CRL *crl)
 {
     return crl->crl.lastUpdate;
 }
 
-ASN1_TIME *X509_CRL_get_nextUpdate(X509_CRL *crl)
+ASN1_TIME *X509_CRL_get_nextUpdate(const X509_CRL *crl)
 {
     return crl->crl.nextUpdate;
 }
 
-X509_NAME *X509_CRL_get_issuer(X509_CRL *crl)
+X509_NAME *X509_CRL_get_issuer(const X509_CRL *crl)
 {
     return crl->crl.issuer;
 }
@@ -178,7 +178,7 @@ int X509_REVOKED_set_serialNumber(X509_REVOKED *x, ASN1_INTEGER *serial)
     return 1;
 }
 
-STACK_OF(X509_EXTENSION) *X509_REVOKED_get0_extensions(X509_REVOKED *r)
+STACK_OF(X509_EXTENSION) *X509_REVOKED_get0_extensions(const X509_REVOKED *r)
 {
     return r->extensions;
 }

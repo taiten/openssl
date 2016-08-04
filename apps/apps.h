@@ -274,6 +274,10 @@ int has_stdin_waiting(void);
         case OPT_S_DHPARAM: \
         case OPT_S_DEBUGBROKE
 
+#define IS_NO_PROT_FLAG(o) \
+ (o == OPT_S_NOSSL3 || o == OPT_S_NOTLS1 || o == OPT_S_NOTLS1_1 \
+  || o == OPT_S_NOTLS1_2)
+
 /*
  * Option parsing.
  */
@@ -363,6 +367,11 @@ typedef struct args_st {
  * can be re-used.
  */
 char **copy_argv(int *argc, char *argv[]);
+/*
+ * Win32-specific argv initialization that splits OS-supplied UNICODE
+ * command line string to array of UTF8-encoded strings.
+ */
+void win32_utf8argv(int *argc, char **argv[]);
 
 
 # define PW_MIN_LENGTH 4

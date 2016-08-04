@@ -32,6 +32,7 @@ static ERR_STRING_DATA EC_str_functs[] = {
     {ERR_FUNC(EC_F_ECDSA_DO_VERIFY), "ECDSA_do_verify"},
     {ERR_FUNC(EC_F_ECDSA_SIGN_EX), "ECDSA_sign_ex"},
     {ERR_FUNC(EC_F_ECDSA_SIGN_SETUP), "ECDSA_sign_setup"},
+    {ERR_FUNC(EC_F_ECDSA_SIG_NEW), "ECDSA_SIG_new"},
     {ERR_FUNC(EC_F_ECDSA_VERIFY), "ECDSA_verify"},
     {ERR_FUNC(EC_F_ECKEY_PARAM2TYPE), "eckey_param2type"},
     {ERR_FUNC(EC_F_ECKEY_PARAM_DECODE), "eckey_param_decode"},
@@ -270,7 +271,7 @@ static ERR_STRING_DATA EC_str_reasons[] = {
 
 #endif
 
-void ERR_load_EC_strings(void)
+int ERR_load_EC_strings(void)
 {
 #ifndef OPENSSL_NO_ERR
 
@@ -279,4 +280,5 @@ void ERR_load_EC_strings(void)
         ERR_load_strings(0, EC_str_reasons);
     }
 #endif
+    return 1;
 }

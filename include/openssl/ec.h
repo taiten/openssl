@@ -771,13 +771,13 @@ void EC_KEY_free(EC_KEY *key);
  *  \param  src  src EC_KEY object
  *  \return dst or NULL if an error occurred.
  */
-EC_KEY *EC_KEY_copy(EC_KEY *dst, EC_KEY *src);
+EC_KEY *EC_KEY_copy(EC_KEY *dst, const EC_KEY *src);
 
 /** Creates a new EC_KEY object and copies the content from src to it.
  *  \param  src  the source EC_KEY object
  *  \return newly created EC_KEY object or NULL if an error occurred.
  */
-EC_KEY *EC_KEY_dup(EC_KEY *src);
+EC_KEY *EC_KEY_dup(const EC_KEY *src);
 
 /** Increases the internal reference count of a EC_KEY object.
  *  \param  key  EC_KEY object
@@ -906,7 +906,7 @@ int EC_KEY_oct2key(EC_KEY *key, const unsigned char *buf, size_t len,
  *  \return 1 on success and 0 if an error occurred
  */
 
-int EC_KEY_oct2priv(EC_KEY *key, unsigned char *buf, size_t len);
+int EC_KEY_oct2priv(EC_KEY *key, const unsigned char *buf, size_t len);
 
 /** Encodes a EC_KEY private key to an octet string
  *  \param  key    key to encode
@@ -1360,7 +1360,7 @@ void EC_KEY_METHOD_get_verify(EC_KEY_METHOD *meth,
  * made after this point may be overwritten when the script is next run.
  */
 
-void ERR_load_EC_strings(void);
+int ERR_load_EC_strings(void);
 
 /* Error codes for the EC functions. */
 
@@ -1378,6 +1378,7 @@ void ERR_load_EC_strings(void);
 # define EC_F_ECDSA_DO_VERIFY                             252
 # define EC_F_ECDSA_SIGN_EX                               254
 # define EC_F_ECDSA_SIGN_SETUP                            248
+# define EC_F_ECDSA_SIG_NEW                               265
 # define EC_F_ECDSA_VERIFY                                253
 # define EC_F_ECKEY_PARAM2TYPE                            223
 # define EC_F_ECKEY_PARAM_DECODE                          212

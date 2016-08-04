@@ -651,6 +651,10 @@ static int check_name_constraints(X509_STORE_CTX *ctx)
             if (nc) {
                 int rv = NAME_CONSTRAINTS_check(x, nc);
 
+                /* If EE certificate check commonName too */
+                if (rv == X509_V_OK && i == 0)
+                    rv = NAME_CONSTRAINTS_check_CN(x, nc);
+
                 switch (rv) {
                 case X509_V_OK:
                     break;
@@ -840,6 +844,9 @@ static int check_cert(X509_STORE_CTX *ctx)
     ctx->current_crl_score = 0;
     ctx->current_reasons = 0;
 
+    if (x->ex_flags & EXFLAG_PROXY)
+        return 1;
+
     while (ctx->current_reasons != CRLDP_ALL_REASONS) {
         unsigned int last_reasons = ctx->current_reasons;
 
@@ -967,13 +974,25 @@ static int get_crl_sk(X509_STORE_CTX *ctx, X509_CRL **pcrl, X509_CRL **pdcrl,
         crl = sk_X509_CRL_value(crls, i);
         reasons = *preasons;
         crl_score = get_crl_score(ctx, &crl_issuer, &reasons, crl, x);
-
-        if (crl_score > best_score) {
-            best_crl = crl;
-            best_crl_issuer = crl_issuer;
-            best_score = crl_score;
-            best_reasons = reasons;
+        if (crl_score < best_score)
+            continue;
+        /* If current CRL is equivalent use it if it is newer */
+        if (crl_score == best_score) {
+            int day, sec;
+            if (ASN1_TIME_diff(&day, &sec, X509_CRL_get_lastUpdate(best_crl),
+                               X509_CRL_get_lastUpdate(crl)) == 0)
+                continue;
+            /*
+             * ASN1_TIME_diff never returns inconsistent signs for |day|
+             * and |sec|.
+             */
+            if (day <= 0 && sec <= 0)
+                continue;
         }
+        best_crl = crl;
+        best_crl_issuer = crl_issuer;
+        best_score = crl_score;
+        best_reasons = reasons;
     }
 
     if (best_crl) {
@@ -2204,7 +2223,6 @@ int X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509,
     int ret = 1;
 
     ctx->ctx = store;
-    ctx->current_method = 0;
     ctx->cert = x509;
     ctx->untrusted = chain;
     ctx->crls = NULL;
@@ -2273,6 +2291,11 @@ int X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509,
     else
         ctx->cert_crl = cert_crl;
 
+    if (store && store->check_policy)
+        ctx->check_policy = store->check_policy;
+    else
+        ctx->check_policy = check_policy;
+
     if (store && store->lookup_certs)
         ctx->lookup_certs = store->lookup_certs;
     else
@@ -2282,8 +2305,6 @@ int X509_STORE_CTX_init(X509_STORE_CTX *ctx, X509_STORE *store, X509 *x509,
         ctx->lookup_crls = store->lookup_crls;
     else
         ctx->lookup_crls = X509_STORE_CTX_get1_crls;
-
-    ctx->check_policy = check_policy;
 
     ctx->param = X509_VERIFY_PARAM_new();
     if (ctx->param == NULL) {
@@ -2387,17 +2408,6 @@ void X509_STORE_CTX_set_time(X509_STORE_CTX *ctx, unsigned long flags,
     X509_VERIFY_PARAM_set_time(ctx->param, t);
 }
 
-void X509_STORE_CTX_set_verify_cb(X509_STORE_CTX *ctx,
-                                  X509_STORE_CTX_verify_cb verify_cb)
-{
-    ctx->verify_cb = verify_cb;
-}
-
-X509_STORE_CTX_verify_cb X509_STORE_CTX_get_verify_cb(X509_STORE_CTX *ctx)
-{
-    return ctx->verify_cb;
-}
-
 X509 *X509_STORE_CTX_get0_cert(X509_STORE_CTX *ctx)
 {
     return ctx->cert;
@@ -2419,15 +2429,70 @@ void X509_STORE_CTX_set0_verified_chain(X509_STORE_CTX *ctx, STACK_OF(X509) *sk)
     ctx->chain = sk;
 }
 
-void X509_STORE_CTX_set_verify(X509_STORE_CTX *ctx,
-                               X509_STORE_CTX_verify verify)
+void X509_STORE_CTX_set_verify_cb(X509_STORE_CTX *ctx,
+                                  X509_STORE_CTX_verify_cb verify_cb)
 {
-    ctx->verify = verify;
+    ctx->verify_cb = verify_cb;
 }
 
-X509_STORE_CTX_verify X509_STORE_CTX_get_verify(X509_STORE_CTX *ctx)
+X509_STORE_CTX_verify_cb X509_STORE_CTX_get_verify_cb(X509_STORE_CTX *ctx)
+{
+    return ctx->verify_cb;
+}
+
+X509_STORE_CTX_verify_fn X509_STORE_CTX_get_verify(X509_STORE_CTX *ctx)
 {
     return ctx->verify;
+}
+
+X509_STORE_CTX_get_issuer_fn X509_STORE_CTX_get_get_issuer(X509_STORE_CTX *ctx)
+{
+    return ctx->get_issuer;
+}
+
+X509_STORE_CTX_check_issued_fn X509_STORE_CTX_get_check_issued(X509_STORE_CTX *ctx)
+{
+    return ctx->check_issued;
+}
+
+X509_STORE_CTX_check_revocation_fn X509_STORE_CTX_get_check_revocation(X509_STORE_CTX *ctx)
+{
+    return ctx->check_revocation;
+}
+
+X509_STORE_CTX_get_crl_fn X509_STORE_CTX_get_get_crl(X509_STORE_CTX *ctx)
+{
+    return ctx->get_crl;
+}
+
+X509_STORE_CTX_check_crl_fn X509_STORE_CTX_get_check_crl(X509_STORE_CTX *ctx)
+{
+    return ctx->check_crl;
+}
+
+X509_STORE_CTX_cert_crl_fn X509_STORE_CTX_get_cert_crl(X509_STORE_CTX *ctx)
+{
+    return ctx->cert_crl;
+}
+
+X509_STORE_CTX_check_policy_fn X509_STORE_CTX_get_check_policy(X509_STORE_CTX *ctx)
+{
+    return ctx->check_policy;
+}
+
+X509_STORE_CTX_lookup_certs_fn X509_STORE_CTX_get_lookup_certs(X509_STORE_CTX *ctx)
+{
+    return ctx->lookup_certs;
+}
+
+X509_STORE_CTX_lookup_crls_fn X509_STORE_CTX_get_lookup_crls(X509_STORE_CTX *ctx)
+{
+    return ctx->lookup_crls;
+}
+
+X509_STORE_CTX_cleanup_fn X509_STORE_CTX_get_cleanup(X509_STORE_CTX *ctx)
+{
+    return ctx->cleanup;
 }
 
 X509_POLICY_TREE *X509_STORE_CTX_get0_policy_tree(X509_STORE_CTX *ctx)
@@ -2760,6 +2825,10 @@ static int dane_verify(X509_STORE_CTX *ctx)
     if (matched > 0) {
         /* Callback invoked as needed */
         if (!check_leaf_suiteb(ctx, cert))
+            return 0;
+        /* Callback invoked as needed */
+        if ((dane->flags & DANE_FLAG_NO_DANE_EE_NAMECHECKS) == 0 &&
+            !check_id(ctx))
             return 0;
         /* Bypass internal_verify(), issue depth 0 success callback */
         ctx->error_depth = 0;

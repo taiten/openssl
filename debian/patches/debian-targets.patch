@@ -1,7 +1,9 @@
-Index: openssl-1.1.0~pre5/Configurations/20-debian.conf
-===================================================================
+---
+ Configurations/20-debian.conf |  133 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 133 insertions(+)
+
 --- /dev/null
-+++ openssl-1.1.0~pre5/Configurations/20-debian.conf
++++ b/Configurations/20-debian.conf
 @@ -0,0 +1,133 @@
 +my $debian_cflags = `dpkg-buildflags --get CFLAGS` . `dpkg-buildflags --get CPPFLAGS` . "-Wa,--noexecstack -Wall";
 +$debian_cflags =~ s/\n/ /g;

@@ -141,18 +141,18 @@
                                 } \
                         }
 
-# define n2s(c,s)        ((s=(((unsigned int)(c[0]))<< 8)| \
-                            (((unsigned int)(c[1]))    )),c+=2)
-# define s2n(s,c)        ((c[0]=(unsigned char)(((s)>> 8)&0xff), \
-                          c[1]=(unsigned char)(((s)    )&0xff)),c+=2)
+# define n2s(c,s)        ((s=(((unsigned int)((c)[0]))<< 8)| \
+                             (((unsigned int)((c)[1]))    )),(c)+=2)
+# define s2n(s,c)        (((c)[0]=(unsigned char)(((s)>> 8)&0xff), \
+                           (c)[1]=(unsigned char)(((s)    )&0xff)),(c)+=2)
 
-# define n2l3(c,l)       ((l =(((unsigned long)(c[0]))<<16)| \
-                             (((unsigned long)(c[1]))<< 8)| \
-                             (((unsigned long)(c[2]))    )),c+=3)
+# define n2l3(c,l)       ((l =(((unsigned long)((c)[0]))<<16)| \
+                              (((unsigned long)((c)[1]))<< 8)| \
+                              (((unsigned long)((c)[2]))    )),(c)+=3)
 
-# define l2n3(l,c)       ((c[0]=(unsigned char)(((l)>>16)&0xff), \
-                          c[1]=(unsigned char)(((l)>> 8)&0xff), \
-                          c[2]=(unsigned char)(((l)    )&0xff)),c+=3)
+# define l2n3(l,c)       (((c)[0]=(unsigned char)(((l)>>16)&0xff), \
+                           (c)[1]=(unsigned char)(((l)>> 8)&0xff), \
+                           (c)[2]=(unsigned char)(((l)    )&0xff)),(c)+=3)
 
 #define DTLS_VERSION_GT(v1, v2) ((v1) < (v2))
 #define DTLS_VERSION_GE(v1, v2) ((v1) <= (v2))
@@ -1875,7 +1875,7 @@ int ssl3_renegotiate_check(SSL *ssl);
 __owur int ssl3_dispatch_alert(SSL *s);
 __owur int ssl3_final_finish_mac(SSL *s, const char *sender, int slen,
                           unsigned char *p);
-void ssl3_finish_mac(SSL *s, const unsigned char *buf, int len);
+__owur int ssl3_finish_mac(SSL *s, const unsigned char *buf, int len);
 void ssl3_free_digest_list(SSL *s);
 __owur unsigned long ssl3_output_cert_chain(SSL *s, CERT_PKEY *cpk);
 __owur const SSL_CIPHER *ssl3_choose_cipher(SSL *ssl,
@@ -2004,7 +2004,7 @@ __owur unsigned char *ssl_add_serverhello_tlsext(SSL *s, unsigned char *buf,
 __owur int ssl_parse_clienthello_tlsext(SSL *s, PACKET *pkt);
 void ssl_set_default_md(SSL *s);
 __owur int tls1_set_server_sigalgs(SSL *s);
-__owur int ssl_check_clienthello_tlsext_late(SSL *s);
+__owur int ssl_check_clienthello_tlsext_late(SSL *s, int *al);
 __owur int ssl_parse_serverhello_tlsext(SSL *s, PACKET *pkt);
 __owur int ssl_prepare_clienthello_tlsext(SSL *s);
 __owur int ssl_prepare_serverhello_tlsext(SSL *s);
@@ -2085,9 +2085,9 @@ __owur int ssl3_cbc_digest_record(const EVP_MD_CTX *ctx,
                                   const unsigned char *mac_secret,
                                   unsigned mac_secret_length, char is_sslv3);
 
-void tls_fips_digest_extra(const EVP_CIPHER_CTX *cipher_ctx,
-                           EVP_MD_CTX *mac_ctx, const unsigned char *data,
-                           size_t data_len, size_t orig_len);
+__owur int tls_fips_digest_extra(const EVP_CIPHER_CTX *cipher_ctx,
+                                 EVP_MD_CTX *mac_ctx, const unsigned char *data,
+                                 size_t data_len, size_t orig_len);
 
 __owur int srp_generate_server_master_secret(SSL *s);
 __owur int srp_generate_client_master_secret(SSL *s);

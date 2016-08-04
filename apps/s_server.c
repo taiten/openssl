@@ -151,11 +151,10 @@ static const char *session_id_prefix = NULL;
 #ifndef OPENSSL_NO_DTLS
 static int enable_timeouts = 0;
 static long socket_mtu;
-static int cert_chain = 0;
+
 #endif
 static int dtlslisten = 0;
 
-static BIO *serverinfo_in = NULL;
 static const char *s_serverinfo_file = NULL;
 
 #ifndef OPENSSL_NO_PSK
@@ -713,7 +712,7 @@ typedef enum OPTION_choice {
     OPT_SRPUSERSEED, OPT_REV, OPT_WWW, OPT_UPPER_WWW, OPT_HTTP, OPT_ASYNC,
     OPT_SSL_CONFIG, OPT_SPLIT_SEND_FRAG, OPT_MAX_PIPELINES, OPT_READ_BUF,
     OPT_SSL3, OPT_TLS1_2, OPT_TLS1_1, OPT_TLS1, OPT_DTLS, OPT_DTLS1,
-    OPT_DTLS1_2, OPT_TIMEOUT, OPT_MTU, OPT_CHAIN, OPT_LISTEN,
+    OPT_DTLS1_2, OPT_TIMEOUT, OPT_MTU, OPT_LISTEN,
     OPT_ID_PREFIX, OPT_RAND, OPT_SERVERNAME, OPT_SERVERNAME_FATAL,
     OPT_CERT2, OPT_KEY2, OPT_NEXTPROTONEG, OPT_ALPN,
     OPT_SRTP_PROFILES, OPT_KEYMATEXPORT, OPT_KEYMATEXPORTLEN,
@@ -741,7 +740,7 @@ OPTIONS s_server_options[] = {
     {"Verify", OPT_UPPER_V_VERIFY, 'n',
      "Turn on peer certificate verification, must have a cert"},
     {"cert", OPT_CERT, '<', "Certificate file to use; default is " TEST_CERT},
-    {"naccept", OPT_NACCEPT, 'p', "Terminate after pnum connections"},
+    {"naccept", OPT_NACCEPT, 'p', "Terminate after #num connections"},
     {"serverinfo", OPT_SERVERINFO, 's',
      "PEM serverinfo file for certificate"},
     {"certform", OPT_CERTFORM, 'F',
@@ -789,7 +788,7 @@ OPTIONS s_server_options[] = {
      "-Private Key file to use for servername if not in -cert2"},
     {"tlsextdebug", OPT_TLSEXTDEBUG, '-',
      "Hex dump of all TLS extensions received"},
-    {"HTTP", OPT_HTTP, '-', "Like -WWW but ./path incluedes HTTP headers"},
+    {"HTTP", OPT_HTTP, '-', "Like -WWW but ./path includes HTTP headers"},
     {"id_prefix", OPT_ID_PREFIX, 's',
      "Generate SSL/TLS session IDs prefixed by arg"},
     {"rand", OPT_RAND, 's',
@@ -881,7 +880,6 @@ OPTIONS s_server_options[] = {
     {"dtls", OPT_DTLS, '-', "Use any DTLS version"},
     {"timeout", OPT_TIMEOUT, '-', "Enable timeouts"},
     {"mtu", OPT_MTU, 'p', "Set link layer MTU"},
-    {"chain", OPT_CHAIN, '-', "Read a certificate chain"},
     {"listen", OPT_LISTEN, '-',
      "Listen for a DTLS ClientHello with a cookie and then connect"},
 #endif
@@ -909,6 +907,10 @@ OPTIONS s_server_options[] = {
 #endif
     {NULL, OPT_EOF, 0, NULL}
 };
+
+#define IS_PROT_FLAG(o) \
+ (o == OPT_SSL3 || o == OPT_TLS1 || o == OPT_TLS1_1 || o == OPT_TLS1_2 \
+  || o == OPT_DTLS || o == OPT_DTLS1 || o == OPT_DTLS1_2)
 
 int s_server_main(int argc, char *argv[])
 {
@@ -970,7 +972,7 @@ int s_server_main(int argc, char *argv[])
     char *srpuserseed = NULL;
     char *srp_verifier_file = NULL;
 #endif
-    int min_version = 0, max_version = 0;
+    int min_version = 0, max_version = 0, prot_opt = 0, no_prot_opt = 0;
 
     local_argc = argc;
     local_argv = argv;
@@ -984,6 +986,17 @@ int s_server_main(int argc, char *argv[])
 
     prog = opt_init(argc, argv, s_server_options);
     while ((o = opt_next()) != OPT_EOF) {
+        if (IS_PROT_FLAG(o) && ++prot_opt > 1) {
+            BIO_printf(bio_err, "Cannot supply multiple protocol flags\n");
+            goto end;
+        }
+        if (IS_NO_PROT_FLAG(o))
+            no_prot_opt++;
+        if (prot_opt == 1 && no_prot_opt) {
+            BIO_printf(bio_err, "Cannot supply both a protocol flag and "
+                                "\"-no_<prot>\"\n");
+            goto end;
+        }
         switch (o) {
         case OPT_EOF:
         case OPT_ERR:
@@ -1368,11 +1381,6 @@ int s_server_main(int argc, char *argv[])
         case OPT_MTU:
 #ifndef OPENSSL_NO_DTLS
             socket_mtu = atol(opt_arg());
-#endif
-            break;
-        case OPT_CHAIN:
-#ifndef OPENSSL_NO_DTLS
-            cert_chain = 1;
 #endif
             break;
         case OPT_LISTEN:
@@ -1968,7 +1976,6 @@ int s_server_main(int argc, char *argv[])
     SSL_CTX_free(ctx2);
     X509_free(s_cert2);
     EVP_PKEY_free(s_key2);
-    BIO_free(serverinfo_in);
 #ifndef OPENSSL_NO_NEXTPROTONEG
     OPENSSL_free(next_proto.data);
 #endif
@@ -2450,7 +2457,7 @@ static int init_ssl_connection(SSL *con)
     int retry = 0;
 
 #ifndef OPENSSL_NO_DTLS
-    if(dtlslisten) {
+    if (dtlslisten) {
         BIO_ADDR *client = NULL;
 
         if ((client = BIO_ADDR_new()) == NULL) {
@@ -2463,11 +2470,11 @@ static int init_ssl_connection(SSL *con)
             int fd = -1;
 
             wbio = SSL_get_wbio(con);
-            if(wbio) {
+            if (wbio) {
                 BIO_get_fd(wbio, &fd);
             }
 
-            if(!wbio || BIO_connect(fd, client, 0) == 0) {
+            if (!wbio || BIO_connect(fd, client, 0) == 0) {
                 BIO_printf(bio_err, "ERROR - unable to connect\n");
                 BIO_ADDR_free(client);
                 return 0;

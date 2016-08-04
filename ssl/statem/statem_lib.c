@@ -40,8 +40,10 @@ int ssl3_do_write(SSL *s, int type)
          * should not be done for 'Hello Request's, but in that case we'll
          * ignore the result anyway
          */
-        ssl3_finish_mac(s, (unsigned char *)&s->init_buf->data[s->init_off],
-                        ret);
+        if (!ssl3_finish_mac(s,
+                             (unsigned char *)&s->init_buf->data[s->init_off],
+                             ret))
+            return -1;
 
     if (ret == s->init_num) {
         if (s->msg_callback)
@@ -399,15 +401,14 @@ int tls_get_message_header(SSL *s, int *mt)
     *mt = *p;
     s->s3->tmp.message_type = *(p++);
 
-    if(RECORD_LAYER_is_sslv2_record(&s->rlayer)) {
+    if (RECORD_LAYER_is_sslv2_record(&s->rlayer)) {
         /*
          * Only happens with SSLv3+ in an SSLv2 backward compatible
          * ClientHello
+         *
+         * Total message size is the remaining record bytes to read
+         * plus the SSL3_HM_HEADER_LENGTH bytes that we already read
          */
-         /*
-          * Total message size is the remaining record bytes to read
-          * plus the SSL3_HM_HEADER_LENGTH bytes that we already read
-          */
         l = RECORD_LAYER_get_rrec_length(&s->rlayer)
             + SSL3_HM_HEADER_LENGTH;
         if (l && !BUF_MEM_grow_clean(s->init_buf, (int)l)) {
@@ -480,14 +481,25 @@ int tls_get_message_body(SSL *s, unsigned long *len)
 #endif
 
     /* Feed this message into MAC computation. */
-    if(RECORD_LAYER_is_sslv2_record(&s->rlayer)) {
-        ssl3_finish_mac(s, (unsigned char *)s->init_buf->data, s->init_num);
+    if (RECORD_LAYER_is_sslv2_record(&s->rlayer)) {
+        if (!ssl3_finish_mac(s, (unsigned char *)s->init_buf->data,
+                             s->init_num)) {
+            SSLerr(SSL_F_TLS_GET_MESSAGE_BODY, ERR_R_EVP_LIB);
+            ssl3_send_alert(s, SSL3_AL_FATAL, SSL_AD_INTERNAL_ERROR);
+            *len = 0;
+            return 0;
+        }
         if (s->msg_callback)
             s->msg_callback(0, SSL2_VERSION, 0,  s->init_buf->data,
                             (size_t)s->init_num, s, s->msg_callback_arg);
     } else {
-        ssl3_finish_mac(s, (unsigned char *)s->init_buf->data,
-            s->init_num + SSL3_HM_HEADER_LENGTH);
+        if (!ssl3_finish_mac(s, (unsigned char *)s->init_buf->data,
+            s->init_num + SSL3_HM_HEADER_LENGTH)) {
+            SSLerr(SSL_F_TLS_GET_MESSAGE_BODY, ERR_R_EVP_LIB);
+            ssl3_send_alert(s, SSL3_AL_FATAL, SSL_AD_INTERNAL_ERROR);
+            *len = 0;
+            return 0;
+        }
         if (s->msg_callback)
             s->msg_callback(0, s->version, SSL3_RT_HANDSHAKE, s->init_buf->data,
                             (size_t)s->init_num + SSL3_HM_HEADER_LENGTH, s,

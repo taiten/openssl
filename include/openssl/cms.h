@@ -144,7 +144,7 @@ int CMS_decrypt(CMS_ContentInfo *cms, EVP_PKEY *pkey, X509 *cert,
 int CMS_decrypt_set1_pkey(CMS_ContentInfo *cms, EVP_PKEY *pk, X509 *cert);
 int CMS_decrypt_set1_key(CMS_ContentInfo *cms,
                          unsigned char *key, size_t keylen,
-                         unsigned char *id, size_t idlen);
+                         const unsigned char *id, size_t idlen);
 int CMS_decrypt_set1_password(CMS_ContentInfo *cms,
                               unsigned char *pass, ossl_ssize_t passlen);
 
@@ -335,7 +335,7 @@ int CMS_SharedInfo_encode(unsigned char **pder, X509_ALGOR *kekalg,
  * made after this point may be overwritten when the script is next run.
  */
 
-void ERR_load_CMS_strings(void);
+int ERR_load_CMS_strings(void);
 
 /* Error codes for the CMS functions. */
 

@@ -83,6 +83,8 @@ static const test_enum ssl_alerts[] = {
     {"UnknownCA", SSL_AD_UNKNOWN_CA},
     {"HandshakeFailure", SSL_AD_HANDSHAKE_FAILURE},
     {"UnrecognizedName", SSL_AD_UNRECOGNIZED_NAME},
+    {"BadCertificate", SSL_AD_BAD_CERTIFICATE},
+    {"NoApplicationProtocol", SSL_AD_NO_APPLICATION_PROTOCOL},
 };
 
 __owur static int parse_alert(int *alert, const char *value)
@@ -280,6 +282,76 @@ const char *ssl_test_method_name(ssl_test_method_t method)
     return enum_name(ssl_test_methods, OSSL_NELEM(ssl_test_methods), method);
 }
 
+#define IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(field)                     \
+    static int parse_##field(SSL_TEST_CTX *test_ctx, const char *value) \
+    {                                                                   \
+        OPENSSL_free(test_ctx->field);                                  \
+        test_ctx->field = OPENSSL_strdup(value);                        \
+        OPENSSL_assert(test_ctx->field != NULL);                        \
+        return 1;                                                       \
+    }
+
+/************************************/
+/* NPN and ALPN options             */
+/************************************/
+
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(client_npn_protocols)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(server_npn_protocols)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(server2_npn_protocols)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(expected_npn_protocol)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(client_alpn_protocols)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(server_alpn_protocols)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(server2_alpn_protocols)
+IMPLEMENT_SSL_TEST_CTX_STRING_OPTION(expected_alpn_protocol)
+
+/***********************/
+/* Handshake mode      */
+/***********************/
+
+static const test_enum ssl_handshake_modes[] = {
+    {"Simple", SSL_TEST_HANDSHAKE_SIMPLE},
+    {"Resume", SSL_TEST_HANDSHAKE_RESUME},
+    {"Renegotiate", SSL_TEST_HANDSHAKE_RENEGOTIATE},
+};
+
+__owur static int parse_handshake_mode(SSL_TEST_CTX *test_ctx, const char *value)
+{
+    int ret_value;
+    if (!parse_enum(ssl_handshake_modes, OSSL_NELEM(ssl_handshake_modes),
+                    &ret_value, value)) {
+        return 0;
+    }
+    test_ctx->handshake_mode = ret_value;
+    return 1;
+}
+
+const char *ssl_handshake_mode_name(ssl_handshake_mode_t mode)
+{
+    return enum_name(ssl_handshake_modes, OSSL_NELEM(ssl_handshake_modes),
+                     mode);
+}
+
+static int parse_boolean(const char *value, int *result)
+{
+    if (strcasecmp(value, "Yes") == 0) {
+        *result = 1;
+        return 1;
+    }
+    else if (strcasecmp(value, "No") == 0) {
+        *result = 0;
+        return 1;
+    }
+    return 0;
+}
+
+#define IMPLEMENT_SSL_TEST_CTX_BOOL_OPTION(field)                       \
+    static int parse_##field(SSL_TEST_CTX *test_ctx, const char *value) \
+    {                                                                   \
+        return parse_boolean(value, &test_ctx->field);                  \
+    }
+
+IMPLEMENT_SSL_TEST_CTX_BOOL_OPTION(resumption_expected)
+
 /*************************************************************/
 /* Known test options and their corresponding parse methods. */
 /*************************************************************/
@@ -300,8 +372,17 @@ static const ssl_test_ctx_option ssl_test_ctx_options[] = {
     { "ServerNameCallback", &parse_servername_callback },
     { "SessionTicketExpected", &parse_session_ticket },
     { "Method", &parse_test_method },
+    { "ClientNPNProtocols", &parse_client_npn_protocols },
+    { "ServerNPNProtocols", &parse_server_npn_protocols },
+    { "Server2NPNProtocols", &parse_server2_npn_protocols },
+    { "ExpectedNPNProtocol", &parse_expected_npn_protocol },
+    { "ClientALPNProtocols", &parse_client_alpn_protocols },
+    { "ServerALPNProtocols", &parse_server_alpn_protocols },
+    { "Server2ALPNProtocols", &parse_server2_alpn_protocols },
+    { "ExpectedALPNProtocol", &parse_expected_alpn_protocol },
+    { "HandshakeMode", &parse_handshake_mode },
+    { "ResumptionExpected", &parse_resumption_expected },
 };
-
 
 /*
  * Since these methods are used to create tests, we use OPENSSL_assert liberally
@@ -317,6 +398,17 @@ SSL_TEST_CTX *SSL_TEST_CTX_new()
 
 void SSL_TEST_CTX_free(SSL_TEST_CTX *ctx)
 {
+
+#ifndef OPENSSL_NO_NEXTPROTONEG
+    OPENSSL_free(ctx->client_npn_protocols);
+    OPENSSL_free(ctx->server_npn_protocols);
+    OPENSSL_free(ctx->server2_npn_protocols);
+    OPENSSL_free(ctx->client_alpn_protocols);
+    OPENSSL_free(ctx->server_alpn_protocols);
+    OPENSSL_free(ctx->server2_alpn_protocols);
+    OPENSSL_free(ctx->expected_npn_protocol);
+    OPENSSL_free(ctx->expected_alpn_protocol);
+#endif
     OPENSSL_free(ctx);
 }
 
