@@ -7,10 +7,11 @@ Uploaders: Christoph Martin <christoph.martin@uni-mainz.de>, Kurt Roeckx <kurt@r
 Standards-Version: 3.9.5
 Vcs-Browser: https://anonscm.debian.org/viewvc/pkg-openssl/openssl
 Vcs-Svn: svn://anonscm.debian.org/pkg-openssl/openssl/
+Homepage: https://www.openssl.org/
 
 Package: openssl
-Priority: optional
 Architecture: any
+Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends}
 Suggests: ca-certificates
 Description: Secure Sockets Layer toolkit - cryptographic utility
@@ -42,9 +43,8 @@ Description: Secure Sockets Layer toolkit - shared libraries
  It provides the libssl and libcrypto shared libraries.
 
 Package: libcrypto1.1-udeb
-XC-Package-Type: udeb
+Package-Type: udeb
 Section: debian-installer
-Priority: optional
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Secure Sockets Layer toolkit - libcrypto udeb
@@ -56,9 +56,8 @@ Description: Secure Sockets Layer toolkit - libcrypto udeb
  Debian Installer. Do not install it on a normal system.
 
 Package: libssl1.1-udeb
-XC-Package-Type: udeb
+Package-Type: udeb
 Section: debian-installer
-Priority: optional
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: ssl shared library - udeb
@@ -68,11 +67,10 @@ Description: ssl shared library - udeb
 
 Package: libssl-dev
 Section: libdevel
-Priority: optional
 Architecture: any
 Multi-Arch: same
 Recommends: libssl-doc
-Depends: libssl1.1 (= ${binary:Version}), zlib1g-dev, ${misc:Depends}
+Depends: libssl1.1 (= ${binary:Version}), ${misc:Depends}
 Description: Secure Sockets Layer toolkit - development files
  This package is part of the OpenSSL project's implementation of the SSL
  and TLS cryptographic protocols for secure communication over the
@@ -83,7 +81,6 @@ Description: Secure Sockets Layer toolkit - development files
 
 Package: libssl-doc
 Section: doc
-Priority: optional
 Architecture: all
 Replaces: libssl-dev (<< 1.0.0)
 Breaks: libssl-dev (<< 1.0.0)

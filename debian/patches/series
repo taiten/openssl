@@ -1,4 +1,3 @@
-config-hurd.patch
 debian-targets.patch
 man-section.patch
 no-rpath.patch

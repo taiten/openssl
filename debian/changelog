@@ -1,3 +1,20 @@
+openssl (1.1.0-1) experimental; urgency=medium
+
+  [ Kurt Roeckx ]
+  * New upstream version
+  * Use Package-Type instead of XC-Package-Type
+  * Remove "Priority: optional" in the binary packages.
+  * Add Homepage
+  * Use dpkg-buildflags's LDFLAGS also for building the shared libraries.
+
+  [ Sebastian Andrzej Siewior ]
+  * drop config-hurd.patch, we don't use `config' and it works without the
+    patch.
+  * Drop depend on zlib1g-dev since we don't use it anymore (Closes: #767207)
+  * Make the openssl package Multi-Arch: foregin (Closes: #827028)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 25 Aug 2016 18:52:22 +0200
+
 openssl (1.1.0~pre6-1) experimental; urgency=medium
 
   [ Sebastian Andrzej Siewior ]

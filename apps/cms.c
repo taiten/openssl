@@ -199,7 +199,8 @@ int cms_main(int argc, char **argv)
     X509_STORE *store = NULL;
     X509_VERIFY_PARAM *vpm = NULL;
     char *certfile = NULL, *keyfile = NULL, *contfile = NULL;
-    char *CAfile = NULL, *CApath = NULL, *certsoutfile = NULL;
+    const char *CAfile = NULL, *CApath = NULL;
+    char *certsoutfile = NULL;
     int noCAfile = 0, noCApath = 0;
     char *infile = NULL, *outfile = NULL, *rctfile = NULL, *inrand = NULL;
     char *passinarg = NULL, *passin = NULL, *signerfile = NULL, *recipfile =
@@ -411,6 +412,11 @@ int cms_main(int argc, char **argv)
             noout = print = 1;
             break;
         case OPT_SECRETKEY:
+            if (secret_key != NULL) {
+                BIO_printf(bio_err, "Invalid key (supplied twice) %s\n",
+                           opt_arg());
+                goto opthelp;
+            }
             secret_key = OPENSSL_hexstr2buf(opt_arg(), &ltmp);
             if (secret_key == NULL) {
                 BIO_printf(bio_err, "Invalid key %s\n", opt_arg());
@@ -419,6 +425,11 @@ int cms_main(int argc, char **argv)
             secret_keylen = (size_t)ltmp;
             break;
         case OPT_SECRETKEYID:
+            if (secret_keyid != NULL) {
+                BIO_printf(bio_err, "Invalid id (supplied twice) %s\n",
+                           opt_arg());
+                goto opthelp;
+            }
             secret_keyid = OPENSSL_hexstr2buf(opt_arg(), &ltmp);
             if (secret_keyid == NULL) {
                 BIO_printf(bio_err, "Invalid id %s\n", opt_arg());
@@ -430,6 +441,11 @@ int cms_main(int argc, char **argv)
             pwri_pass = (unsigned char *)opt_arg();
             break;
         case OPT_ECONTENT_TYPE:
+            if (econtent_type != NULL) {
+                BIO_printf(bio_err, "Invalid OID (supplied twice) %s\n",
+                           opt_arg());
+                goto opthelp;
+            }
             econtent_type = OBJ_txt2obj(opt_arg(), 0);
             if (econtent_type == NULL) {
                 BIO_printf(bio_err, "Invalid OID %s\n", opt_arg());
@@ -1177,13 +1193,13 @@ static void receipt_request_print(CMS_ContentInfo *cms)
             BIO_puts(bio_err, "  Receipt Request Parse Error\n");
             ERR_print_errors(bio_err);
         } else {
-            char *id;
+            const char *id;
             int idlen;
             CMS_ReceiptRequest_get0_values(rr, &scid, &allorfirst,
                                            &rlist, &rto);
             BIO_puts(bio_err, "  Signed Content ID:\n");
             idlen = ASN1_STRING_length(scid);
-            id = (char *)ASN1_STRING_data(scid);
+            id = (const char *)ASN1_STRING_get0_data(scid);
             BIO_dump_indent(bio_err, id, idlen, 4);
             BIO_puts(bio_err, "  Receipts From");
             if (rlist) {
