@@ -4,7 +4,7 @@
 
 --- /dev/null
 +++ b/Configurations/20-debian.conf
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,134 @@
 +my $debian_cflags = `dpkg-buildflags --get CFLAGS` . `dpkg-buildflags --get CPPFLAGS` . "-Wa,--noexecstack -Wall";
 +$debian_cflags =~ s/\n/ /g;
 +my $debian_ldflags = `dpkg-buildflags --get LDFLAGS`;
@@ -14,6 +14,7 @@
 +	"debian" => {
 +		cflags => $debian_cflags,
 +		lflags => add($debian_ldflags, "-pthread"),
++		shared_ldflag => add($debian_ldflags),
 +	},
 +	"debian-alpha" => {
 +		inherit_from => [ "linux-alpha-gcc", "debian" ],
