@@ -7,8 +7,10 @@ Subject: [PATCH] also create old hash for compatibility
  tools/c_rehash.in |   20 ++++++++++++++------
  1 file changed, 14 insertions(+), 6 deletions(-)
 
---- a/tools/c_rehash.in
-+++ b/tools/c_rehash.in
+Index: openssl-1.1.0a/tools/c_rehash.in
+===================================================================
+--- openssl-1.1.0a.orig/tools/c_rehash.in
++++ openssl-1.1.0a/tools/c_rehash.in
 @@ -17,8 +17,6 @@ my $prefix = {- quotify1($config{prefix}
  my $errorcount = 0;
  my $openssl = $ENV{OPENSSL} || "openssl";
@@ -25,8 +27,8 @@ Subject: [PATCH] also create old hash for compatibility
 -    if ( $flag eq '-old') {
 -	    $x509hash = "-subject_hash_old";
 -	    $crlhash = "-hash_old";
--    } elsif ( $flag eq '-h') {
-+    if ( $flag eq '-h') {
+-    } elsif ( $flag eq '-h' || $flag eq '-help' ) {
++    if ( $flag eq '-h' || $flag eq '-help' ) {
  	    help();
      } elsif ( $flag eq '-n' ) {
  	    $removelinks = 0;
