@@ -1,3 +1,10 @@
+openssl (1.1.0b-1) experimental; urgency=medium
+
+  * New upstream release
+    - Fixes CVE-2016-6309
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 26 Sep 2016 18:21:09 +0200
+
 openssl (1.1.0a-1) experimental; urgency=medium
 
   * New upstream release
