@@ -1,3 +1,9 @@
+openssl (1.1.0b-2) unstable; urgency=low
+
+  * Upload to unstable
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 01 Nov 2016 22:02:32 +0100
+
 openssl (1.1.0b-1) experimental; urgency=medium
 
   * New upstream release
