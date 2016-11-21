@@ -1,3 +1,12 @@
+openssl (1.1.0c-2) unstable; urgency=medium
+
+  * Revert behaviour of SSL_read() and SSL_write(), and update documentation.
+    (Closes: #844234)
+  * Add missing -zdelete on x32 (Closes: #844715)
+  * Add a Breaks on salt-common. Addresses #844706
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 21 Nov 2016 22:20:00 +0100
+
 openssl (1.1.0c-1) unstable; urgency=medium
 
   * New upstrem release

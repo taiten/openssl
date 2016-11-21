@@ -35,6 +35,7 @@ Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Breaks: salt-common (<= 2016.3.3+ds-3)
 Description: Secure Sockets Layer toolkit - shared libraries
  This package is part of the OpenSSL project's implementation of the SSL
  and TLS cryptographic protocols for secure communication over the
