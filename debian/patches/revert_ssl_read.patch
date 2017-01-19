@@ -1,5 +1,19 @@
-diff --git a/doc/ssl/SSL_get_error.pod b/doc/ssl/SSL_get_error.pod
-index ddd72f7..47d2358 100644
+Subject: Revert behaviour of SSL_read() and SSL_write(), and update documentation.
+
+Author: Kurt Roeckx <kurt@roeckx.be>
+Bug: https://github.com/openssl/openssl/issues/1903
+Bug-Debian: https://bugs.debian.org/844234
+Forwarded: no
+Description: This is a revert of upstream commit 4880672a9b41 ("A zero return
+ from BIO_read()/BIO_write() could be retryable").
+---
+ doc/ssl/SSL_get_error.pod |   22 +++++++---------
+ doc/ssl/SSL_read.pod      |   31 +++++++++--------------
+ doc/ssl/SSL_write.pod     |   21 ++++++---------
+ ssl/record/rec_layer_s3.c |   14 +++-------
+ test/asynciotest.c        |   61 +++++++++++++++++++++++++++++++++-------------
+ 5 files changed, 79 insertions(+), 70 deletions(-)
+
 --- a/doc/ssl/SSL_get_error.pod
 +++ b/doc/ssl/SSL_get_error.pod
 @@ -38,12 +38,13 @@ if and only if B<ret E<gt> 0>.
@@ -38,11 +52,9 @@ index ddd72f7..47d2358 100644
  
  =item SSL_ERROR_SSL
  
-diff --git a/doc/ssl/SSL_read.pod b/doc/ssl/SSL_read.pod
-index 8dff244..20ccf40 100644
 --- a/doc/ssl/SSL_read.pod
 +++ b/doc/ssl/SSL_read.pod
-@@ -81,28 +81,21 @@ The following return values can occur:
+@@ -81,28 +81,21 @@ with the same arguments.
  
  =over 4
  
@@ -67,26 +79,25 @@ index 8dff244..20ccf40 100644
 -incomplete. Call SSL_get_error() with the return value B<ret> to find out,
 -whether an error occurred or the connection was shut down cleanly
 -(SSL_ERROR_ZERO_RETURN).
-+The read operation was not successful, because either the connection was closed,
-+an error occurred or action must be taken by the calling process.
-+Call L<SSL_get_error(3)> with the return value B<ret> to find out the reason.
- 
+-
 -=item E<lt>0
 -
 -The read operation was not successful, because either an error occurred
 -or action must be taken by the calling process. Call SSL_get_error() with the
 -return value B<ret> to find out the reason.
++The read operation was not successful, because either the connection was closed,
++an error occurred or action must be taken by the calling process.
++Call L<SSL_get_error(3)> with the return value B<ret> to find out the reason.
++
 +Old documentation indicated a difference between 0 and -1, and that -1 was
 +retryable.
 +You should instead call SSL_get_error() to find out if it's retryable.
  
  =back
  
-diff --git a/doc/ssl/SSL_write.pod b/doc/ssl/SSL_write.pod
-index 5ab0790..ef3b92a 100644
 --- a/doc/ssl/SSL_write.pod
 +++ b/doc/ssl/SSL_write.pod
-@@ -74,23 +74,20 @@ The following return values can occur:
+@@ -74,23 +74,20 @@ undefined.
  
  =over 4
  
@@ -103,26 +114,25 @@ index 5ab0790..ef3b92a 100644
 -was closed. Call SSL_get_error() with the return value B<ret> to find out,
 -whether an error occurred or the connection was shut down cleanly
 -(SSL_ERROR_ZERO_RETURN).
-+The write operation was not successful, because either the connection was
-+closed, an error occurred or action must be taken by the calling process.
-+Call SSL_get_error() with the return value B<ret> to find out the reason.
- 
+-
 -=item E<lt>0
 -
 -The write operation was not successful, because either an error occurred
 -or action must be taken by the calling process. Call SSL_get_error() with the
 -return value B<ret> to find out the reason.
++The write operation was not successful, because either the connection was
++closed, an error occurred or action must be taken by the calling process.
++Call SSL_get_error() with the return value B<ret> to find out the reason.
++
 +Old documentation indicated a difference between 0 and -1, and that -1 was
 +retryable.
 +You should instead call SSL_get_error() to find out if it's retryable.
  
  =back
  
-diff --git a/ssl/record/rec_layer_s3.c b/ssl/record/rec_layer_s3.c
-index 28de7c3..1270a5f 100644
 --- a/ssl/record/rec_layer_s3.c
 +++ b/ssl/record/rec_layer_s3.c
-@@ -178,10 +178,7 @@ const char *SSL_rstate_string(const SSL *s)
+@@ -178,10 +178,7 @@ const char *SSL_rstate_string(const SSL
  }
  
  /*
@@ -134,7 +144,7 @@ index 28de7c3..1270a5f 100644
   */
  int ssl3_read_n(SSL *s, int n, int max, int extend, int clearold)
  {
-@@ -312,7 +309,7 @@ int ssl3_read_n(SSL *s, int n, int max, int extend, int clearold)
+@@ -312,7 +309,7 @@ int ssl3_read_n(SSL *s, int n, int max,
              if (s->mode & SSL_MODE_RELEASE_BUFFERS && !SSL_IS_DTLS(s))
                  if (len + left == 0)
                      ssl3_release_read_buffer(s);
@@ -143,7 +153,7 @@ index 28de7c3..1270a5f 100644
          }
          left += i;
          /*
-@@ -882,10 +879,7 @@ int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
+@@ -882,10 +879,7 @@ int do_ssl3_write(SSL *s, int type, cons
  
  /* if s->s3->wbuf.left != 0, we need to call this
   *
@@ -155,7 +165,7 @@ index 28de7c3..1270a5f 100644
   */
  int ssl3_write_pending(SSL *s, int type, const unsigned char *buf,
                         unsigned int len)
-@@ -936,7 +930,7 @@ int ssl3_write_pending(SSL *s, int type, const unsigned char *buf,
+@@ -936,7 +930,7 @@ int ssl3_write_pending(SSL *s, int type,
                   */
                  SSL3_BUFFER_set_left(&wb[currbuf], 0);
              }
@@ -164,8 +174,6 @@ index 28de7c3..1270a5f 100644
          }
          SSL3_BUFFER_add_offset(&wb[currbuf], i);
          SSL3_BUFFER_add_left(&wb[currbuf], -i);
-diff --git a/test/asynciotest.c b/test/asynciotest.c
-index 23d0907..133e3d5 100644
 --- a/test/asynciotest.c
 +++ b/test/asynciotest.c
 @@ -85,7 +85,7 @@ static int async_free(BIO *bio)
@@ -177,7 +185,7 @@ index 23d0907..133e3d5 100644
      BIO *next = BIO_next(bio);
  
      if (outl <= 0)
-@@ -120,7 +120,7 @@ static int async_read(BIO *bio, char *out, int outl)
+@@ -120,7 +120,7 @@ static int async_read(BIO *bio, char *ou
  static int async_write(BIO *bio, const char *in, int inl)
  {
      struct async_ctrs *ctrs;

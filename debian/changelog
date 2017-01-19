@@ -1,3 +1,22 @@
+openssl (1.1.0c-3) unstable; urgency=medium
+
+  * Add myself as Uploader.
+  * Add support for tilegx, patch by Helmut Grohne (Closes: #848957).
+  * redo the rules file to some newer debhelper:
+    - everyfile should remain, nothing should get lost
+    - the scripts in the doc package gained an exec bit
+    - openssl gained a dep on perl (the package contains perl scripts)
+    - libssl1.0.2-dbg is gone, we have dbgsym now
+    - dh compat 10
+    - pkg.install instead of pkg.files is used for install
+  * Mark libssl-doc as MA foreign
+  * Update Standards-Version from 3.9.5 to 3.9.8. No changes required.
+  * Document the change for openssl's enc command between 1.1.0 and pre 1.1.0
+    in the NEWS file (Closes: #843064).
+  * Add an override for lintian for the non-standard private directory
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Thu, 19 Jan 2017 23:00:01 +0100
+
 openssl (1.1.0c-2) unstable; urgency=medium
 
   * Revert behaviour of SSL_read() and SSL_write(), and update documentation.
