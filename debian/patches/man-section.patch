@@ -4,7 +4,7 @@
 
 --- a/Configurations/unix-Makefile.tmpl
 +++ b/Configurations/unix-Makefile.tmpl
-@@ -160,7 +160,8 @@ HTMLDIR=$(DOCDIR)/html
+@@ -164,7 +164,8 @@ HTMLDIR=$(DOCDIR)/html
  # MANSUFFIX is for the benefit of anyone who may want to have a suffix
  # appended after the manpage file section number.  "ssl" is popular,
  # resulting in files such as config.5ssl rather than config.5.
@@ -14,7 +14,7 @@
  HTMLSUFFIX=html
  
  
-@@ -635,7 +636,7 @@ UNINSTALL_DOCS=\
+@@ -630,7 +631,7 @@ UNINSTALL_DOCS=\
  	@\
  	OUTSUFFIX='.$${SEC}$(MANSUFFIX)'; \
  	OUTTOP="$(DESTDIR)$(MANDIR)"; \

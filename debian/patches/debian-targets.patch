@@ -1,10 +1,10 @@
 ---
- Configurations/20-debian.conf |  133 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 133 insertions(+)
+ Configurations/20-debian.conf |  137 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 137 insertions(+)
 
 --- /dev/null
 +++ b/Configurations/20-debian.conf
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,137 @@
 +my $debian_cflags = `dpkg-buildflags --get CFLAGS` . `dpkg-buildflags --get CPPFLAGS` . "-Wa,--noexecstack -Wall";
 +$debian_cflags =~ s/\n/ /g;
 +my $debian_ldflags = `dpkg-buildflags --get LDFLAGS`;
@@ -133,6 +133,9 @@
 +	        inherit_from => [ "linux-generic64", "debian", asm("sparcv9_asm") ],
 +	        cflags => add("-m64 -mcpu=ultrasparc -DB_ENDIAN"),
 +		bn_ops => "BN_LLONG RC4_CHAR",
++	},
++	"debian-tilegx" => {
++		inherit_from => [ "linux-generic64", "debian" ],
 +	},
 +	"debian-x32" => {
 +		inherit_from => [ "linux-x32", "debian" ],
