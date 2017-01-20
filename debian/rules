@@ -125,12 +125,19 @@ override_dh_installchangelogs:
 	dh_installchangelogs -a CHANGES
 
 override_dh_fixperms:
-	test -d debian/openssl/etc/ssl/private && chmod 700 debian/openssl/etc/ssl/private
+	if [ -d debian/openssl/etc/ssl/private ] ; then \
+		chmod 700 debian/openssl/etc/ssl/private ; \
+	fi
 	dh_fixperms -a -X etc/ssl/private
 
 override_dh_makeshlibs:
 	#dpkg-gensymbols -Pdebian/libssl1.1/ -plibssl1.1 -c4
 	dh_makeshlibs -a --add-udeb="libcrypto1.1-udeb" -Xengines
+	# XXX: This needs gets set perl:any by dh_perl which is correct, but
+	# that breaks debootstrap in jessie (the current stable). This hack
+	# could be removed once stretch is stable and contains a fixed
+	# debootstrap, see #836525
+	sed -i 's@perl:Depends=perl:any@perl:Depends=perl@' debian/openssl.substvars
 
 override_dh_shlibdeps:
 	sed -i '/^udeb: libssl/s/libcrypto1.1-udeb/libssl1.1-udeb/' debian/libssl1.1/DEBIAN/shlibs

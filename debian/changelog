@@ -1,3 +1,11 @@
+openssl (1.1.0c-4) unstable; urgency=medium
+
+  * Make build-indep build again.
+  * Don't depend on perl:any in openssl as it breaks debootstrap
+   ("Closes: #852017).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Fri, 20 Jan 2017 22:18:15 +0100
+
 openssl (1.1.0c-3) unstable; urgency=medium
 
   * Add myself as Uploader.
