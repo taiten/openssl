@@ -1,3 +1,15 @@
+openssl (1.1.0d-1) unstable; urgency=medium
+
+  * New Upstream release
+    - Fixes CVE-2017-3731
+    - Fixes CVE-2017-3730
+    - Fixes CVE-2017-3732
+    - drop revert_ssl_read.patch and
+      0001-Add-missing-zdelete-for-some-linux-arches.patch, applied upstream.
+  * add new symbols.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Thu, 26 Jan 2017 16:38:34 +0100
+
 openssl (1.1.0c-4) unstable; urgency=medium
 
   * Make build-indep build again.

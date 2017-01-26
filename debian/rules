@@ -122,7 +122,7 @@ override_dh_auto_install-arch:
 	mv debian/tmp/usr/include/openssl/opensslconf.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/
 
 override_dh_installchangelogs:
-	dh_installchangelogs -a CHANGES
+	dh_installchangelogs CHANGES
 
 override_dh_fixperms:
 	if [ -d debian/openssl/etc/ssl/private ] ; then \
