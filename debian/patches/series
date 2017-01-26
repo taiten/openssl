@@ -4,5 +4,3 @@ no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
 #padlock_conf.patch
-revert_ssl_read.patch
-0001-Add-missing-zdelete-for-some-linux-arches.patch
