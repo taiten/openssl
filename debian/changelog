@@ -1,3 +1,15 @@
+openssl (1.1.0d-2) unstable; urgency=medium
+
+  * Fix building of arch and all packages in a minimal environment
+    (Closes: #852900).
+  * Fix precomputing SHA1 by adding the following patches from upstream:
+    - Add-a-couple-of-test-to-check-CRL-fingerprint.patch
+    - Document-what-EXFLAG_SET-is-for-in-x509v3.h.patch
+    - X509_CRL_digest-ensure-precomputed-sha1-hash-before-.patch
+    (Closes: #852920).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Mon, 30 Jan 2017 23:20:07 +0100
+
 openssl (1.1.0d-1) unstable; urgency=medium
 
   * New Upstream release
