@@ -96,11 +96,14 @@ override_dh_auto_clean:
 	dh_auto_clean
 
 override_dh_auto_install-indep:
-	$(MAKE) -C build_shared install DESTDIR=`pwd`/debian/tmp
-	# Those two ensure that it is not installed in case we build both
-	# (ARCH and INDEP) in one go
-	mkdir -p debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl
-	mv debian/tmp/usr/include/openssl/opensslconf.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/
+	# Install is only required for the -indep only build, that is if
+	# -arch isn't run as well. Otherwise install will fail because
+	# usr/lib/ssl/cert is a symlink to a non existing target.
+	if [ ! -L debian/tmp/usr/lib/ssl/certs ]; then \
+		$(MAKE) -C build_shared install DESTDIR=`pwd`/debian/tmp ;\
+		mkdir -p debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl ;\
+		mv debian/tmp/usr/include/openssl/opensslconf.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/ ;\
+	fi
 
 override_dh_auto_install-arch:
 	$(MAKE) -C build_shared install DESTDIR=`pwd`/debian/tmp
