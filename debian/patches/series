@@ -4,6 +4,3 @@ no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
 #padlock_conf.patch
-X509_CRL_digest-ensure-precomputed-sha1-hash-before-.patch
-Document-what-EXFLAG_SET-is-for-in-x509v3.h.patch
-Add-a-couple-of-test-to-check-CRL-fingerprint.patch
