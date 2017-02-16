@@ -1,3 +1,11 @@
+openssl (1.1.0e-1) unstable; urgency=high
+
+  * New upstream version
+    - Fixes CVE-2017-3733
+    - Remove patches that are applied upstream.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 16 Feb 2017 18:57:58 +0100
+
 openssl (1.1.0d-2) unstable; urgency=medium
 
   * Fix building of arch and all packages in a minimal environment
