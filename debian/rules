@@ -133,6 +133,9 @@ override_dh_fixperms:
 	fi
 	dh_fixperms -a -X etc/ssl/private
 
+override_dh_perl:
+	dh_perl -d
+
 override_dh_makeshlibs:
 	#dpkg-gensymbols -Pdebian/libssl1.1/ -plibssl1.1 -c4
 	dh_makeshlibs -a --add-udeb="libcrypto1.1-udeb" -Xengines
@@ -140,7 +143,7 @@ override_dh_makeshlibs:
 	# that breaks debootstrap in jessie (the current stable). This hack
 	# could be removed once stretch is stable and contains a fixed
 	# debootstrap, see #836525
-	sed -i 's@perl:Depends=perl:any@perl:Depends=perl@' debian/openssl.substvars
+	#sed -i 's@perl:Depends=perl:any@perl:Depends=perl@' debian/openssl.substvars
 
 override_dh_shlibdeps:
 	sed -i '/^udeb: libssl/s/libcrypto1.1-udeb/libssl1.1-udeb/' debian/libssl1.1/DEBIAN/shlibs
