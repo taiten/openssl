@@ -1,3 +1,14 @@
+openssl (1.1.0f-1) unstable; urgency=medium
+
+  * New upstream version
+    - Fix regression in req -x509 (Closes: #839575)
+    - Properly detect features on the AMD Ryzen processor (Closes: #861145)
+    - Don't mention -tls1_3 in the manpage (Closes: #859191)
+  * Update libssl1.1.symbols for new symbols
+  * Update man-section.patch
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 25 May 2017 18:29:01 +0200
+
 openssl (1.1.0e-2) unstable; urgency=medium
 
   * Make openssl depend on perl-base (Closes: #860254)
