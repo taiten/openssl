@@ -72,6 +72,7 @@ Architecture: any
 Multi-Arch: same
 Recommends: libssl-doc
 Depends: libssl1.1 (= ${binary:Version}), ${misc:Depends}
+Conflicts: libssl1.0-dev
 Description: Secure Sockets Layer toolkit - development files
  This package is part of the OpenSSL project's implementation of the SSL
  and TLS cryptographic protocols for secure communication over the
