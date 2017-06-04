@@ -138,7 +138,7 @@ override_dh_perl:
 
 override_dh_makeshlibs:
 	#dpkg-gensymbols -Pdebian/libssl1.1/ -plibssl1.1 -c4
-	dh_makeshlibs -a --add-udeb="libcrypto1.1-udeb" -Xengines
+	dh_makeshlibs -a -V --add-udeb="libcrypto1.1-udeb" -Xengines
 	# XXX: This needs gets set perl:any by dh_perl which is correct, but
 	# that breaks debootstrap in jessie (the current stable). This hack
 	# could be removed once stretch is stable and contains a fixed
