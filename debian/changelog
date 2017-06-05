@@ -1,3 +1,9 @@
+openssl (1.1.0f-3) unstable; urgency=medium
+
+  * Don't cleanup a thread-local key we didn't create it (Closes: #863707)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 05 Jun 2017 11:40:42 +0200
+
 openssl (1.1.0f-2) unstable; urgency=medium
 
   * Make the udeb use a versioned depends (Closes: #864080)
