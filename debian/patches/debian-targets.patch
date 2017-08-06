@@ -1,10 +1,10 @@
 ---
- Configurations/20-debian.conf |  137 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 137 insertions(+)
+ Configurations/20-debian.conf |  140 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 140 insertions(+)
 
 --- /dev/null
 +++ b/Configurations/20-debian.conf
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,140 @@
 +my $debian_cflags = `dpkg-buildflags --get CFLAGS` . `dpkg-buildflags --get CPPFLAGS` . "-Wa,--noexecstack -Wall";
 +$debian_cflags =~ s/\n/ /g;
 +my $debian_ldflags = `dpkg-buildflags --get LDFLAGS`;
@@ -29,6 +29,9 @@
 +	},
 +	"debian-arm64" => {
 +		inherit_from => [ "linux-aarch64", "debian" ],
++	},
++	"debian-arm64ilp32" => {
++		inherit_from => [ "linux-arm64ilp32", "debian" ],
 +	},
 +	"debian-armel" => {
 +		inherit_from => [ "linux-armv4", "debian" ],

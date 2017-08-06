@@ -1,3 +1,17 @@
+openssl (1.1.0f-4) unstable; urgency=medium
+
+  [ Sebastian Andrzej Siewior ]
+  * Add support for arm64ilp32, patch by Wookey (Closes: #867240)
+
+  [ Kurt Roeckx ]
+  * Disable TLS 1.0 and 1.1, leaving 1.2 as the only supported SSL/TLS
+    version. This will likely break things, but the hope is that by
+    the release of Buster everything will speak at least TLS 1.2. This will be
+    reconsidered before the Buster release.
+  * Fix a race condition in the test suite (Closes: #869856)
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Mon, 07 Aug 2017 01:08:45 +0200
+
 openssl (1.1.0f-3) unstable; urgency=medium
 
   * Don't cleanup a thread-local key we didn't create it (Closes: #863707)
