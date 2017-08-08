@@ -1,3 +1,11 @@
+openssl (1.1.0f-5) unstable; urgency=medium
+
+  * Instead of completly disabling TLS 1.0 and 1.1, just set the minimum
+    version to TLS 1.2 by default. TLS 1.0 and 1.1 can be enabled again by
+    calling SSL_CTX_set_min_proto_version() or SSL_set_min_proto_version().
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 08 Aug 2017 16:13:54 +0200
+
 openssl (1.1.0f-4) unstable; urgency=medium
 
   [ Sebastian Andrzej Siewior ]
