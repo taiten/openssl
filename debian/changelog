@@ -1,3 +1,15 @@
+openssl (1.1.0g-1) unstable; urgency=medium
+
+  * New upstream version
+    - Fixes CVE-2017-3735
+    - Fixes CVE-2017-3736
+  * Remove patches applied upstream
+  * Temporary enable TLS 1.0 and 1.1 again (#875423)
+  * Attempt to fix testsuite race condition
+  * update no-symbolic.patch to apply
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Thu, 02 Nov 2017 15:22:48 +0100
+
 openssl (1.1.0f-5) unstable; urgency=medium
 
   * Instead of completly disabling TLS 1.0 and 1.1, just set the minimum
