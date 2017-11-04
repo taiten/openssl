@@ -1,0 +1,78 @@
+From 6d8f25b770bfb09f11ab0e5fd670554fc54770ca Mon Sep 17 00:00:00 2001
+From: Andy Polyakov <appro@openssl.org>
+Date: Fri, 3 Nov 2017 23:30:01 +0100
+Subject: [PATCH] aes/asm/{aes-armv4|bsaes-armv7}.pl: make it work with
+ binutils-2.29.
+
+It's not clear if it's a feature or bug, but binutils-2.29[.1]
+misinterprets 'adr' instruction with Thumb2 code reference.
+---
+ crypto/aes/asm/aes-armv4.pl   | 6 +++---
+ crypto/aes/asm/bsaes-armv7.pl | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/crypto/aes/asm/aes-armv4.pl b/crypto/aes/asm/aes-armv4.pl
+index 16d79aae53..c6474b8aad 100644
+--- a/crypto/aes/asm/aes-armv4.pl
++++ b/crypto/aes/asm/aes-armv4.pl
+@@ -200,7 +200,7 @@ AES_encrypt:
+ #ifndef	__thumb2__
+ 	sub	r3,pc,#8		@ AES_encrypt
+ #else
+-	adr	r3,AES_encrypt
++	adr	r3,.
+ #endif
+ 	stmdb   sp!,{r1,r4-r12,lr}
+ #ifdef	__APPLE__
+@@ -450,7 +450,7 @@ _armv4_AES_set_encrypt_key:
+ #ifndef	__thumb2__
+ 	sub	r3,pc,#8		@ AES_set_encrypt_key
+ #else
+-	adr	r3,AES_set_encrypt_key
++	adr	r3,.
+ #endif
+ 	teq	r0,#0
+ #ifdef	__thumb2__
+@@ -976,7 +976,7 @@ AES_decrypt:
+ #ifndef	__thumb2__
+ 	sub	r3,pc,#8		@ AES_decrypt
+ #else
+-	adr	r3,AES_decrypt
++	adr	r3,.
+ #endif
+ 	stmdb   sp!,{r1,r4-r12,lr}
+ #ifdef	__APPLE__
+diff --git a/crypto/aes/asm/bsaes-armv7.pl b/crypto/aes/asm/bsaes-armv7.pl
+index cc34859a0d..0c5e762ac2 100644
+--- a/crypto/aes/asm/bsaes-armv7.pl
++++ b/crypto/aes/asm/bsaes-armv7.pl
+@@ -740,7 +740,7 @@ $code.=<<___;
+ .type	_bsaes_decrypt8,%function
+ .align	4
+ _bsaes_decrypt8:
+-	adr	$const,_bsaes_decrypt8
++	adr	$const,.
+ 	vldmia	$key!, {@XMM[9]}		@ round 0 key
+ #ifdef	__APPLE__
+ 	adr	$const,.LM0ISR
+@@ -839,7 +839,7 @@ _bsaes_const:
+ .type	_bsaes_encrypt8,%function
+ .align	4
+ _bsaes_encrypt8:
+-	adr	$const,_bsaes_encrypt8
++	adr	$const,.
+ 	vldmia	$key!, {@XMM[9]}		@ round 0 key
+ #ifdef	__APPLE__
+ 	adr	$const,.LM0SR
+@@ -947,7 +947,7 @@ $code.=<<___;
+ .type	_bsaes_key_convert,%function
+ .align	4
+ _bsaes_key_convert:
+-	adr	$const,_bsaes_key_convert
++	adr	$const,.
+ 	vld1.8	{@XMM[7]},  [$inp]!		@ load round 0 key
+ #ifdef	__APPLE__
+ 	adr	$const,.LM0
+-- 
+2.14.2
+
