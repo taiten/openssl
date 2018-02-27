@@ -1,3 +1,19 @@
+openssl (1.1.1~~pre2-1) experimental; urgency=medium
+
+  * Update to 1.1.1-pre2
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 27 Feb 2018 21:25:09 +0100
+
+openssl (1.1.1~~pre1-1) experimental; urgency=medium
+
+  * Abort the build if symbols are discovered which are not part of the
+    symbols file.
+  * Add config support for MIPS R6, patch by YunQiang Su (Closes: #882007).
+  * Enable afalgeng on Linux targets (Closes: #888305)
+  * Update 1.1.1-pre1.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sun, 25 Feb 2018 21:03:52 +0100
+
 openssl (1.1.0g-2) unstable; urgency=high
 
   * Avoid problems with aes assembler on armhf using binutils 2.29
@@ -6,6 +22,7 @@ openssl (1.1.0g-2) unstable; urgency=high
 
 openssl (1.1.0g-1) unstable; urgency=medium
 
+  [ Kurt Roeckx ]
   * New upstream version
     - Fixes CVE-2017-3735
     - Fixes CVE-2017-3736

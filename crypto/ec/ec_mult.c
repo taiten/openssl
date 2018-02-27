@@ -1,16 +1,11 @@
 /*
- * Copyright 2001-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2017 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
- */
-
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * Portions of this software developed by SUN MICROSYSTEMS, INC.,
- * and contributed to the OpenSSL project.
  */
 
 #include <string.h>
@@ -19,6 +14,7 @@
 #include "internal/cryptlib.h"
 #include "internal/bn_int.h"
 #include "ec_lcl.h"
+#include "internal/refcount.h"
 
 /*
  * This file implements the wNAF-based interleaving multi-exponentiation method
@@ -42,7 +38,7 @@ struct ec_pre_comp_st {
                                  * generator: 'num' pointers to EC_POINT
                                  * objects followed by a NULL */
     size_t num;                 /* numblocks * 2^(w-1) */
-    int references;
+    CRYPTO_REF_COUNT references;
     CRYPTO_RWLOCK *lock;
 };
 
@@ -77,7 +73,7 @@ EC_PRE_COMP *EC_ec_pre_comp_dup(EC_PRE_COMP *pre)
 {
     int i;
     if (pre != NULL)
-        CRYPTO_atomic_add(&pre->references, 1, &i, pre->lock);
+        CRYPTO_UP_REF(&pre->references, &i, pre->lock);
     return pre;
 }
 
@@ -88,7 +84,7 @@ void EC_ec_pre_comp_free(EC_PRE_COMP *pre)
     if (pre == NULL)
         return;
 
-    CRYPTO_atomic_add(&pre->references, -1, &i, pre->lock);
+    CRYPTO_DOWN_REF(&pre->references, &i, pre->lock);
     REF_PRINT_COUNT("EC_ec", pre);
     if (i > 0)
         return;
@@ -222,11 +218,11 @@ int ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
 
     totalnum = num + numblocks;
 
-    wsize = OPENSSL_malloc(totalnum * sizeof wsize[0]);
-    wNAF_len = OPENSSL_malloc(totalnum * sizeof wNAF_len[0]);
-    wNAF = OPENSSL_malloc((totalnum + 1) * sizeof wNAF[0]); /* includes space
-                                                             * for pivot */
-    val_sub = OPENSSL_malloc(totalnum * sizeof val_sub[0]);
+    wsize = OPENSSL_malloc(totalnum * sizeof(wsize[0]));
+    wNAF_len = OPENSSL_malloc(totalnum * sizeof(wNAF_len[0]));
+    /* include space for pivot */
+    wNAF = OPENSSL_malloc((totalnum + 1) * sizeof(wNAF[0]));
+    val_sub = OPENSSL_malloc(totalnum * sizeof(val_sub[0]));
 
     /* Ensure wNAF is initialised in case we end up going to err */
     if (wNAF != NULL)
@@ -372,7 +368,7 @@ int ec_wNAF_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *scalar,
      * 'val_sub[i]' is a pointer to the subarray for the i-th point, or to a
      * subarray of 'pre_comp->points' if we already have precomputation.
      */
-    val = OPENSSL_malloc((num_val + 1) * sizeof val[0]);
+    val = OPENSSL_malloc((num_val + 1) * sizeof(val[0]));
     if (val == NULL) {
         ECerr(EC_F_EC_WNAF_MUL, ERR_R_MALLOC_FAILURE);
         goto err;
