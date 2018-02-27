@@ -18,9 +18,13 @@ configuration in diverse ways:
 Configurations of OpenSSL target platforms
 ==========================================
 
-Target configurations are a collection of facts that we know about
+Configuration targets are a collection of facts that we know about
 different platforms and their capabilities.  We organise them in a
 hash table, where each entry represent a specific target.
+
+Note that configuration target names must be unique across all config
+files.  The Configure script does check that a config file doesn't
+have config targets that shadow config targets from other files.
 
 In each table entry, the following keys are significant:
 
@@ -34,17 +38,40 @@ In each table entry, the following keys are significant:
         sys_id          => System identity for systems where that
                            is difficult to determine automatically.
 
-        cc              => The compiler command, usually one of "cc",
-                           "gcc" or "clang".  This command is normally
-                           also used to link object files and
-                           libraries into the final program.
-        cflags          => Flags that are used at all times when
-                           compiling.
+        enable          => Enable specific configuration features.
+                           This MUST be an array of words.
+        disable         => Disable specific configuration features.
+                           This MUST be an array of words.
+                           Note: if the same feature is both enabled
+                           and disabled, disable wins.
+
+        cpp             => The C preprocessor command, normally not
+                           given, as the build file defaults are
+                           usually good enough.
+        cppflags        => The C preprocessor flags.
         defines         => As an alternative, macro definitions may be
-                           present here instead of in `cflags'.  If
+                           given here instead of in `cppflags'.  If
                            given here, they MUST be as an array of the
                            string such as "MACRO=value", or just
                            "MACRO" for definitions without value.
+        includes        => As an alternative, inclusion directories
+                           may be given here instead of in `cppflags'.
+                           If given here, the MUST be an array of
+                           strings, one directory specification each.
+        cc              => The C compiler command, usually one of "cc",
+                           "gcc" or "clang".  This command is normally
+                           also used to link object files and
+                           libraries into the final program.
+        cxx             => The C++ compiler command, usually one of
+                           "c++", "g++" or "clang++".  This command is
+                           also used when linking a program where at
+                           least one of the object file is made from
+                           C++ source.
+        cflags          => Flags that are used at all times when
+                           compiling C object files.
+        cxxflags        => Flags that are used at all times when
+                           compiling C++ object files.  If unset, it
+                           gets the same value as cflags.
         shared_cflag    => Extra compilation flags used when
                            compiling for shared libraries, typically
                            something like "-fPIC".
@@ -68,7 +95,8 @@ In each table entry, the following keys are significant:
                            (NOTE: this is here for future use, it's
                            not implemented yet)
         arflags         => Flags to be used with the library archive
-                           command.
+                           command.  On Unix, this includes the
+                           command letter, 'r' by default.
 
         ranlib          => The library archive indexing command, the
                            default is 'ranlib' it it exists.
@@ -86,6 +114,27 @@ In each table entry, the following keys are significant:
                            files.  On unix, this defaults to "" (NOTE:
                            this is here for future use, it's not
                            implemented yet)
+        shlib_variant   => A "variant" identifier inserted between the base
+                           shared library name and the extension.  On "unixy"
+                           platforms (BSD, Linux, Solaris, MacOS/X, ...) this
+                           supports installation of custom OpenSSL libraries
+                           that don't conflict with other builds of OpenSSL
+                           installed on the system.  The variant identifier
+                           becomes part of the SONAME of the library and also
+                           any symbol versions (symbol versions are not used or
+                           needed with MacOS/X).  For example, on a system
+                           where a default build would normally create the SSL
+                           shared library as 'libssl.so -> libssl.so.1.1' with
+                           the value of the symlink as the SONAME, a target
+                           definition that sets 'shlib_variant => "-abc"' will
+                           create 'libssl.so -> libssl-abc.so.1.1', again with
+                           an SONAME equal to the value of the symlink.  The
+                           symbol versions associated with the variant library
+                           would then be 'OPENSSL_ABC_<version>' rather than
+                           the default 'OPENSSL_<version>'. The string inserted
+                           into symbol versions is obtained by mapping all
+                           letters in the "variant" identifier to upper case
+                           and all non-alphanumeric characters to '_'.
 
         thread_scheme   => The type of threads is used on the
                            configured platform.  Currently known
@@ -164,8 +213,14 @@ In each table entry, the following keys are significant:
                                                 export vars as
                                                 accessor functions.
 
-        apps_extra_src  => Extra source to build apps/openssl, as
-                           needed by the target.
+        apps_aux_src    => Extra source to build apps/openssl and other
+                           apps, as needed by the target and that can be
+                           collected in a library.
+        apps_init_src   => Init source to build apps/openssl and other
+                           apps, as needed by the target.  This code
+                           cannot be placed in a library, as the rest
+                           of the code isn't expected to link to it
+                           explicitely.
         cpuid_asm_src   => assembler implementation of cpuid code as
                            well as OPENSSL_cleanse().
                            Default to mem_clr.c
@@ -352,14 +407,16 @@ source as well.  However, the files given through SOURCE are expected
 to be located in the source tree while files given through DEPEND are
 expected to be located in the build tree)
 
-For some libraries, we maintain files with public symbols and their
-slot in a transfer vector (important on some platforms).  It can be
-declared like this:
+It's also possible to depend on static libraries explicitly:
 
-    ORDINALS[libcrypto]=crypto
+    DEPEND[foo]=libsomething.a
+    DEPEND[libbar]=libsomethingelse.a
 
-The value is not the name of the file in question, but rather the
-argument to util/mkdef.pl that indicates which file to use.
+This should be rarely used, and care should be taken to make sure it's
+only used when supported.  For example, native Windows build doesn't
+support build static libraries and DLLs at the same time, so using
+static libraries on Windows can only be done when configured
+'no-shared'.
 
 One some platforms, shared libraries come with a name that's different
 from their static counterpart.  That's declared as follows:
@@ -395,8 +452,8 @@ others, that's done as follows:
     GENERATE[bar.s]=asm/bar.S
 
 The value of each GENERATE line is a command line or part of it.
-Configure places no rules on the command line, except the the first
-item muct be the generator file.  It is, however, entirely up to the
+Configure places no rules on the command line, except that the first
+item must be the generator file.  It is, however, entirely up to the
 build file template to define exactly how those command lines should
 be handled, how the output is captured and so on.
 
@@ -598,8 +655,7 @@ They are all expected to return a string with the lines they produce.
                         libobj2shlib(shlib => "PATH/TO/shlibfile",
                                      lib => "PATH/TO/libfile",
                                      objs => [ "PATH/TO/objectfile", ... ],
-                                     deps => [ "PATH/TO/otherlibfile", ... ],
-                                     ordinals => [ "word", "/PATH/TO/ordfile" ]);
+                                     deps => [ "PATH/TO/otherlibfile", ... ]);
 
                   'lib' has the intended library file name *without*
                   extension, libobj2shlib is expected to add that.
@@ -608,11 +664,7 @@ They are all expected to return a string with the lines they produce.
                   libraries (also *without* extension) this library
                   needs to be linked with.  'objs' has the list of
                   object files (also *without* extension) to build
-                  this library.  'ordinals' MAY be present, and when
-                  it is, its value is an array where the word is
-                  "crypto" or "ssl" and the file is one of the ordinal
-                  files util/libeay.num or util/ssleay.num in the
-                  source directory.
+                  this library.
 
                   This function has a choice; it can use the
                   corresponding static library as input to make the

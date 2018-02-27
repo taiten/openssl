@@ -51,11 +51,12 @@ override_dh_auto_configure:
 		mkdir build_$$opt; \
 		cd build_$$opt ; \
 		../Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)-$$opt; \
+		perl configdata.pm -d; \
 		cd .. ;\
 	done
-	mkdir build_static; cd build_static; ../Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
+	mkdir build_static; cd build_static; ../Configure no-shared $(CONFARGS) debian-$(DEB_HOST_ARCH) ;perl configdata.pm -d
 	# Debian Perl policy 5.1 (Script Magic)
-	mkdir build_shared; cd build_shared; HASHBANGPERL=/usr/bin/perl ../Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH)
+	mkdir build_shared; cd build_shared; HASHBANGPERL=/usr/bin/perl ../Configure shared $(CONFARGS) debian-$(DEB_HOST_ARCH) ;perl configdata.pm -d
 
 override_dh_auto_build-indep:
 	$(MAKE) -C build_shared all
@@ -93,7 +94,9 @@ override_dh_auto_clean:
 		rm -rf build_$$opt; \
 	done
 	rm -f doc/openssl.pod doc/crypto.pod doc/ssl.pod
-	dh_auto_clean
+	# distclean removes also configdata.pm + Makefile which are
+	# part of the archive.
+	$(MAKE) clean
 
 override_dh_auto_install-indep:
 	# Install is only required for the -indep only build, that is if
@@ -137,8 +140,7 @@ override_dh_perl:
 	dh_perl -d
 
 override_dh_makeshlibs:
-	#dpkg-gensymbols -Pdebian/libssl1.1/ -plibssl1.1 -c4
-	dh_makeshlibs -a -V --add-udeb="libcrypto1.1-udeb" -Xengines
+	dh_makeshlibs -a -V --add-udeb="libcrypto1.1-udeb" -Xengines -- -c4
 	# XXX: This needs gets set perl:any by dh_perl which is correct, but
 	# that breaks debootstrap in jessie (the current stable). This hack
 	# could be removed once stretch is stable and contains a fixed

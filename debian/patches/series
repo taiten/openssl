@@ -3,7 +3,4 @@ man-section.patch
 no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
-#padlock_conf.patch
-#tls1_2_default.patch
-testsuite_race.patch
-0001-aes-asm-aes-armv4-bsaes-armv7-.pl-make-it-work-with-.patch
+Configure-allow-to-enable-afalgeng-if-target-does-not-sta.patch

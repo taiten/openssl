@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the OpenSSL license (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -15,7 +15,7 @@ my $test_name = "test_sslcbcpadding";
 setup($test_name);
 
 plan skip_all => "TLSProxy isn't usable on $^O"
-    if $^O =~ /^(VMS|MSWin32)$/;
+    if $^O =~ /^(VMS)$/;
 
 plan skip_all => "$test_name needs the dynamic engine feature enabled"
     if disabled("engine") || disabled("dynamic-engine");
@@ -40,6 +40,7 @@ my @test_offsets = (0, 128, 254, 255);
 
 # Test that maximally-padded records are accepted.
 my $bad_padding_offset = -1;
+$proxy->serverflags("-tls1_2");
 $proxy->start() or plan skip_all => "Unable to start up Proxy for tests";
 plan tests => 1 + scalar(@test_offsets);
 ok(TLSProxy::Message->success(), "Maximally-padded record test");
@@ -47,6 +48,7 @@ ok(TLSProxy::Message->success(), "Maximally-padded record test");
 # Test that invalid padding is rejected.
 foreach my $offset (@test_offsets) {
     $proxy->clear();
+    $proxy->serverflags("-tls1_2");
     $bad_padding_offset = $offset;
     $proxy->start();
     ok(TLSProxy::Message->fail(), "Invalid padding byte $bad_padding_offset");

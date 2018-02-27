@@ -1,5 +1,6 @@
 /*
- * Copyright 1998-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1998-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -7,12 +8,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* ====================================================================
- * Copyright 2002 Sun Microsystems, Inc. ALL RIGHTS RESERVED.
- * ECDH support in OpenSSL originally developed by
- * SUN MICROSYSTEMS, INC., and contributed to the OpenSSL project.
- */
-
+#include "e_os.h"
 #include "internal/cryptlib_int.h"
 #include <openssl/safestack.h>
 
@@ -65,16 +61,26 @@ void OPENSSL_cpuid_setup(void)
         }
 
         if ((env = strchr(env, ':'))) {
-            unsigned int vecx;
+            IA32CAP vecx;
             env++;
             off = (env[0] == '~') ? 1 : 0;
-            vecx = strtoul(env + off, NULL, 0);
-            if (off)
-                OPENSSL_ia32cap_P[2] &= ~vecx;
-            else
-                OPENSSL_ia32cap_P[2] = vecx;
+#  if defined(_WIN32)
+            if (!sscanf(env + off, "%I64i", &vecx))
+                vecx = strtoul(env + off, NULL, 0);
+#  else
+            if (!sscanf(env + off, "%lli", (long long *)&vecx))
+                vecx = strtoul(env + off, NULL, 0);
+#  endif
+            if (off) {
+                OPENSSL_ia32cap_P[2] &= ~(unsigned int)vecx;
+                OPENSSL_ia32cap_P[3] &= ~(unsigned int)(vecx >> 32);
+            } else {
+                OPENSSL_ia32cap_P[2] = (unsigned int)vecx;
+                OPENSSL_ia32cap_P[3] = (unsigned int)(vecx >> 32);
+            }
         } else {
             OPENSSL_ia32cap_P[2] = 0;
+            OPENSSL_ia32cap_P[3] = 0;
         }
     } else {
         vec = OPENSSL_ia32_cpuid(OPENSSL_ia32cap_P);
@@ -99,7 +105,7 @@ void OPENSSL_cpuid_setup(void)
 }
 #endif
 
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32)
 # include <tchar.h>
 # include <signal.h>
 # ifdef __WATCOMC__
@@ -182,7 +188,13 @@ void OPENSSL_showfatal(const char *fmta, ...)
     va_list ap;
     TCHAR buf[256];
     const TCHAR *fmt;
-# ifdef STD_ERROR_HANDLE        /* what a dirty trick! */
+    /*
+     * First check if it's a console application, in which case the
+     * error message would be printed to standard error.
+     * Windows CE does not have a concept of a console application,
+     * so we need to guard the check.
+     */
+# ifdef STD_ERROR_HANDLE
     HANDLE h;
 
     if ((h = GetStdHandle(STD_ERROR_HANDLE)) != NULL &&
@@ -308,7 +320,7 @@ void OPENSSL_die(const char *message, const char *file, int line)
 {
     OPENSSL_showfatal("%s:%d: OpenSSL internal error: %s\n",
                       file, line, message);
-#if !defined(_WIN32) || defined(__CYGWIN__)
+#if !defined(_WIN32)
     abort();
 #else
     /*
@@ -322,26 +334,16 @@ void OPENSSL_die(const char *message, const char *file, int line)
 }
 
 #if !defined(OPENSSL_CPUID_OBJ)
-/* volatile unsigned char* pointers are there because
- * 1. Accessing a variable declared volatile via a pointer
- *    that lacks a volatile qualifier causes undefined behavior.
- * 2. When the variable itself is not volatile the compiler is
- *    not required to keep all those reads and can convert
- *    this into canonical memcmp() which doesn't read the whole block.
- * Pointers to volatile resolve the first problem fully. The second
- * problem cannot be resolved in any Standard-compliant way but this
- * works the problem around. Compilers typically react to
- * pointers to volatile by preserving the reads and writes through them.
- * The latter is not required by the Standard if the memory pointed to
- * is not volatile.
- * Pointers themselves are volatile in the function signature to work
- * around a subtle bug in gcc 4.6+ which causes writes through
- * pointers to volatile to not be emitted in some rare,
- * never needed in real life, pieces of code.
+/*
+ * The volatile is used to to ensure that the compiler generates code that reads
+ * all values from the array and doesn't try to optimize this away. The standard
+ * doesn't actually require this behavior if the original data pointed to is
+ * not volatile, but compilers do this in practice anyway.
+ *
+ * There are also assembler versions of this function.
  */
-int CRYPTO_memcmp(const volatile void * volatile in_a,
-                  const volatile void * volatile in_b,
-                  size_t len)
+# undef CRYPTO_memcmp
+int CRYPTO_memcmp(const void * in_a, const void * in_b, size_t len)
 {
     size_t i;
     const volatile unsigned char *a = in_a;
@@ -352,5 +354,13 @@ int CRYPTO_memcmp(const volatile void * volatile in_a,
         x |= a[i] ^ b[i];
 
     return x;
+}
+
+/*
+ * For systems that don't provide an instruction counter register or equivalent.
+ */
+uint32_t OPENSSL_rdtsc(void)
+{
+    return 0;
 }
 #endif
