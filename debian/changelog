@@ -1,3 +1,12 @@
+openssl (1.1.1~~pre3-1) experimental; urgency=medium
+
+  * Update to 1.1.1-pre3
+  * Don't suggest 1024 bit RSA key to be typical (Closes: #878303).
+  * Don't insist on TLS1.3 cipher for <TLS1.3 connections (Closes: #891570).
+  * Enable system default config to enforce TLS1.2 as a minimum.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 21 Mar 2018 00:01:08 +0100
+
 openssl (1.1.1~~pre2-1) experimental; urgency=medium
 
   * Update to 1.1.1-pre2
