@@ -1,0 +1,38 @@
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Tue, 20 Mar 2018 22:07:30 +0100
+Subject: Set systemwide default settings for libssl users
+
+This config change enforeces a TLS1.2 protocol version as minimum. It
+can be overwritten by the system administrator.
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ apps/openssl.cnf | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/apps/openssl.cnf b/apps/openssl.cnf
+index 7d1a8bb6e7f0..5ae50ba2f859 100644
+--- a/apps/openssl.cnf
++++ b/apps/openssl.cnf
+@@ -16,6 +16,9 @@ RANDFILE		= $ENV::HOME/.rnd
+ #oid_file		= $ENV::HOME/.oid
+ oid_section		= new_oids
+ 
++# System default
++openssl_conf = default_conf
++
+ # To use this configuration file with the "-extfile" option of the
+ # "openssl x509" utility, name here the section containing the
+ # X.509v3 extensions to use:
+@@ -350,3 +353,11 @@ ess_cert_id_chain	= no	# Must the ESS cert id chain be included?
+ 				# (optional, default: no)
+ ess_cert_id_alg		= sha1	# algorithm to compute certificate
+ 				# identifier (optional, default: sha1)
++[default_conf]
++ssl_conf = ssl_sect
++
++[ssl_sect]
++system_default = system_default_sect
++
++[system_default_sect]
++MinProtocol = TLSv1.2
