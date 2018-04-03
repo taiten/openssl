@@ -1,3 +1,10 @@
+openssl (1.1.1~~pre4-1) experimental; urgency=medium
+
+  * Update to 1.1.1-pre4 (Closes: #892276, #894282).
+  * Add riscv64 target (Closes: #891797).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 03 Apr 2018 21:41:55 +0200
+
 openssl (1.1.1~~pre3-1) experimental; urgency=medium
 
   * Update to 1.1.1-pre3
