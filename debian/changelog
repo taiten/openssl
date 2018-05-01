@@ -1,3 +1,18 @@
+openssl (1.1.1~~pre6-2) experimental; urgency=medium
+
+  * Update libssl1.1.symbols
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 01 May 2018 16:34:27 +0200
+
+openssl (1.1.1~~pre6-1) experimental; urgency=medium
+
+  * New upstream version
+  * Increase default security level from 1 to 2. This moves from the 80 bit
+    security level to the 112 bit securit level and will require 2048 bit RSA
+    and DHE keys.
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 01 May 2018 16:00:55 +0200
+
 openssl (1.1.1~~pre4-1) experimental; urgency=medium
 
   * Update to 1.1.1-pre4 (Closes: #892276, #894282).

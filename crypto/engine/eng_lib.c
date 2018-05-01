@@ -20,7 +20,8 @@ CRYPTO_ONCE engine_lock_init = CRYPTO_ONCE_STATIC_INIT;
 
 DEFINE_RUN_ONCE(do_engine_lock_init)
 {
-    OPENSSL_init_crypto(0, NULL);
+    if (!OPENSSL_init_crypto(0, NULL))
+        return 0;
     global_engine_lock = CRYPTO_THREAD_lock_new();
     return global_engine_lock != NULL;
 }
@@ -126,9 +127,12 @@ static int int_cleanup_check(int create)
 
 static ENGINE_CLEANUP_ITEM *int_cleanup_item(ENGINE_CLEANUP_CB *cb)
 {
-    ENGINE_CLEANUP_ITEM *item = OPENSSL_malloc(sizeof(*item));
-    if (item == NULL)
+    ENGINE_CLEANUP_ITEM *item;
+    
+    if ((item = OPENSSL_malloc(sizeof(*item))) == NULL) {
+        ENGINEerr(ENGINE_F_INT_CLEANUP_ITEM, ERR_R_MALLOC_FAILURE);
         return NULL;
+    }
     item->cb = cb;
     return item;
 }
@@ -136,6 +140,7 @@ static ENGINE_CLEANUP_ITEM *int_cleanup_item(ENGINE_CLEANUP_CB *cb)
 void engine_cleanup_add_first(ENGINE_CLEANUP_CB *cb)
 {
     ENGINE_CLEANUP_ITEM *item;
+
     if (!int_cleanup_check(1))
         return;
     item = int_cleanup_item(cb);
