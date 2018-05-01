@@ -342,9 +342,11 @@ int tls1_set_groups(uint16_t **pext, size_t *pextlen,
      * ids < 32
      */
     unsigned long dup_list = 0;
-    glist = OPENSSL_malloc(ngroups * sizeof(*glist));
-    if (glist == NULL)
+
+    if ((glist = OPENSSL_malloc(ngroups * sizeof(*glist))) == NULL) {
+        SSLerr(SSL_F_TLS1_SET_GROUPS, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     for (i = 0; i < ngroups; i++) {
         unsigned long idmask;
         uint16_t id;
@@ -364,7 +366,7 @@ int tls1_set_groups(uint16_t **pext, size_t *pextlen,
     return 1;
 }
 
-# define MAX_CURVELIST   28
+# define MAX_CURVELIST   OSSL_NELEM(nid_list)
 
 typedef struct {
     size_t nidcnt;
@@ -440,8 +442,11 @@ static int tls1_check_pkey_comp(SSL *s, EVP_PKEY *pkey)
     if (EC_KEY_get_conv_form(ec) == POINT_CONVERSION_UNCOMPRESSED) {
             comp_id = TLSEXT_ECPOINTFORMAT_uncompressed;
     } else if (SSL_IS_TLS13(s)) {
-            /* Compression not allowed in TLS 1.3 */
-            return 0;
+            /*
+             * ec_point_formats extension is not used in TLSv1.3 so we ignore
+             * this check.
+             */
+            return 1;
     } else {
         int field_type = EC_METHOD_get_field_type(EC_GROUP_method_of(grp));
 
@@ -1600,9 +1605,10 @@ static int tls1_set_shared_sigalgs(SSL *s)
     }
     nmatch = tls12_shared_sigalgs(s, NULL, pref, preflen, allow, allowlen);
     if (nmatch) {
-        salgs = OPENSSL_malloc(nmatch * sizeof(*salgs));
-        if (salgs == NULL)
+        if ((salgs = OPENSSL_malloc(nmatch * sizeof(*salgs))) == NULL) {
+            SSLerr(SSL_F_TLS1_SET_SHARED_SIGALGS, ERR_R_MALLOC_FAILURE);
             return 0;
+        }
         nmatch = tls12_shared_sigalgs(s, salgs, pref, preflen, allow, allowlen);
     } else {
         salgs = NULL;
@@ -1626,9 +1632,10 @@ int tls1_save_u16(PACKET *pkt, uint16_t **pdest, size_t *pdestlen)
 
     size >>= 1;
 
-    buf = OPENSSL_malloc(size * sizeof(*buf));
-    if (buf == NULL)
+    if ((buf = OPENSSL_malloc(size * sizeof(*buf))) == NULL)  {
+        SSLerr(SSL_F_TLS1_SAVE_U16, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     for (i = 0; i < size && PACKET_get_net_2(pkt, &stmp); i++)
         buf[i] = stmp;
 
@@ -1856,9 +1863,10 @@ int tls1_set_raw_sigalgs(CERT *c, const uint16_t *psigs, size_t salglen,
 {
     uint16_t *sigalgs;
 
-    sigalgs = OPENSSL_malloc(salglen * sizeof(*sigalgs));
-    if (sigalgs == NULL)
+    if ((sigalgs = OPENSSL_malloc(salglen * sizeof(*sigalgs))) == NULL) {
+        SSLerr(SSL_F_TLS1_SET_RAW_SIGALGS, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     memcpy(sigalgs, psigs, salglen * sizeof(*sigalgs));
 
     if (client) {
@@ -1881,9 +1889,10 @@ int tls1_set_sigalgs(CERT *c, const int *psig_nids, size_t salglen, int client)
 
     if (salglen & 1)
         return 0;
-    sigalgs = OPENSSL_malloc((salglen / 2) * sizeof(*sigalgs));
-    if (sigalgs == NULL)
+    if ((sigalgs = OPENSSL_malloc((salglen / 2) * sizeof(*sigalgs))) == NULL) {
+        SSLerr(SSL_F_TLS1_SET_SIGALGS, ERR_R_MALLOC_FAILURE);
         return 0;
+    }
     for (i = 0, sptr = sigalgs; i < salglen; i += 2) {
         size_t j;
         const SIGALG_LOOKUP *curr;
@@ -2429,7 +2438,7 @@ int tls_choose_sigalg(SSL *s, int fatalerrs)
     if (SSL_IS_TLS13(s)) {
         size_t i;
 #ifndef OPENSSL_NO_EC
-        int curve = -1, skip_ec = 0;
+        int curve = -1;
 #endif
 
         /* Look for a certificate matching shared sigalgs */
@@ -2452,11 +2461,8 @@ int tls_choose_sigalg(SSL *s, int fatalerrs)
                     EC_KEY *ec = EVP_PKEY_get0_EC_KEY(s->cert->pkeys[SSL_PKEY_ECC].privatekey);
 
                     curve = EC_GROUP_get_curve_name(EC_KEY_get0_group(ec));
-                    if (EC_KEY_get_conv_form(ec)
-                        != POINT_CONVERSION_UNCOMPRESSED)
-                        skip_ec = 1;
                 }
-                if (skip_ec || (lu->curve != NID_undef && curve != lu->curve))
+                if (lu->curve != NID_undef && curve != lu->curve)
                     continue;
 #else
                 continue;
