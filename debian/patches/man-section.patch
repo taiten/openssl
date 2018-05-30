@@ -8,10 +8,10 @@ Subject: man-section
  2 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/Configurations/unix-Makefile.tmpl b/Configurations/unix-Makefile.tmpl
-index cc66abe46d94..67d9cec043cb 100644
+index 445123204645..c86b6b55798c 100644
 --- a/Configurations/unix-Makefile.tmpl
 +++ b/Configurations/unix-Makefile.tmpl
-@@ -182,7 +182,8 @@ HTMLDIR=$(DOCDIR)/html
+@@ -179,7 +179,8 @@ HTMLDIR=$(DOCDIR)/html
  # MANSUFFIX is for the benefit of anyone who may want to have a suffix
  # appended after the manpage file section number.  "ssl" is popular,
  # resulting in files such as config.5ssl rather than config.5.
@@ -21,7 +21,7 @@ index cc66abe46d94..67d9cec043cb 100644
  HTMLSUFFIX=html
  
  # For "optional" echo messages, to get "real" silence
-@@ -675,7 +676,8 @@ uninstall_docs: uninstall_man_docs uninstall_html_docs
+@@ -681,7 +682,8 @@ uninstall_docs: uninstall_man_docs uninstall_html_docs
  	@[ -n "$(INSTALLTOP)" ] || (echo INSTALLTOP should not be empty; exit 1)
  	@$(ECHO) "*** Installing manpages"
  	$(PERL) $(SRCDIR)/util/process_docs.pl \
@@ -32,7 +32,7 @@ index cc66abe46d94..67d9cec043cb 100644
  uninstall_man_docs:
  	@$(ECHO) "*** Uninstalling manpages"
 diff --git a/util/process_docs.pl b/util/process_docs.pl
-index 2b7f3227d3c8..c352e4f8789e 100755
+index 30b149eb8fcc..424155ea808e 100755
 --- a/util/process_docs.pl
 +++ b/util/process_docs.pl
 @@ -37,6 +37,7 @@ GetOptions(\%options,
@@ -49,6 +49,6 @@ index 2b7f3227d3c8..c352e4f8789e 100755
                         html => ".html" } -> {$options{type}};
 -        my $generate = { man  => "pod2man --name=$name --section=$podinfo{section} --center=OpenSSL --release=$config{version} \"$podpath\"",
 +        my $generate = { man  => "pod2man --name=$name --section=$podinfo{section}$options{mansection} --center=OpenSSL --release=$config{version} \"$podpath\"",
-                          html => "pod2html \"--podroot=$options{sourcedir}\" --htmldir=$updir --podpath=man1:man3:man5:man7 \"--infile=$podpath\" \"--title=$podname\""
+                          html => "pod2html \"--podroot=$options{sourcedir}\" --htmldir=$updir --podpath=man1:man3:man5:man7 \"--infile=$podpath\" \"--title=$podname\" --quiet"
                           } -> {$options{type}};
          my $output_dir = catdir($options{destdir}, "man$podinfo{section}");

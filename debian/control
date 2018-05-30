@@ -4,7 +4,7 @@ Section: utils
 Priority: optional
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
 Uploaders: Christoph Martin <christoph.martin@uni-mainz.de>, Kurt Roeckx <kurt@roeckx.be>, Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Standards-Version: 3.9.8
+Standards-Version: 4.1.4
 Vcs-Browser: https://salsa.debian.org/debian/openssl
 Vcs-Git: https://salsa.debian.org/debian/openssl.git
 Homepage: https://www.openssl.org/
@@ -30,7 +30,6 @@ Description: Secure Sockets Layer toolkit - cryptographic utility
 
 Package: libssl1.1
 Section: libs
-Priority: important
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
@@ -70,7 +69,7 @@ Package: libssl-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: same
-Recommends: libssl-doc
+Suggests: libssl-doc
 Depends: libssl1.1 (= ${binary:Version}), ${misc:Depends}
 Conflicts: libssl1.0-dev
 Description: Secure Sockets Layer toolkit - development files
