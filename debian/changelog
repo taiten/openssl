@@ -1,3 +1,16 @@
+openssl (1.1.1-1) unstable; urgency=medium
+
+  * New upstream version.
+   - Update symbol file for 1.1.1
+   - CVE-2018-0732 (actually since pre8).
+  * Add Breaks on python-httplib2 (Addresses: #907015)
+  * Add hardening=+all.
+  * Update to policy 4.2.1
+    - Less verbose testsuite with terse
+    - Use RRR=no
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 12 Sep 2018 20:39:24 +0200
+
 openssl (1.1.1~~pre9-1) unstable; urgency=medium
 
   * New upstream version.
