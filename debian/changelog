@@ -1,9 +1,22 @@
+openssl (1.1.1-2) unstable; urgency=medium
+
+  [ Sebastian Andrzej Siewior ]
+  * Add Breaks on isync (See: #906955)
+  * Fix autopkgtest (Closes: #910459)
+
+  [ Kurt Roeckx ]
+  * Add Breaks on python-imaplib2 (See: #907079)
+  * Add news entry regarding default TLS version and security level
+    (Closes: #875423, #907631, #911389, #912067).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sun, 28 Oct 2018 23:52:24 +0100
+
 openssl (1.1.1-1) unstable; urgency=medium
 
   * New upstream version.
    - Update symbol file for 1.1.1
    - CVE-2018-0732 (actually since pre8).
-  * Add Breaks on python-httplib2 (Addresses: #907015)
+  * Add Breaks on python-httplib2 (See: #907278)
   * Add hardening=+all.
   * Update to policy 4.2.1
     - Less verbose testsuite with terse
