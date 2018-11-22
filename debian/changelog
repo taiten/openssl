@@ -1,3 +1,13 @@
+openssl (1.1.1a-1) unstable; urgency=medium
+
+  * Add Breaks on python-boto (See: #909545)
+  * New upstream version
+   - CVE-2018-0734 (Timing vulnerability in DSA signature generation)
+   - CVE-2018-0735 (Timing vulnerability in ECDSA signature generation)
+   - Update symbol file for 1.1.1a
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Thu, 22 Nov 2018 19:40:54 +0100
+
 openssl (1.1.1-2) unstable; urgency=medium
 
   [ Sebastian Andrzej Siewior ]
