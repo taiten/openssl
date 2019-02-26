@@ -1,3 +1,14 @@
+openssl (1.1.1b-1) unstable; urgency=medium
+
+  [ Sebastian Andrzej Siewior ]
+  * Add Breaks on lighttpd (Closes: #913558).
+
+  [ Kurt Roeckx ]
+  * New upstream version
+  * Update symbol list
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 26 Feb 2019 19:52:12 +0100
+
 openssl (1.1.1a-1) unstable; urgency=medium
 
   * Add Breaks on python-boto (See: #909545)
