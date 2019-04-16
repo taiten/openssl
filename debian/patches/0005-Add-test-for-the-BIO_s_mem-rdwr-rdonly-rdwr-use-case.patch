@@ -1,0 +1,72 @@
+From 2456ae5763dc4b036b3b4cdb9b98de5d46dd221f Mon Sep 17 00:00:00 2001
+From: Tomas Mraz <tmraz@fedoraproject.org>
+Date: Thu, 4 Apr 2019 09:49:36 +0200
+Subject: [PATCH 5/5] Add test for the BIO_s_mem rdwr->rdonly->rdwr use-case
+
+Reviewed-by: Bernd Edlinger <bernd.edlinger@hotmail.de>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/8649)
+
+(cherry picked from commit 06add280d90de9625e9c18985f376ef8d0419a46)
+---
+ test/bio_memleak_test.c | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+
+diff --git a/test/bio_memleak_test.c b/test/bio_memleak_test.c
+index bde66e0812..9724148fae 100644
+--- a/test/bio_memleak_test.c
++++ b/test/bio_memleak_test.c
+@@ -145,6 +145,43 @@ finish:
+     return ok;
+ }
+ 
++static int test_bio_rdwr_rdonly(void)
++{
++    int ok = 0;
++    BIO *bio = NULL;
++    char data[16];
++
++    bio = BIO_new(BIO_s_mem());
++    if (!TEST_ptr(bio))
++        goto finish;
++    if (!TEST_int_eq(BIO_puts(bio, "Hello World\n"), 12))
++        goto finish;
++
++    BIO_set_flags(bio, BIO_FLAGS_MEM_RDONLY);
++    if (!TEST_int_eq(BIO_read(bio, data, 16), 12))
++        goto finish;
++    if (!TEST_mem_eq(data, 12, "Hello World\n", 12))
++        goto finish;
++    if (!TEST_int_gt(BIO_reset(bio), 0))
++        goto finish;
++
++    BIO_clear_flags(bio, BIO_FLAGS_MEM_RDONLY);
++    if (!TEST_int_eq(BIO_puts(bio, "Hi!\n"), 4))
++        goto finish;
++    if (!TEST_int_eq(BIO_read(bio, data, 16), 16))
++        goto finish;
++
++    if (!TEST_mem_eq(data, 16, "Hello World\nHi!\n", 16))
++        goto finish;
++
++    ok = 1;
++
++finish:
++    BIO_free(bio);
++    return ok;
++}
++
++
+ int global_init(void)
+ {
+     CRYPTO_set_mem_debug(1);
+@@ -158,5 +195,6 @@ int setup_tests(void)
+     ADD_TEST(test_bio_get_mem);
+     ADD_TEST(test_bio_new_mem_buf);
+     ADD_TEST(test_bio_rdonly_mem_buf);
++    ADD_TEST(test_bio_rdwr_rdonly);
+     return 1;
+ }
+-- 
+2.20.1
+

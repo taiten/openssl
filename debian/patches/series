@@ -4,3 +4,9 @@ no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
 Set-systemwide-default-settings-for-libssl-users.patch
+0001-Fix-for-BIO_get_mem_ptr-and-related-regressions.patch
+0002-Add-test-for-the-BIO_get_mem_ptr-regression.patch
+0003-Add-testing-of-RDONLY-memory-BIOs.patch
+0004-Add-documentation-for-the-BIO_s_mem-pecularities.patch
+0005-Add-test-for-the-BIO_s_mem-rdwr-rdonly-rdwr-use-case.patch
+0001-OPENSSL_config-restore-error-agnosticism.patch
