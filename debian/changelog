@@ -1,3 +1,11 @@
+openssl (1.1.1b-2) unstable; urgency=medium
+
+  * Fix BUF_MEM regression (Closes: #923516)
+  * Fix error when config can't be opened (Closes: #926315)
+  * Ship an openssl.cnf in libssl1.1-udeb.dirs
+
+ -- Kurt Roeckx <kurt@roeckx.be>  Tue, 16 Apr 2019 21:31:11 +0200
+
 openssl (1.1.1b-1) unstable; urgency=medium
 
   [ Sebastian Andrzej Siewior ]
