@@ -14,7 +14,7 @@ Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
  1 file changed, 12 insertions(+)
 
 diff --git a/apps/openssl.cnf b/apps/openssl.cnf
-index 6df2878d5021..d155d1eda0bd 100644
+index 4acca4b0446f..a6fed92a2e75 100644
 --- a/apps/openssl.cnf
 +++ b/apps/openssl.cnf
 @@ -15,6 +15,9 @@ HOME			= .
