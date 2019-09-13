@@ -8,10 +8,10 @@ Subject: man-section
  2 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/Configurations/unix-Makefile.tmpl b/Configurations/unix-Makefile.tmpl
-index 1292053546f5..c034d21884d8 100644
+index 7db7578a4b64..ed60eb679c31 100644
 --- a/Configurations/unix-Makefile.tmpl
 +++ b/Configurations/unix-Makefile.tmpl
-@@ -183,7 +183,8 @@ HTMLDIR=$(DOCDIR)/html
+@@ -281,7 +281,8 @@ HTMLDIR=$(DOCDIR)/html
  # MANSUFFIX is for the benefit of anyone who may want to have a suffix
  # appended after the manpage file section number.  "ssl" is popular,
  # resulting in files such as config.5ssl rather than config.5.
@@ -21,7 +21,7 @@ index 1292053546f5..c034d21884d8 100644
  HTMLSUFFIX=html
  
  # For "optional" echo messages, to get "real" silence
-@@ -726,7 +727,8 @@ uninstall_runtime: uninstall_programs uninstall_runtime_libs
+@@ -824,7 +825,8 @@ uninstall_runtime: uninstall_programs uninstall_runtime_libs
  	@[ -n "$(INSTALLTOP)" ] || (echo INSTALLTOP should not be empty; exit 1)
  	@$(ECHO) "*** Installing manpages"
  	$(PERL) $(SRCDIR)/util/process_docs.pl \
