@@ -1,3 +1,9 @@
+openssl (1.1.1d-2) unstable; urgency=medium
+
+  * Reenable AES-CBC-HMAC-SHA ciphers (Closes: #941987).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sat, 12 Oct 2019 21:37:55 +0200
+
 openssl (1.1.1d-1) unstable; urgency=medium
 
   * New upstream version
