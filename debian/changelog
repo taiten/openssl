@@ -1,3 +1,15 @@
+openssl (1.1.1e-1) unstable; urgency=medium
+
+  * Use dh-compat level 12.
+  * New upstream version
+    - CVE-2019-1551 (Overflow in the x64_64 Montgomery squaring procedure),
+    (Closes: #947949).
+  * Update symbol list.
+  * Update Standards-Version to 4.5.0. No changes required.
+  * Add musl configurations (Closes: #941765).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 18 Mar 2020 20:59:39 +0100
+
 openssl (1.1.1d-2) unstable; urgency=medium
 
   * Reenable AES-CBC-HMAC-SHA ciphers (Closes: #941987).
