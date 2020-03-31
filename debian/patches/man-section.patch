@@ -8,7 +8,7 @@ Subject: man-section
  2 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/Configurations/unix-Makefile.tmpl b/Configurations/unix-Makefile.tmpl
-index 9bf54f21277f..c84592ce6725 100644
+index 3a24d551359b..d0c90cb2546c 100644
 --- a/Configurations/unix-Makefile.tmpl
 +++ b/Configurations/unix-Makefile.tmpl
 @@ -281,7 +281,8 @@ HTMLDIR=$(DOCDIR)/html
@@ -25,9 +25,9 @@ index 9bf54f21277f..c84592ce6725 100644
  	@[ -n "$(INSTALLTOP)" ] || (echo INSTALLTOP should not be empty; exit 1)
  	@$(ECHO) "*** Installing manpages"
  	$(PERL) $(SRCDIR)/util/process_docs.pl \
--		--destdir=$(DESTDIR)$(MANDIR) --type=man --suffix=$(MANSUFFIX)
-+		--destdir=$(DESTDIR)$(MANDIR) --type=man --suffix=$(MANSUFFIX) \
-+		--mansection=$(MANSECTION)
+-		"--destdir=$(DESTDIR)$(MANDIR)" --type=man --suffix=$(MANSUFFIX)
++		"--destdir=$(DESTDIR)$(MANDIR)" --type=man --suffix=$(MANSUFFIX) \
++			--mansection=$(MANSECTION)
  
  uninstall_man_docs:
  	@$(ECHO) "*** Uninstalling manpages"
