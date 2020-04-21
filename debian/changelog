@@ -1,3 +1,10 @@
+openssl (1.1.1g-1) unstable; urgency=medium
+
+  * New upstream version
+    - CVE-2020-1967 (Segmentation fault in SSL_check_chain).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 21 Apr 2020 21:45:21 +0200
+
 openssl (1.1.1f-1) unstable; urgency=medium
 
   * New upstream version
