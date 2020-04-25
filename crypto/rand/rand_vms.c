@@ -1,7 +1,7 @@
 /*
  * Copyright 2001-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -9,36 +9,33 @@
 
 #include "e_os.h"
 
-#if defined(OPENSSL_SYS_VMS)
-# define __NEW_STARLET 1         /* New starlet definitions since VMS 7.0 */
-# include <unistd.h>
-# include "internal/cryptlib.h"
-# include <openssl/bio.h>
-# include <openssl/err.h>
-# include <openssl/rand.h>
-# include "crypto/rand.h"
-# include "rand_local.h"
-# include <descrip.h>
-# include <dvidef.h>
-# include <jpidef.h>
-# include <rmidef.h>
-# include <syidef.h>
-# include <ssdef.h>
-# include <starlet.h>
-# include <efndef.h>
-# include <gen64def.h>
-# include <iosbdef.h>
-# include <iledef.h>
-# include <lib$routines.h>
-# ifdef __DECC
-#  pragma message disable DOLLARID
-# endif
+#define __NEW_STARLET 1         /* New starlet definitions since VMS 7.0 */
+#include <unistd.h>
+#include "internal/cryptlib.h"
+#include <openssl/rand.h>
+#include "crypto/rand.h"
+#include "rand_local.h"
+#include <descrip.h>
+#include <dvidef.h>
+#include <jpidef.h>
+#include <rmidef.h>
+#include <syidef.h>
+#include <ssdef.h>
+#include <starlet.h>
+#include <efndef.h>
+#include <gen64def.h>
+#include <iosbdef.h>
+#include <iledef.h>
+#include <lib$routines.h>
+#ifdef __DECC
+# pragma message disable DOLLARID
+#endif
 
-# include <dlfcn.h>              /* SYS$GET_ENTROPY presence */
+#include <dlfcn.h>              /* SYS$GET_ENTROPY presence */
 
-# ifndef OPENSSL_RAND_SEED_OS
-#  error "Unsupported seeding method configured; must be os"
-# endif
+#ifndef OPENSSL_RAND_SEED_OS
+# error "Unsupported seeding method configured; must be os"
+#endif
 
 /*
  * DATA COLLECTION METHOD
@@ -50,14 +47,14 @@
  */
 
 /* We need to make sure we have the right size pointer in some cases */
-# if __INITIAL_POINTER_SIZE == 64
-#  pragma pointer_size save
-#  pragma pointer_size 32
-# endif
+#if __INITIAL_POINTER_SIZE == 64
+# pragma pointer_size save
+# pragma pointer_size 32
+#endif
 typedef uint32_t *uint32_t__ptr32;
-# if __INITIAL_POINTER_SIZE == 64
-#  pragma pointer_size restore
-# endif
+#if __INITIAL_POINTER_SIZE == 64
+# pragma pointer_size restore
+#endif
 
 struct item_st {
     short length, code;         /* length is number of bytes */
@@ -458,12 +455,9 @@ size_t data_collect_method(RAND_POOL *pool)
      * If we can't feed the requirements from the caller, we're in deep trouble.
      */
     if (!ossl_assert(total_length >= bytes_needed)) {
-        char buf[100];           /* That should be enough */
-
-        BIO_snprintf(buf, sizeof(buf), "Needed: %zu, Available: %zu",
-                     bytes_needed, total_length);
-        RANDerr(RAND_F_DATA_COLLECT_METHOD, RAND_R_RANDOM_POOL_UNDERFLOW);
-        ERR_add_error_data(1, buf);
+        ERR_raise_data(ERR_LIB_RAND, RAND_R_RANDOM_POOL_UNDERFLOW,
+                       "Needed: %zu, Available: %zu",
+                       bytes_needed, total_length);
         return 0;
     }
 
@@ -485,7 +479,10 @@ int rand_pool_add_nonce_data(RAND_POOL *pool)
         pid_t pid;
         CRYPTO_THREAD_ID tid;
         uint64_t time;
-    } data = { 0 };
+    } data;
+
+    /* Erase the entire structure including any padding */
+    memset(&data, 0, sizeof(data));
 
     /*
      * Add process id, thread id, and a high resolution timestamp
@@ -583,7 +580,10 @@ int rand_pool_add_additional_data(RAND_POOL *pool)
     struct {
         CRYPTO_THREAD_ID tid;
         uint64_t time;
-    } data = { 0 };
+    } data;
+
+    /* Erase the entire structure including any padding */
+    memset(&data, 0, sizeof(data));
 
     /*
      * Add some noise from the thread id and a high resolution timer.
@@ -612,5 +612,3 @@ void rand_pool_cleanup(void)
 void rand_pool_keep_random_devices_open(int keep)
 {
 }
-
-#endif

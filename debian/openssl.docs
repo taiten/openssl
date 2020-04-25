@@ -1,7 +1,7 @@
 doc/fingerprints.txt
 doc/HOWTO
-README
+README.md
 README.ENGINE
-NEWS
-FAQ
+NEWS.md
+FAQ.md
 debian/README.optimization

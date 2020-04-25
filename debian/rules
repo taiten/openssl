@@ -120,7 +120,7 @@ override_dh_auto_install-arch:
 	ln -s /etc/ssl/{certs,openssl.cnf,private} debian/tmp/usr/lib/ssl/
 	cp -pf debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypto.so.* debian/libcrypto1.1-udeb/usr/lib/
 	cp -pf debian/tmp/etc/ssl/openssl.cnf debian/libcrypto1.1-udeb/usr/lib/ssl/openssl.cnf
-	cp -pf debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libssl.so.* debian/libssl1.1-udeb/usr/lib/
+	cp -pf debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libssl.so.* debian/libssl3-udeb/usr/lib/
 	cp -auv build_shared/lib*.so* debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/
 	for opt in $(OPTS); \
 		do set -xe; \
@@ -131,7 +131,7 @@ override_dh_auto_install-arch:
 	mv debian/tmp/usr/include/openssl/opensslconf.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/
 
 override_dh_installchangelogs:
-	dh_installchangelogs CHANGES
+	dh_installchangelogs CHANGES.md
 
 override_dh_fixperms:
 	if [ -d debian/openssl/etc/ssl/private ] ; then \
@@ -146,5 +146,5 @@ override_dh_makeshlibs:
 	dh_makeshlibs -a -V --add-udeb="libcrypto1.1-udeb" -Xengines -- -c4
 
 override_dh_shlibdeps:
-	sed -i '/^udeb: libssl/s/libcrypto1.1-udeb/libssl1.1-udeb/' debian/libssl1.1/DEBIAN/shlibs
-	dh_shlibdeps -a -L libssl1.1
+	sed -i '/^udeb: libssl/s/libcrypto1.1-udeb/libssl3-udeb/' debian/libssl3/DEBIAN/shlibs
+	dh_shlibdeps -a -L libssl3

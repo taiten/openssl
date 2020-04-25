@@ -1,7 +1,7 @@
 /*
  * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -13,6 +13,7 @@
 #include <openssl/objects.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/core_names.h>
 #include "crypto/x509.h"
 
 int X509_issuer_and_serial_cmp(const X509 *a, const X509 *b)
@@ -20,6 +21,10 @@ int X509_issuer_and_serial_cmp(const X509 *a, const X509 *b)
     int i;
     const X509_CINF *ai, *bi;
 
+    if (b == NULL)
+        return a != NULL;
+    if (a == NULL)
+        return -1;
     ai = &a->cert_info;
     bi = &b->cert_info;
     i = ASN1_INTEGER_cmp(&ai->serialNumber, &bi->serialNumber);
@@ -160,8 +165,12 @@ int X509_NAME_cmp(const X509_NAME *a, const X509_NAME *b)
 {
     int ret;
 
-    /* Ensure canonical encoding is present and up to date */
+    if (b == NULL)
+        return a != NULL;
+    if (a == NULL)
+        return -1;
 
+    /* Ensure canonical encoding is present and up to date */
     if (!a->canon_enc || a->modified) {
         ret = i2d_X509_NAME((X509_NAME *)a, NULL);
         if (ret < 0)
@@ -183,7 +192,7 @@ int X509_NAME_cmp(const X509_NAME *a, const X509_NAME *b)
 
 }
 
-unsigned long X509_NAME_hash(X509_NAME *x)
+unsigned long X509_NAME_hash(const X509_NAME *x)
 {
     unsigned long ret = 0;
     unsigned char md[SHA_DIGEST_LENGTH];
@@ -206,33 +215,36 @@ unsigned long X509_NAME_hash(X509_NAME *x)
  * this is reasonably efficient.
  */
 
-unsigned long X509_NAME_hash_old(X509_NAME *x)
+unsigned long X509_NAME_hash_old(const X509_NAME *x)
 {
+    EVP_MD *md5 = EVP_MD_fetch(NULL, OSSL_DIGEST_NAME_MD5, "-fips");
     EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
     unsigned long ret = 0;
     unsigned char md[16];
 
-    if (md_ctx == NULL)
-        return ret;
+    if (md5 == NULL || md_ctx == NULL)
+        goto end;
 
     /* Make sure X509_NAME structure contains valid cached encoding */
     i2d_X509_NAME(x, NULL);
-    EVP_MD_CTX_set_flags(md_ctx, EVP_MD_CTX_FLAG_NON_FIPS_ALLOW);
-    if (EVP_DigestInit_ex(md_ctx, EVP_md5(), NULL)
+    if (EVP_DigestInit_ex(md_ctx, md5, NULL)
         && EVP_DigestUpdate(md_ctx, x->bytes->data, x->bytes->length)
         && EVP_DigestFinal_ex(md_ctx, md, NULL))
         ret = (((unsigned long)md[0]) | ((unsigned long)md[1] << 8L) |
                ((unsigned long)md[2] << 16L) | ((unsigned long)md[3] << 24L)
             ) & 0xffffffffL;
+
+ end:
     EVP_MD_CTX_free(md_ctx);
+    EVP_MD_free(md5);
 
     return ret;
 }
 #endif
 
 /* Search a stack of X509 for a match */
-X509 *X509_find_by_issuer_and_serial(STACK_OF(X509) *sk, X509_NAME *name,
-                                     ASN1_INTEGER *serial)
+X509 *X509_find_by_issuer_and_serial(STACK_OF(X509) *sk, const X509_NAME *name,
+                                     const ASN1_INTEGER *serial)
 {
     int i;
     X509 x, *x509 = NULL;
@@ -241,7 +253,7 @@ X509 *X509_find_by_issuer_and_serial(STACK_OF(X509) *sk, X509_NAME *name,
         return NULL;
 
     x.cert_info.serialNumber = *serial;
-    x.cert_info.issuer = name;
+    x.cert_info.issuer = (X509_NAME *)name; /* won't modify it */
 
     for (i = 0; i < sk_X509_num(sk); i++) {
         x509 = sk_X509_value(sk, i);
@@ -251,7 +263,7 @@ X509 *X509_find_by_issuer_and_serial(STACK_OF(X509) *sk, X509_NAME *name,
     return NULL;
 }
 
-X509 *X509_find_by_subject(STACK_OF(X509) *sk, X509_NAME *name)
+X509 *X509_find_by_subject(STACK_OF(X509) *sk, const X509_NAME *name)
 {
     X509 *x509;
     int i;

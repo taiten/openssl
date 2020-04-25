@@ -1,7 +1,7 @@
 /*
  * Copyright 2010-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -24,6 +24,12 @@
  */
 
 /*
+ * ECDSA low level APIs are deprecated for public use, but still ok for
+ * internal use.
+ */
+#include "internal/deprecated.h"
+
+/*
  * A 64-bit implementation of the NIST P-224 elliptic curve point multiplication
  *
  * Inspired by Daniel J. Bernstein's public domain nistp224 implementation
@@ -31,22 +37,19 @@
  */
 
 #include <openssl/opensslconf.h>
-#ifdef OPENSSL_NO_EC_NISTP_64_GCC_128
-NON_EMPTY_TRANSLATION_UNIT
-#else
 
-# include <stdint.h>
-# include <string.h>
-# include <openssl/err.h>
-# include "ec_local.h"
+#include <stdint.h>
+#include <string.h>
+#include <openssl/err.h>
+#include "ec_local.h"
 
-# if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__==16
+#if defined(__SIZEOF_INT128__) && __SIZEOF_INT128__==16
   /* even with gcc, the typedef won't work for 32-bit platforms */
 typedef __uint128_t uint128_t;  /* nonstandard; implemented by gcc on 64-bit
                                  * platforms */
-# else
-#  error "Your compiler doesn't appear to support 128-bit integer types"
-# endif
+#else
+# error "Your compiler doesn't appear to support 128-bit integer types"
+#endif
 
 typedef uint8_t u8;
 typedef uint64_t u64;
@@ -258,8 +261,6 @@ const EC_METHOD *EC_GFp_nistp224_method(void)
         ec_GFp_simple_point_clear_finish,
         ec_GFp_simple_point_copy,
         ec_GFp_simple_point_set_to_infinity,
-        ec_GFp_simple_set_Jprojective_coordinates_GFp,
-        ec_GFp_simple_get_Jprojective_coordinates_GFp,
         ec_GFp_simple_point_set_affine_coordinates,
         ec_GFp_nistp224_point_get_affine_coordinates,
         0 /* point_set_compressed_coordinates */ ,
@@ -292,6 +293,9 @@ const EC_METHOD *EC_GFp_nistp224_method(void)
         0, /* keycopy */
         0, /* keyfinish */
         ecdh_simple_compute_key,
+        ecdsa_simple_sign_setup,
+        ecdsa_simple_sign_sig,
+        ecdsa_simple_verify_sig,
         0, /* field_inverse_mod_ord */
         0, /* blind_coordinates */
         0, /* ladder_pre */
@@ -662,7 +666,9 @@ static void felem_contract(felem out, const felem in)
  */
 static void felem_neg(felem out, const felem in)
 {
-    widefelem tmp = {0};
+    widefelem tmp;
+
+    memset(tmp, 0, sizeof(tmp));
     felem_diff_128_64(tmp, in);
     felem_reduce(out, tmp);
 }
@@ -1292,12 +1298,16 @@ int ec_GFp_nistp224_group_set_curve(EC_GROUP *group, const BIGNUM *p,
                                     BN_CTX *ctx)
 {
     int ret = 0;
-    BN_CTX *new_ctx = NULL;
     BIGNUM *curve_p, *curve_a, *curve_b;
+#ifndef FIPS_MODE
+    BN_CTX *new_ctx = NULL;
 
     if (ctx == NULL)
-        if ((ctx = new_ctx = BN_CTX_new()) == NULL)
-            return 0;
+        ctx = new_ctx = BN_CTX_new();
+#endif
+    if (ctx == NULL)
+        return 0;
+
     BN_CTX_start(ctx);
     curve_p = BN_CTX_get(ctx);
     curve_a = BN_CTX_get(ctx);
@@ -1316,7 +1326,9 @@ int ec_GFp_nistp224_group_set_curve(EC_GROUP *group, const BIGNUM *p,
     ret = ec_GFp_simple_group_set_curve(group, p, a, b, ctx);
  err:
     BN_CTX_end(ctx);
+#ifndef FIPS_MODE
     BN_CTX_free(new_ctx);
+#endif
     return ret;
 }
 
@@ -1451,9 +1463,8 @@ int ec_GFp_nistp224_points_mul(const EC_GROUP *group, EC_POINT *r,
             ECerr(EC_F_EC_GFP_NISTP224_POINTS_MUL, ERR_R_BN_LIB);
             goto err;
         }
-        if (!EC_POINT_set_Jprojective_coordinates_GFp(group,
-                                                      generator, x, y, z,
-                                                      ctx))
+        if (!ec_GFp_simple_set_Jprojective_coordinates_GFp(group, generator, x,
+                                                           y, z, ctx))
             goto err;
         if (0 == EC_POINT_cmp(group, generator, group->generator, ctx))
             /* precomputation matches generator */
@@ -1587,7 +1598,7 @@ int ec_GFp_nistp224_points_mul(const EC_GROUP *group, EC_POINT *r,
         ECerr(EC_F_EC_GFP_NISTP224_POINTS_MUL, ERR_R_BN_LIB);
         goto err;
     }
-    ret = EC_POINT_set_Jprojective_coordinates_GFp(group, r, x, y, z, ctx);
+    ret = ec_GFp_simple_set_Jprojective_coordinates_GFp(group, r, x, y, z, ctx);
 
  err:
     BN_CTX_end(ctx);
@@ -1603,16 +1614,23 @@ int ec_GFp_nistp224_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
     int ret = 0;
     NISTP224_PRE_COMP *pre = NULL;
     int i, j;
-    BN_CTX *new_ctx = NULL;
     BIGNUM *x, *y;
     EC_POINT *generator = NULL;
     felem tmp_felems[32];
+#ifndef FIPS_MODE
+    BN_CTX *new_ctx = NULL;
+#endif
 
     /* throw away old precomputation */
     EC_pre_comp_free(group);
+
+#ifndef FIPS_MODE
     if (ctx == NULL)
-        if ((ctx = new_ctx = BN_CTX_new()) == NULL)
-            return 0;
+        ctx = new_ctx = BN_CTX_new();
+#endif
+    if (ctx == NULL)
+        return 0;
+
     BN_CTX_start(ctx);
     x = BN_CTX_get(ctx);
     y = BN_CTX_get(ctx);
@@ -1720,7 +1738,9 @@ int ec_GFp_nistp224_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
  err:
     BN_CTX_end(ctx);
     EC_POINT_free(generator);
+#ifndef FIPS_MODE
     BN_CTX_free(new_ctx);
+#endif
     EC_nistp224_pre_comp_free(pre);
     return ret;
 }
@@ -1729,5 +1749,3 @@ int ec_GFp_nistp224_have_precompute_mult(const EC_GROUP *group)
 {
     return HAVEPRECOMP(group, nistp224);
 }
-
-#endif

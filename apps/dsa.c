@@ -1,13 +1,14 @@
 /*
  * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
 #include <openssl/opensslconf.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,22 +29,13 @@ typedef enum OPTION_choice {
     /* Do not change the order here; see case statements below */
     OPT_PVK_NONE, OPT_PVK_WEAK, OPT_PVK_STRONG,
     OPT_NOOUT, OPT_TEXT, OPT_MODULUS, OPT_PUBIN,
-    OPT_PUBOUT, OPT_CIPHER, OPT_PASSIN, OPT_PASSOUT
+    OPT_PUBOUT, OPT_CIPHER, OPT_PASSIN, OPT_PASSOUT,
+    OPT_PROV_ENUM
 } OPTION_CHOICE;
 
 const OPTIONS dsa_options[] = {
+    OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
-    {"inform", OPT_INFORM, 'f', "Input format, DER PEM PVK"},
-    {"outform", OPT_OUTFORM, 'f', "Output format, DER PEM PVK"},
-    {"in", OPT_IN, 's', "Input key"},
-    {"out", OPT_OUT, '>', "Output file"},
-    {"noout", OPT_NOOUT, '-', "Don't print key out"},
-    {"text", OPT_TEXT, '-', "Print the key in text"},
-    {"modulus", OPT_MODULUS, '-', "Print the DSA public value"},
-    {"pubin", OPT_PUBIN, '-', "Expect a public key in input file"},
-    {"pubout", OPT_PUBOUT, '-', "Output public key, not private"},
-    {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
-    {"passout", OPT_PASSOUT, 's', "Output file pass phrase source"},
     {"", OPT_CIPHER, '-', "Any supported cipher"},
 #ifndef OPENSSL_NO_RC4
     {"pvk-strong", OPT_PVK_STRONG, '-', "Enable 'Strong' PVK encoding level (default)"},
@@ -53,6 +45,23 @@ const OPTIONS dsa_options[] = {
 #ifndef OPENSSL_NO_ENGINE
     {"engine", OPT_ENGINE, 's', "Use engine e, possibly a hardware device"},
 #endif
+
+    OPT_SECTION("Input"),
+    {"in", OPT_IN, 's', "Input key"},
+    {"inform", OPT_INFORM, 'f', "Input format, DER PEM PVK"},
+    {"pubin", OPT_PUBIN, '-', "Expect a public key in input file"},
+    {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
+
+    OPT_SECTION("Output"),
+    {"out", OPT_OUT, '>', "Output file"},
+    {"outform", OPT_OUTFORM, 'f', "Output format, DER PEM PVK"},
+    {"noout", OPT_NOOUT, '-', "Don't print key out"},
+    {"text", OPT_TEXT, '-', "Print the key in text"},
+    {"modulus", OPT_MODULUS, '-', "Print the DSA public value"},
+    {"pubout", OPT_PUBOUT, '-', "Output public key, not private"},
+    {"passout", OPT_PASSOUT, 's', "Output file pass phrase source"},
+
+    OPT_PROV_OPTIONS,
     {NULL}
 };
 
@@ -61,6 +70,7 @@ int dsa_main(int argc, char **argv)
     BIO *out = NULL;
     DSA *dsa = NULL;
     ENGINE *e = NULL;
+    EVP_PKEY *pkey = NULL;
     const EVP_CIPHER *enc = NULL;
     char *infile = NULL, *outfile = NULL, *prog;
     char *passin = NULL, *passout = NULL, *passinarg = NULL, *passoutarg = NULL;
@@ -134,6 +144,10 @@ int dsa_main(int argc, char **argv)
             if (!opt_cipher(opt_unknown(), &enc))
                 goto end;
             break;
+        case OPT_PROV_CASES:
+            if (!opt_provider(o))
+                goto end;
+            break;
         }
     }
     argc = opt_num_rest();
@@ -150,19 +164,14 @@ int dsa_main(int argc, char **argv)
     }
 
     BIO_printf(bio_err, "read DSA key\n");
-    {
-        EVP_PKEY *pkey;
+    if (pubin)
+        pkey = load_pubkey(infile, informat, 1, passin, e, "Public Key");
+    else
+        pkey = load_key(infile, informat, 1, passin, e, "Private Key");
 
-        if (pubin)
-            pkey = load_pubkey(infile, informat, 1, passin, e, "Public Key");
-        else
-            pkey = load_key(infile, informat, 1, passin, e, "Private Key");
+    if (pkey != NULL)
+        dsa = EVP_PKEY_get1_DSA(pkey);
 
-        if (pkey != NULL) {
-            dsa = EVP_PKEY_get1_DSA(pkey);
-            EVP_PKEY_free(pkey);
-        }
-    }
     if (dsa == NULL) {
         BIO_printf(bio_err, "unable to load Key\n");
         ERR_print_errors(bio_err);
@@ -175,7 +184,8 @@ int dsa_main(int argc, char **argv)
 
     if (text) {
         assert(pubin || private);
-        if (!DSA_print(out, dsa, 0)) {
+        if ((pubin && EVP_PKEY_print_public(out, pkey, 0, NULL) <= 0)
+            || (!pubin && EVP_PKEY_print_private(out, pkey, 0, NULL) <= 0)) {
             perror(outfile);
             ERR_print_errors(bio_err);
             goto end;
@@ -252,6 +262,7 @@ int dsa_main(int argc, char **argv)
     ret = 0;
  end:
     BIO_free_all(out);
+    EVP_PKEY_free(pkey);
     DSA_free(dsa);
     release_engine(e);
     OPENSSL_free(passin);

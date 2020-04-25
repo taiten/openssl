@@ -1,14 +1,20 @@
 /*
- * Copyright 1999-2019 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
-#ifndef HEADER_X509V3_H
-# define HEADER_X509V3_H
+#ifndef OPENSSL_X509V3_H
+# define OPENSSL_X509V3_H
+# pragma once
+
+# include <openssl/macros.h>
+# ifndef OPENSSL_NO_DEPRECATED_3_0
+#  define HEADER_X509V3_H
+# endif
 
 # include <openssl/bio.h>
 # include <openssl/x509.h>
@@ -28,7 +34,7 @@ struct v3_ext_ctx;
 typedef void *(*X509V3_EXT_NEW)(void);
 typedef void (*X509V3_EXT_FREE) (void *);
 typedef void *(*X509V3_EXT_D2I)(void *, const unsigned char **, long);
-typedef int (*X509V3_EXT_I2D) (void *, unsigned char **);
+typedef int (*X509V3_EXT_I2D) (const void *, unsigned char **);
 typedef STACK_OF(CONF_VALUE) *
     (*X509V3_EXT_I2V) (const struct v3_ext_method *method, void *ext,
                        STACK_OF(CONF_VALUE) *extlist);
@@ -223,6 +229,13 @@ typedef struct SXNET_st {
     ASN1_INTEGER *version;
     STACK_OF(SXNETID) *ids;
 } SXNET;
+
+typedef struct ISSUER_SIGN_TOOL_st {
+    ASN1_UTF8STRING *signTool;
+    ASN1_UTF8STRING *cATool;
+    ASN1_UTF8STRING *signToolCert;
+    ASN1_UTF8STRING *cAToolCert;
+} ISSUER_SIGN_TOOL;
 
 typedef struct NOTICEREF_st {
     ASN1_STRING *organization;
@@ -452,6 +465,8 @@ DECLARE_ASN1_FUNCTIONS(BASIC_CONSTRAINTS)
 DECLARE_ASN1_FUNCTIONS(SXNET)
 DECLARE_ASN1_FUNCTIONS(SXNETID)
 
+DECLARE_ASN1_FUNCTIONS(ISSUER_SIGN_TOOL)
+
 int SXNET_add_id_asc(SXNET **psx, const char *zone, const char *user, int userlen);
 int SXNET_add_id_ulong(SXNET **psx, unsigned long lzone, const char *user,
                        int userlen);
@@ -467,7 +482,7 @@ DECLARE_ASN1_FUNCTIONS(AUTHORITY_KEYID)
 DECLARE_ASN1_FUNCTIONS(PKEY_USAGE_PERIOD)
 
 DECLARE_ASN1_FUNCTIONS(GENERAL_NAME)
-GENERAL_NAME *GENERAL_NAME_dup(GENERAL_NAME *a);
+DECLARE_ASN1_DUP_FUNCTION(GENERAL_NAME)
 int GENERAL_NAME_cmp(GENERAL_NAME *a, GENERAL_NAME *b);
 
 ASN1_BIT_STRING *v2i_ASN1_BIT_STRING(X509V3_EXT_METHOD *method,
@@ -524,7 +539,7 @@ DECLARE_ASN1_FUNCTIONS(DIST_POINT)
 DECLARE_ASN1_FUNCTIONS(DIST_POINT_NAME)
 DECLARE_ASN1_FUNCTIONS(ISSUING_DIST_POINT)
 
-int DIST_POINT_set_dpname(DIST_POINT_NAME *dpn, X509_NAME *iname);
+int DIST_POINT_set_dpname(DIST_POINT_NAME *dpn, const X509_NAME *iname);
 
 int NAME_CONSTRAINTS_check(X509 *x, NAME_CONSTRAINTS *nc);
 int NAME_CONSTRAINTS_check_CN(X509 *x, NAME_CONSTRAINTS *nc);
@@ -550,13 +565,16 @@ GENERAL_NAME *a2i_GENERAL_NAME(GENERAL_NAME *out,
                                X509V3_CTX *ctx, int gen_type,
                                const char *value, int is_nc);
 
-# ifdef HEADER_CONF_H
+# ifdef OPENSSL_CONF_H
 GENERAL_NAME *v2i_GENERAL_NAME(const X509V3_EXT_METHOD *method,
                                X509V3_CTX *ctx, CONF_VALUE *cnf);
 GENERAL_NAME *v2i_GENERAL_NAME_ex(GENERAL_NAME *out,
                                   const X509V3_EXT_METHOD *method,
                                   X509V3_CTX *ctx, CONF_VALUE *cnf,
                                   int is_nc);
+
+int X509v3_cache_extensions(X509 *x, OPENSSL_CTX *libctx, const char *propq);
+
 void X509V3_conf_free(CONF_VALUE *val);
 
 X509_EXTENSION *X509V3_EXT_nconf_nid(CONF *conf, X509V3_CTX *ctx, int ext_nid,
@@ -629,7 +647,7 @@ X509_EXTENSION *X509V3_EXT_i2d(int ext_nid, int crit, void *ext_struc);
 int X509V3_add1_i2d(STACK_OF(X509_EXTENSION) **x, int nid, void *value,
                     int crit, unsigned long flags);
 
-#if OPENSSL_API_COMPAT < 0x10100000L
+#ifndef OPENSSL_NO_DEPRECATED_1_1_0
 /* The new declarations are in crypto.h, but the old ones were here. */
 # define hex_to_string OPENSSL_buf2hexstr
 # define string_to_hex OPENSSL_hexstr2buf
