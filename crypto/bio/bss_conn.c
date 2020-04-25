@@ -1,7 +1,7 @@
 /*
  * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -11,6 +11,7 @@
 #include <errno.h>
 
 #include "bio_local.h"
+#include "internal/ktls.h"
 
 #ifndef OPENSSL_NO_SOCK
 
@@ -20,6 +21,9 @@ typedef struct bio_connect_st {
     char *param_hostname;
     char *param_service;
     int connect_mode;
+# ifndef OPENSSL_NO_KTLS
+    unsigned char record_type;
+# endif
 
     BIO_ADDRINFO *addr_first;
     const BIO_ADDRINFO *addr_iter;
@@ -139,10 +143,9 @@ static int conn_state(BIO *b, BIO_CONNECT *c)
                              BIO_ADDRINFO_socktype(c->addr_iter),
                              BIO_ADDRINFO_protocol(c->addr_iter), 0);
             if (ret == (int)INVALID_SOCKET) {
-                SYSerr(SYS_F_SOCKET, get_last_socket_error());
-                ERR_add_error_data(4,
-                                   "hostname=", c->param_hostname,
-                                   " service=", c->param_service);
+                ERR_raise_data(ERR_LIB_SYS, get_last_socket_error(),
+                               "calling socket(%s, %s)",
+                               c->param_hostname, c->param_service);
                 BIOerr(BIO_F_CONN_STATE, BIO_R_UNABLE_TO_CREATE_SOCKET);
                 goto exit_loop;
             }
@@ -171,10 +174,9 @@ static int conn_state(BIO *b, BIO_CONNECT *c)
                     ERR_clear_error();
                     break;
                 } else {
-                    SYSerr(SYS_F_CONNECT, get_last_socket_error());
-                    ERR_add_error_data(4,
-                                       "hostname=", c->param_hostname,
-                                       " service=", c->param_service);
+                    ERR_raise_data(ERR_LIB_SYS, get_last_socket_error(),
+                                   "calling connect(%s, %s)",
+                                    c->param_hostname, c->param_service);
                     c->state = BIO_CONN_S_CONNECT_ERROR;
                     break;
                 }
@@ -188,10 +190,9 @@ static int conn_state(BIO *b, BIO_CONNECT *c)
             i = BIO_sock_error(b->num);
             if (i) {
                 BIO_clear_retry_flags(b);
-                SYSerr(SYS_F_CONNECT, i);
-                ERR_add_error_data(4,
-                                   "hostname=", c->param_hostname,
-                                   " service=", c->param_service);
+                ERR_raise_data(ERR_LIB_SYS, i,
+                               "calling connect(%s, %s)",
+                                c->param_hostname, c->param_service);
                 BIOerr(BIO_F_CONN_STATE, BIO_R_NBIO_CONNECT_ERROR);
                 ret = 0;
                 goto exit_loop;
@@ -311,7 +312,12 @@ static int conn_read(BIO *b, char *out, int outl)
 
     if (out != NULL) {
         clear_socket_error();
-        ret = readsocket(b->num, out, outl);
+# ifndef OPENSSL_NO_KTLS
+        if (BIO_get_ktls_recv(b))
+            ret = ktls_read_record(b->num, out, outl);
+        else
+# endif
+            ret = readsocket(b->num, out, outl);
         BIO_clear_retry_flags(b);
         if (ret <= 0) {
             if (BIO_sock_should_retry(ret))
@@ -336,7 +342,16 @@ static int conn_write(BIO *b, const char *in, int inl)
     }
 
     clear_socket_error();
-    ret = writesocket(b->num, in, inl);
+# ifndef OPENSSL_NO_KTLS
+    if (BIO_should_ktls_ctrl_msg_flag(b)) {
+        ret = ktls_send_ctrl_message(b->num, data->record_type, in, inl);
+        if (ret >= 0) {
+            ret = inl;
+            BIO_clear_ktls_ctrl_msg_flag(b);
+        }
+    } else
+# endif
+        ret = writesocket(b->num, in, inl);
     BIO_clear_retry_flags(b);
     if (ret <= 0) {
         if (BIO_sock_should_retry(ret))
@@ -352,6 +367,13 @@ static long conn_ctrl(BIO *b, int cmd, long num, void *ptr)
     const char **pptr = NULL;
     long ret = 1;
     BIO_CONNECT *data;
+# ifndef OPENSSL_NO_KTLS
+#  ifdef __FreeBSD__
+    struct tls_enable *crypto_info;
+#  else
+    struct tls12_crypto_info_aes_gcm_128 *crypto_info;
+#  endif
+# endif
 
     data = (BIO_CONNECT *)b->ptr;
 
@@ -423,7 +445,7 @@ static long conn_ctrl(BIO *b, int cmd, long num, void *ptr)
                     OPENSSL_free(hold_service);
             } else if (num == 1) {
                 OPENSSL_free(data->param_service);
-                data->param_service = BUF_strdup(ptr);
+                data->param_service = OPENSSL_strdup(ptr);
             } else if (num == 2) {
                 const BIO_ADDR *addr = (const BIO_ADDR *)ptr;
                 if (ret) {
@@ -500,6 +522,31 @@ static long conn_ctrl(BIO *b, int cmd, long num, void *ptr)
     case BIO_CTRL_EOF:
         ret = (b->flags & BIO_FLAGS_IN_EOF) != 0 ? 1 : 0;
         break;
+# ifndef OPENSSL_NO_KTLS
+    case BIO_CTRL_SET_KTLS:
+#  ifdef __FreeBSD__
+        crypto_info = (struct tls_enable *)ptr;
+#  else
+        crypto_info = (struct tls12_crypto_info_aes_gcm_128 *)ptr;
+#  endif
+        ret = ktls_start(b->num, crypto_info, sizeof(*crypto_info), num);
+        if (ret)
+            BIO_set_ktls_flag(b, num);
+        break;
+    case BIO_CTRL_GET_KTLS_SEND:
+        return BIO_should_ktls_flag(b, 1);
+    case BIO_CTRL_GET_KTLS_RECV:
+        return BIO_should_ktls_flag(b, 0);
+    case BIO_CTRL_SET_KTLS_TX_SEND_CTRL_MSG:
+        BIO_set_ktls_ctrl_msg_flag(b);
+        data->record_type = num;
+        ret = 0;
+        break;
+    case BIO_CTRL_CLEAR_KTLS_TX_CTRL_MSG:
+        BIO_clear_ktls_ctrl_msg_flag(b);
+        ret = 0;
+        break;
+# endif
     default:
         ret = 0;
         break;

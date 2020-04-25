@@ -4,3 +4,5 @@ no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
 Set-systemwide-default-settings-for-libssl-users.patch
+VERSION-remove-quotes-from-RELEASE_DATE.patch
+Configurations-Identify-the-shell-variables-around-MANSUF.patch

@@ -1,3 +1,9 @@
+openssl (3.0.0~~alpha1-1) experimental; urgency=medium
+
+  * Import 3.0.0-alpha1 (Closes: #934836).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sat, 25 Apr 2020 23:08:44 +0200
+
 openssl (1.1.1g-1) unstable; urgency=medium
 
   * New upstream version

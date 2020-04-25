@@ -2,7 +2,7 @@ Source: openssl
 Build-Depends: debhelper-compat (= 12), m4, bc, dpkg-dev (>= 1.15.7)
 Section: utils
 Priority: optional
-Maintainer: Debian OpenSSL Team <pkg-openssl-devel@lists.alioth.debian.org>
+Maintainer: Debian OpenSSL Team <pkg-openssl-devel@alioth-lists.debian.net>
 Uploaders: Christoph Martin <christoph.martin@uni-mainz.de>, Kurt Roeckx <kurt@roeckx.be>, Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 Standards-Version: 4.5.0
 Vcs-Browser: https://salsa.debian.org/debian/openssl
@@ -29,7 +29,7 @@ Description: Secure Sockets Layer toolkit - cryptographic utility
   * testing SSL/TLS clients and servers;
   * handling S/MIME signed or encrypted mail.
 
-Package: libssl1.1
+Package: libssl3
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -56,7 +56,7 @@ Description: Secure Sockets Layer toolkit - libcrypto udeb
  It contains a version of the libcrypto shared library for use with the
  Debian Installer. Do not install it on a normal system.
 
-Package: libssl1.1-udeb
+Package: libssl3-udeb
 Package-Type: udeb
 Section: debian-installer
 Architecture: any
@@ -71,7 +71,7 @@ Section: libdevel
 Architecture: any
 Multi-Arch: same
 Suggests: libssl-doc
-Depends: libssl1.1 (= ${binary:Version}), ${misc:Depends}
+Depends: libssl3 (= ${binary:Version}), ${misc:Depends}
 Conflicts: libssl1.0-dev
 Description: Secure Sockets Layer toolkit - development files
  This package is part of the OpenSSL project's implementation of the SSL

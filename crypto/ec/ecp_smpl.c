@@ -2,11 +2,17 @@
  * Copyright 2001-2020 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
+
+/*
+ * ECDSA low level APIs are deprecated for public use, but still ok for
+ * internal use.
+ */
+#include "internal/deprecated.h"
 
 #include <openssl/err.h>
 #include <openssl/symhacks.h>
@@ -32,8 +38,6 @@ const EC_METHOD *EC_GFp_simple_method(void)
         ec_GFp_simple_point_clear_finish,
         ec_GFp_simple_point_copy,
         ec_GFp_simple_point_set_to_infinity,
-        ec_GFp_simple_set_Jprojective_coordinates_GFp,
-        ec_GFp_simple_get_Jprojective_coordinates_GFp,
         ec_GFp_simple_point_set_affine_coordinates,
         ec_GFp_simple_point_get_affine_coordinates,
         0, 0, 0,
@@ -64,6 +68,9 @@ const EC_METHOD *EC_GFp_simple_method(void)
         0, /* keycopy */
         0, /* keyfinish */
         ecdh_simple_compute_key,
+        ecdsa_simple_sign_setup,
+        ecdsa_simple_sign_sig,
+        ecdsa_simple_verify_sig,
         0, /* field_inverse_mod_ord */
         ec_GFp_simple_blind_coordinates,
         ec_GFp_simple_ladder_pre,
@@ -146,7 +153,7 @@ int ec_GFp_simple_group_set_curve(EC_GROUP *group,
     }
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -204,7 +211,7 @@ int ec_GFp_simple_group_get_curve(const EC_GROUP *group, BIGNUM *p, BIGNUM *a,
     if (a != NULL || b != NULL) {
         if (group->meth->field_decode) {
             if (ctx == NULL) {
-                ctx = new_ctx = BN_CTX_new();
+                ctx = new_ctx = BN_CTX_new_ex(group->libctx);
                 if (ctx == NULL)
                     return 0;
             }
@@ -248,7 +255,7 @@ int ec_GFp_simple_group_check_discriminant(const EC_GROUP *group, BN_CTX *ctx)
     BN_CTX *new_ctx = NULL;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL) {
             ECerr(EC_F_EC_GFP_SIMPLE_GROUP_CHECK_DISCRIMINANT,
                   ERR_R_MALLOC_FAILURE);
@@ -376,7 +383,7 @@ int ec_GFp_simple_set_Jprojective_coordinates_GFp(const EC_GROUP *group,
     int ret = 0;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -435,7 +442,7 @@ int ec_GFp_simple_get_Jprojective_coordinates_GFp(const EC_GROUP *group,
 
     if (group->meth->field_decode != 0) {
         if (ctx == NULL) {
-            ctx = new_ctx = BN_CTX_new();
+            ctx = new_ctx = BN_CTX_new_ex(group->libctx);
             if (ctx == NULL)
                 return 0;
         }
@@ -509,7 +516,7 @@ int ec_GFp_simple_point_get_affine_coordinates(const EC_GROUP *group,
     }
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -629,7 +636,7 @@ int ec_GFp_simple_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
     p = group->field;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -813,7 +820,7 @@ int ec_GFp_simple_dbl(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
     p = group->field;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -966,7 +973,7 @@ int ec_GFp_simple_is_on_curve(const EC_GROUP *group, const EC_POINT *point,
     p = group->field;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return -1;
     }
@@ -1083,7 +1090,7 @@ int ec_GFp_simple_cmp(const EC_GROUP *group, const EC_POINT *a,
     field_sqr = group->meth->field_sqr;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return -1;
     }
@@ -1169,7 +1176,7 @@ int ec_GFp_simple_make_affine(const EC_GROUP *group, EC_POINT *point,
         return 1;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -1210,7 +1217,7 @@ int ec_GFp_simple_points_make_affine(const EC_GROUP *group, size_t num,
         return 1;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(group->libctx);
         if (ctx == NULL)
             return 0;
     }
@@ -1381,7 +1388,8 @@ int ec_GFp_simple_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a,
     BN_CTX *new_ctx = NULL;
     int ret = 0;
 
-    if (ctx == NULL && (ctx = new_ctx = BN_CTX_secure_new()) == NULL)
+    if (ctx == NULL
+            && (ctx = new_ctx = BN_CTX_secure_new_ex(group->libctx)) == NULL)
         return 0;
 
     BN_CTX_start(ctx);
@@ -1389,7 +1397,7 @@ int ec_GFp_simple_field_inv(const EC_GROUP *group, BIGNUM *r, const BIGNUM *a,
         goto err;
 
     do {
-        if (!BN_priv_rand_range(e, group->field))
+        if (!BN_priv_rand_range_ex(e, group->field, ctx))
         goto err;
     } while (BN_is_zero(e));
 
@@ -1442,7 +1450,7 @@ int ec_GFp_simple_blind_coordinates(const EC_GROUP *group, EC_POINT *p,
      */
     do {
         ERR_set_mark();
-        ret = BN_priv_rand_range(lambda, group->field);
+        ret = BN_priv_rand_range_ex(lambda, group->field, ctx);
         ERR_pop_to_mark();
         if (ret == 0) {
             ret = 1;
@@ -1512,13 +1520,13 @@ int ec_GFp_simple_ladder_pre(const EC_GROUP *group,
 
     /* make sure lambda (r->Y here for storage) is not zero */
     do {
-        if (!BN_priv_rand_range(r->Y, group->field))
+        if (!BN_priv_rand_range_ex(r->Y, group->field, ctx))
             return 0;
     } while (BN_is_zero(r->Y));
 
     /* make sure lambda (s->Z here for storage) is not zero */
     do {
-        if (!BN_priv_rand_range(s->Z, group->field))
+        if (!BN_priv_rand_range_ex(s->Z, group->field, ctx))
             return 0;
     } while (BN_is_zero(s->Z));
 

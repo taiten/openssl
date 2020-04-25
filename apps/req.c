@@ -1,7 +1,7 @@
 /*
- * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -32,7 +32,6 @@
 # include <openssl/dsa.h>
 #endif
 
-#define SECTION         "req"
 
 #define BITS            "default_bits"
 #define KEYFILE         "default_keyfile"
@@ -77,6 +76,8 @@ static int join(char buf[], size_t buf_size, const char *name,
 static EVP_PKEY_CTX *set_keygen_ctx(const char *gstr,
                                     int *pkey_type, long *pkeylen,
                                     char **palgnam, ENGINE *keygen_engine);
+
+static const char *section = "req";
 static CONF *req_conf = NULL;
 static CONF *addext_conf = NULL;
 static int batch = 0;
@@ -86,46 +87,37 @@ typedef enum OPTION_choice {
     OPT_INFORM, OPT_OUTFORM, OPT_ENGINE, OPT_KEYGEN_ENGINE, OPT_KEY,
     OPT_PUBKEY, OPT_NEW, OPT_CONFIG, OPT_KEYFORM, OPT_IN, OPT_OUT,
     OPT_KEYOUT, OPT_PASSIN, OPT_PASSOUT, OPT_NEWKEY,
-    OPT_PKEYOPT, OPT_SIGOPT, OPT_BATCH, OPT_NEWHDR, OPT_MODULUS,
+    OPT_PKEYOPT, OPT_SIGOPT, OPT_VFYOPT, OPT_BATCH, OPT_NEWHDR, OPT_MODULUS,
     OPT_VERIFY, OPT_NODES, OPT_NOOUT, OPT_VERBOSE, OPT_UTF8,
     OPT_NAMEOPT, OPT_REQOPT, OPT_SUBJ, OPT_SUBJECT, OPT_TEXT, OPT_X509,
     OPT_MULTIVALUE_RDN, OPT_DAYS, OPT_SET_SERIAL, OPT_ADDEXT, OPT_EXTENSIONS,
     OPT_REQEXTS, OPT_PRECERT, OPT_MD,
-    OPT_R_ENUM
+    OPT_SECTION,
+    OPT_R_ENUM, OPT_PROV_ENUM
 } OPTION_CHOICE;
 
 const OPTIONS req_options[] = {
+    OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
-    {"inform", OPT_INFORM, 'F', "Input format - DER or PEM"},
-    {"outform", OPT_OUTFORM, 'F', "Output format - DER or PEM"},
+#ifndef OPENSSL_NO_ENGINE
+    {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
+    {"keygen_engine", OPT_KEYGEN_ENGINE, 's',
+     "Specify engine to be used for key generation operations"},
+#endif
     {"in", OPT_IN, '<', "Input file"},
-    {"out", OPT_OUT, '>', "Output file"},
-    {"key", OPT_KEY, 's', "Private key to use"},
-    {"keyform", OPT_KEYFORM, 'f', "Key file format"},
-    {"pubkey", OPT_PUBKEY, '-', "Output public key"},
+    {"inform", OPT_INFORM, 'F', "Input format - DER or PEM"},
+    {"verify", OPT_VERIFY, '-', "Verify signature on REQ"},
+
+    OPT_SECTION("Certificate"),
     {"new", OPT_NEW, '-', "New request"},
     {"config", OPT_CONFIG, '<', "Request template file"},
-    {"keyout", OPT_KEYOUT, '>', "File to send the key to"},
-    {"passin", OPT_PASSIN, 's', "Private key password source"},
-    {"passout", OPT_PASSOUT, 's', "Output file pass phrase source"},
-    OPT_R_OPTIONS,
-    {"newkey", OPT_NEWKEY, 's', "Specify as type:bits"},
-    {"pkeyopt", OPT_PKEYOPT, 's', "Public key options as opt:value"},
-    {"sigopt", OPT_SIGOPT, 's', "Signature parameter in n:v form"},
-    {"batch", OPT_BATCH, '-',
-     "Do not ask anything during request generation"},
-    {"newhdr", OPT_NEWHDR, '-', "Output \"NEW\" in the header lines"},
-    {"modulus", OPT_MODULUS, '-', "RSA modulus"},
-    {"verify", OPT_VERIFY, '-', "Verify signature on REQ"},
-    {"nodes", OPT_NODES, '-', "Don't encrypt the output key"},
-    {"noout", OPT_NOOUT, '-', "Do not output REQ"},
-    {"verbose", OPT_VERBOSE, '-', "Verbose output"},
+    {"section", OPT_SECTION, 's', "Config section to use (default \"req\")"},
     {"utf8", OPT_UTF8, '-', "Input characters are UTF8 (default ASCII)"},
-    {"nameopt", OPT_NAMEOPT, 's', "Various certificate name options"},
+    {"nameopt", OPT_NAMEOPT, 's', "Certificate subject/issuer name printing options"},
     {"reqopt", OPT_REQOPT, 's', "Various request text options"},
     {"text", OPT_TEXT, '-', "Text form of request"},
     {"x509", OPT_X509, '-',
-     "Output a x509 structure instead of a cert request"},
+     "Output an x509 structure instead of a cert request"},
     {OPT_MORE_STR, 1, 1, "(Required by some CA's)"},
     {"subj", OPT_SUBJ, 's', "Set or modify request subject"},
     {"subject", OPT_SUBJECT, '-', "Output the request's subject"},
@@ -140,12 +132,33 @@ const OPTIONS req_options[] = {
     {"reqexts", OPT_REQEXTS, 's',
      "Request extension section (override value in config file)"},
     {"precert", OPT_PRECERT, '-', "Add a poison extension (implies -new)"},
+
+    OPT_SECTION("Keys and Signing"),
+    {"key", OPT_KEY, 's', "Private key to use"},
+    {"keyform", OPT_KEYFORM, 'f', "Key file format"},
+    {"pubkey", OPT_PUBKEY, '-', "Output public key"},
+    {"keyout", OPT_KEYOUT, '>', "File to send the key to"},
+    {"passin", OPT_PASSIN, 's', "Private key password source"},
+    {"passout", OPT_PASSOUT, 's', "Output file pass phrase source"},
+    {"newkey", OPT_NEWKEY, 's', "Specify as type:bits"},
+    {"pkeyopt", OPT_PKEYOPT, 's', "Public key options as opt:value"},
+    {"sigopt", OPT_SIGOPT, 's', "Signature parameter in n:v form"},
+    {"vfyopt", OPT_VFYOPT, 's', "Verification parameter in n:v form"},
     {"", OPT_MD, '-', "Any supported digest"},
-#ifndef OPENSSL_NO_ENGINE
-    {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
-    {"keygen_engine", OPT_KEYGEN_ENGINE, 's',
-     "Specify engine to be used for key generation operations"},
-#endif
+
+    OPT_SECTION("Output"),
+    {"out", OPT_OUT, '>', "Output file"},
+    {"outform", OPT_OUTFORM, 'F', "Output format - DER or PEM"},
+    {"batch", OPT_BATCH, '-',
+     "Do not ask anything during request generation"},
+    {"verbose", OPT_VERBOSE, '-', "Verbose output"},
+    {"nodes", OPT_NODES, '-', "Don't encrypt the output key"},
+    {"noout", OPT_NOOUT, '-', "Do not output REQ"},
+    {"newhdr", OPT_NEWHDR, '-', "Output \"NEW\" in the header lines"},
+    {"modulus", OPT_MODULUS, '-', "RSA modulus"},
+
+    OPT_R_OPTIONS,
+    OPT_PROV_OPTIONS,
     {NULL}
 };
 
@@ -219,7 +232,7 @@ int req_main(int argc, char **argv)
     ENGINE *e = NULL, *gen_eng = NULL;
     EVP_PKEY *pkey = NULL;
     EVP_PKEY_CTX *genctx = NULL;
-    STACK_OF(OPENSSL_STRING) *pkeyopts = NULL, *sigopts = NULL;
+    STACK_OF(OPENSSL_STRING) *pkeyopts = NULL, *sigopts = NULL, *vfyopts = NULL;
     LHASH_OF(OPENSSL_STRING) *addexts = NULL;
     X509 *x509ss = NULL;
     X509_REQ *req = NULL;
@@ -291,6 +304,9 @@ int req_main(int argc, char **argv)
         case OPT_CONFIG:
             template = opt_arg();
             break;
+        case OPT_SECTION:
+            section = opt_arg();
+            break;
         case OPT_KEYFORM:
             if (!opt_format(opt_arg(), OPT_FMT_ANY, &keyform))
                 goto opthelp;
@@ -314,20 +330,31 @@ int req_main(int argc, char **argv)
             if (!opt_rand(o))
                 goto end;
             break;
+        case OPT_PROV_CASES:
+            if (!opt_provider(o))
+                goto end;
+            break;
         case OPT_NEWKEY:
             keyalg = opt_arg();
             newreq = 1;
             break;
         case OPT_PKEYOPT:
-            if (!pkeyopts)
+            if (pkeyopts == NULL)
                 pkeyopts = sk_OPENSSL_STRING_new_null();
-            if (!pkeyopts || !sk_OPENSSL_STRING_push(pkeyopts, opt_arg()))
+            if (pkeyopts == NULL
+                    || !sk_OPENSSL_STRING_push(pkeyopts, opt_arg()))
                 goto opthelp;
             break;
         case OPT_SIGOPT:
             if (!sigopts)
                 sigopts = sk_OPENSSL_STRING_new_null();
             if (!sigopts || !sk_OPENSSL_STRING_push(sigopts, opt_arg()))
+                goto opthelp;
+            break;
+        case OPT_VFYOPT:
+            if (!vfyopts)
+                vfyopts = sk_OPENSSL_STRING_new_null();
+            if (!vfyopts || !sk_OPENSSL_STRING_push(vfyopts, opt_arg()))
                 goto opthelp;
             break;
         case OPT_BATCH:
@@ -473,7 +500,7 @@ int req_main(int argc, char **argv)
         goto end;
 
     if (md_alg == NULL) {
-        p = NCONF_get_string(req_conf, SECTION, "default_md");
+        p = NCONF_get_string(req_conf, section, "default_md");
         if (p == NULL) {
             ERR_clear_error();
         } else {
@@ -484,7 +511,7 @@ int req_main(int argc, char **argv)
     }
 
     if (extensions == NULL) {
-        extensions = NCONF_get_string(req_conf, SECTION, V3_EXTENSIONS);
+        extensions = NCONF_get_string(req_conf, section, V3_EXTENSIONS);
         if (extensions == NULL)
             ERR_clear_error();
     }
@@ -512,19 +539,19 @@ int req_main(int argc, char **argv)
 
     if (passin == NULL) {
         passin = nofree_passin =
-            NCONF_get_string(req_conf, SECTION, "input_password");
+            NCONF_get_string(req_conf, section, "input_password");
         if (passin == NULL)
             ERR_clear_error();
     }
 
     if (passout == NULL) {
         passout = nofree_passout =
-            NCONF_get_string(req_conf, SECTION, "output_password");
+            NCONF_get_string(req_conf, section, "output_password");
         if (passout == NULL)
             ERR_clear_error();
     }
 
-    p = NCONF_get_string(req_conf, SECTION, STRING_MASK);
+    p = NCONF_get_string(req_conf, section, STRING_MASK);
     if (p == NULL)
         ERR_clear_error();
 
@@ -534,7 +561,7 @@ int req_main(int argc, char **argv)
     }
 
     if (chtype != MBSTRING_UTF8) {
-        p = NCONF_get_string(req_conf, SECTION, UTF8_IN);
+        p = NCONF_get_string(req_conf, section, UTF8_IN);
         if (p == NULL)
             ERR_clear_error();
         else if (strcmp(p, "yes") == 0)
@@ -542,7 +569,7 @@ int req_main(int argc, char **argv)
     }
 
     if (req_exts == NULL) {
-        req_exts = NCONF_get_string(req_conf, SECTION, REQ_EXTENSIONS);
+        req_exts = NCONF_get_string(req_conf, section, REQ_EXTENSIONS);
         if (req_exts == NULL)
             ERR_clear_error();
     }
@@ -565,14 +592,14 @@ int req_main(int argc, char **argv)
             /* load_key() has already printed an appropriate message */
             goto end;
         } else {
-            app_RAND_load_conf(req_conf, SECTION);
+            app_RAND_load_conf(req_conf, section);
         }
     }
 
     if (newreq && (pkey == NULL)) {
-        app_RAND_load_conf(req_conf, SECTION);
+        app_RAND_load_conf(req_conf, section);
 
-        if (!NCONF_get_number(req_conf, SECTION, BITS, &newkey)) {
+        if (!NCONF_get_number(req_conf, section, BITS, &newkey)) {
             newkey = DEFAULT_KEY_LENGTH;
         }
 
@@ -642,7 +669,7 @@ int req_main(int argc, char **argv)
         genctx = NULL;
 
         if (keyout == NULL) {
-            keyout = NCONF_get_string(req_conf, SECTION, KEYFILE);
+            keyout = NCONF_get_string(req_conf, section, KEYFILE);
             if (keyout == NULL)
                 ERR_clear_error();
         }
@@ -655,10 +682,10 @@ int req_main(int argc, char **argv)
         if (out == NULL)
             goto end;
 
-        p = NCONF_get_string(req_conf, SECTION, "encrypt_rsa_key");
+        p = NCONF_get_string(req_conf, section, "encrypt_rsa_key");
         if (p == NULL) {
             ERR_clear_error();
-            p = NCONF_get_string(req_conf, SECTION, "encrypt_key");
+            p = NCONF_get_string(req_conf, section, "encrypt_key");
             if (p == NULL)
                 ERR_clear_error();
         }
@@ -849,7 +876,7 @@ int req_main(int argc, char **argv)
                 goto end;
         }
 
-        i = X509_REQ_verify(req, tpubkey);
+        i = do_X509_REQ_verify(req, tpubkey, vfyopts);
 
         if (i < 0) {
             goto end;
@@ -969,6 +996,7 @@ int req_main(int argc, char **argv)
     EVP_PKEY_CTX_free(genctx);
     sk_OPENSSL_STRING_free(pkeyopts);
     sk_OPENSSL_STRING_free(sigopts);
+    sk_OPENSSL_STRING_free(vfyopts);
     lh_OPENSSL_STRING_doall(addexts, exts_cleanup);
     lh_OPENSSL_STRING_free(addexts);
 #ifndef OPENSSL_NO_ENGINE
@@ -994,13 +1022,13 @@ static int make_REQ(X509_REQ *req, EVP_PKEY *pkey, char *subj, int multirdn,
     STACK_OF(CONF_VALUE) *dn_sk, *attr_sk = NULL;
     char *tmp, *dn_sect, *attr_sect;
 
-    tmp = NCONF_get_string(req_conf, SECTION, PROMPT);
+    tmp = NCONF_get_string(req_conf, section, PROMPT);
     if (tmp == NULL)
         ERR_clear_error();
     if ((tmp != NULL) && strcmp(tmp, "no") == 0)
         no_prompt = 1;
 
-    dn_sect = NCONF_get_string(req_conf, SECTION, DISTINGUISHED_NAME);
+    dn_sect = NCONF_get_string(req_conf, section, DISTINGUISHED_NAME);
     if (dn_sect == NULL) {
         BIO_printf(bio_err, "unable to find '%s' in config\n",
                    DISTINGUISHED_NAME);
@@ -1012,7 +1040,7 @@ static int make_REQ(X509_REQ *req, EVP_PKEY *pkey, char *subj, int multirdn,
         goto err;
     }
 
-    attr_sect = NCONF_get_string(req_conf, SECTION, ATTRIBUTES);
+    attr_sect = NCONF_get_string(req_conf, section, ATTRIBUTES);
     if (attr_sect == NULL) {
         ERR_clear_error();
         attr_sk = NULL;
@@ -1079,8 +1107,7 @@ static int prompt_info(X509_REQ *req,
     char *type, *value;
     const char *def;
     CONF_VALUE *v;
-    X509_NAME *subj;
-    subj = X509_REQ_get_subject_name(req);
+    X509_NAME *subj = X509_REQ_get_subject_name(req);
 
     if (!batch) {
         BIO_printf(bio_err,
@@ -1165,8 +1192,7 @@ static int prompt_info(X509_REQ *req,
                 return 0;
         }
         if (X509_NAME_entry_count(subj) == 0) {
-            BIO_printf(bio_err,
-                       "error, no objects specified in config file\n");
+            BIO_printf(bio_err, "error, no objects specified in config file\n");
             return 0;
         }
 
@@ -1611,11 +1637,68 @@ static int genpkey_cb(EVP_PKEY_CTX *ctx)
     return 1;
 }
 
+static int do_pkey_ctx_init(EVP_PKEY_CTX *pkctx, STACK_OF(OPENSSL_STRING) *opts)
+{
+    int i;
+
+    if (opts == NULL)
+        return 1;
+
+    for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
+        char *opt = sk_OPENSSL_STRING_value(opts, i);
+        if (pkey_ctrl_string(pkctx, opt) <= 0) {
+            BIO_printf(bio_err, "parameter error \"%s\"\n", opt);
+            ERR_print_errors(bio_err);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int do_x509_init(X509 *x, STACK_OF(OPENSSL_STRING) *opts)
+{
+    int i;
+
+    if (opts == NULL)
+        return 1;
+
+    for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
+        char *opt = sk_OPENSSL_STRING_value(opts, i);
+        if (x509_ctrl_string(x, opt) <= 0) {
+            BIO_printf(bio_err, "parameter error \"%s\"\n", opt);
+            ERR_print_errors(bio_err);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int do_x509_req_init(X509_REQ *x, STACK_OF(OPENSSL_STRING) *opts)
+{
+    int i;
+
+    if (opts == NULL)
+        return 1;
+
+    for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
+        char *opt = sk_OPENSSL_STRING_value(opts, i);
+        if (x509_req_ctrl_string(x, opt) <= 0) {
+            BIO_printf(bio_err, "parameter error \"%s\"\n", opt);
+            ERR_print_errors(bio_err);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 static int do_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
                         const EVP_MD *md, STACK_OF(OPENSSL_STRING) *sigopts)
 {
     EVP_PKEY_CTX *pkctx = NULL;
-    int i, def_nid;
+    int def_nid;
 
     if (ctx == NULL)
         return 0;
@@ -1628,52 +1711,61 @@ static int do_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
         /* The signing algorithm requires there to be no digest */
         md = NULL;
     }
-    if (!EVP_DigestSignInit(ctx, &pkctx, md, NULL, pkey))
-        return 0;
-    for (i = 0; i < sk_OPENSSL_STRING_num(sigopts); i++) {
-        char *sigopt = sk_OPENSSL_STRING_value(sigopts, i);
-        if (pkey_ctrl_string(pkctx, sigopt) <= 0) {
-            BIO_printf(bio_err, "parameter error \"%s\"\n", sigopt);
-            ERR_print_errors(bio_err);
-            return 0;
-        }
-    }
-    return 1;
+    return EVP_DigestSignInit(ctx, &pkctx, md, NULL, pkey)
+        && do_pkey_ctx_init(pkctx, sigopts);
 }
 
 int do_X509_sign(X509 *x, EVP_PKEY *pkey, const EVP_MD *md,
                  STACK_OF(OPENSSL_STRING) *sigopts)
 {
-    int rv;
+    int rv = 0;
     EVP_MD_CTX *mctx = EVP_MD_CTX_new();
 
-    rv = do_sign_init(mctx, pkey, md, sigopts);
-    if (rv > 0)
-        rv = X509_sign_ctx(x, mctx);
+    if (do_sign_init(mctx, pkey, md, sigopts) > 0)
+        rv = (X509_sign_ctx(x, mctx) > 0);
     EVP_MD_CTX_free(mctx);
-    return rv > 0 ? 1 : 0;
+    return rv;
 }
 
 int do_X509_REQ_sign(X509_REQ *x, EVP_PKEY *pkey, const EVP_MD *md,
                      STACK_OF(OPENSSL_STRING) *sigopts)
 {
-    int rv;
+    int rv = 0;
     EVP_MD_CTX *mctx = EVP_MD_CTX_new();
-    rv = do_sign_init(mctx, pkey, md, sigopts);
-    if (rv > 0)
-        rv = X509_REQ_sign_ctx(x, mctx);
+
+    if (do_sign_init(mctx, pkey, md, sigopts) > 0)
+        rv = (X509_REQ_sign_ctx(x, mctx) > 0);
     EVP_MD_CTX_free(mctx);
-    return rv > 0 ? 1 : 0;
+    return rv;
+}
+
+int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts)
+{
+    int rv = 0;
+
+    if (do_x509_init(x, vfyopts) > 0)
+        rv = (X509_verify(x, pkey) > 0);
+    return rv;
+}
+
+int do_X509_REQ_verify(X509_REQ *x, EVP_PKEY *pkey,
+                       STACK_OF(OPENSSL_STRING) *vfyopts)
+{
+    int rv = 0;
+
+    if (do_x509_req_init(x, vfyopts) > 0)
+        rv = (X509_REQ_verify(x, pkey) > 0);
+    return rv;
 }
 
 int do_X509_CRL_sign(X509_CRL *x, EVP_PKEY *pkey, const EVP_MD *md,
                      STACK_OF(OPENSSL_STRING) *sigopts)
 {
-    int rv;
+    int rv = 0;
     EVP_MD_CTX *mctx = EVP_MD_CTX_new();
-    rv = do_sign_init(mctx, pkey, md, sigopts);
-    if (rv > 0)
-        rv = X509_CRL_sign_ctx(x, mctx);
+
+    if (do_sign_init(mctx, pkey, md, sigopts) > 0)
+        rv = (X509_CRL_sign_ctx(x, mctx) > 0);
     EVP_MD_CTX_free(mctx);
-    return rv > 0 ? 1 : 0;
+    return rv;
 }

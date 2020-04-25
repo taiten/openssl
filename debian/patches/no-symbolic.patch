@@ -7,7 +7,7 @@ Subject: no-symbolic
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/Configurations/shared-info.pl b/Configurations/shared-info.pl
-index 47eddd68355b..208132e7307f 100644
+index a673c7cada08..37d1e399a0d3 100644
 --- a/Configurations/shared-info.pl
 +++ b/Configurations/shared-info.pl
 @@ -25,7 +25,7 @@ sub detect_gnu_cc {

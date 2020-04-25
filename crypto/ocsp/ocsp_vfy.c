@@ -1,7 +1,7 @@
 /*
- * Copyright 2001-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -22,7 +22,7 @@ static int ocsp_match_issuerid(X509 *cert, OCSP_CERTID *cid,
                                STACK_OF(OCSP_SINGLERESP) *sresp);
 static int ocsp_check_delegated(X509 *x);
 static int ocsp_req_find_signer(X509 **psigner, OCSP_REQUEST *req,
-                                X509_NAME *nm, STACK_OF(X509) *certs,
+                                const X509_NAME *nm, STACK_OF(X509) *certs,
                                 unsigned long flags);
 
 /* Verify a basic response message */
@@ -279,7 +279,7 @@ static int ocsp_match_issuerid(X509 *cert, OCSP_CERTID *cid,
     /* If only one ID to match then do it */
     if (cid) {
         const EVP_MD *dgst;
-        X509_NAME *iname;
+        const X509_NAME *iname;
         int mdlen;
         unsigned char md[EVP_MAX_MD_SIZE];
         if ((dgst = EVP_get_digestbyobj(cid->hashAlgorithm.algorithm))
@@ -340,7 +340,7 @@ int OCSP_request_verify(OCSP_REQUEST *req, STACK_OF(X509) *certs,
                         X509_STORE *store, unsigned long flags)
 {
     X509 *signer;
-    X509_NAME *nm;
+    const X509_NAME *nm;
     GENERAL_NAME *gen;
     int ret = 0;
     X509_STORE_CTX *ctx = X509_STORE_CTX_new();
@@ -414,7 +414,7 @@ end:
 }
 
 static int ocsp_req_find_signer(X509 **psigner, OCSP_REQUEST *req,
-                                X509_NAME *nm, STACK_OF(X509) *certs,
+                                const X509_NAME *nm, STACK_OF(X509) *certs,
                                 unsigned long flags)
 {
     X509 *signer;

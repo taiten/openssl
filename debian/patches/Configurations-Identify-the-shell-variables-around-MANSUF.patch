@@ -1,0 +1,99 @@
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Sat, 25 Apr 2020 20:29:48 +0200
+Subject: Configurations: Identify the shell variables around MANSUFFIX
+
+With MANSUFFIX=A the statement '$$fn$(MANSUFFIX)' is reaplaces with
+'$fnA' and left empty because the `fnA' variables is not recognized
+within the shell.
+
+With {} around fn it is then bocomes ${fn}A and works as expected.
+While here, add the MANSUFFIX to the ECHO line so it is properly printed
+during build.
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ Configurations/unix-Makefile.tmpl | 40 +++++++++++++++++++--------------------
+ 1 file changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/Configurations/unix-Makefile.tmpl b/Configurations/unix-Makefile.tmpl
+index 4e1c0351c4da..6411df3067b3 100644
+--- a/Configurations/unix-Makefile.tmpl
++++ b/Configurations/unix-Makefile.tmpl
+@@ -860,30 +860,30 @@ install_man_docs: build_man_docs
+ 	@set -e; for x in dummy $(MANDOCS1); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man1/$$fn"; \
+-		cp $$x $(DESTDIR)$(MANDIR)/man1/$$fn$(MANSUFFIX); \
+-		chmod 755 $(DESTDIR)$(MANDIR)/man1/$$fn$(MANSUFFIX); \
++		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man1/$${fn}$(MANSUFFIX)"; \
++		cp $$x $(DESTDIR)$(MANDIR)/man1/$${fn}$(MANSUFFIX); \
++		chmod 755 $(DESTDIR)$(MANDIR)/man1/$${fn}$(MANSUFFIX); \
+ 	done
+ 	@set -e; for x in dummy $(MANDOCS3); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man3/$$fn"; \
+-		cp $$x $(DESTDIR)$(MANDIR)/man3/$$fn$(MANSUFFIX); \
+-		chmod 755 $(DESTDIR)$(MANDIR)/man3/$$fn$(MANSUFFIX); \
++		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man3/$${fn}$(MANSUFFIX)"; \
++		cp $$x $(DESTDIR)$(MANDIR)/man3/$${fn}$(MANSUFFIX); \
++		chmod 755 $(DESTDIR)$(MANDIR)/man3/$${fn}$(MANSUFFIX); \
+ 	done
+ 	@set -e; for x in dummy $(MANDOCS5); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man5/$$fn"; \
+-		cp $$x $(DESTDIR)$(MANDIR)/man5/$$fn$(MANSUFFIX); \
+-		chmod 755 $(DESTDIR)$(MANDIR)/man5/$$fn$(MANSUFFIX); \
++		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man5/$${fn}$(MANSUFFIX)"; \
++		cp $$x $(DESTDIR)$(MANDIR)/man5/$${fn}$(MANSUFFIX); \
++		chmod 755 $(DESTDIR)$(MANDIR)/man5/$${fn}$(MANSUFFIX); \
+ 	done
+ 	@set -e; for x in dummy $(MANDOCS7); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man7/$$fn"; \
+-		cp $$x $(DESTDIR)$(MANDIR)/man7/$$fn$(MANSUFFIX); \
+-		chmod 755 $(DESTDIR)$(MANDIR)/man7/$$fn$(MANSUFFIX); \
++		$(ECHO) "install $$x -> $(DESTDIR)$(MANDIR)/man7/$${fn}$(MANSUFFIX)"; \
++		cp $$x $(DESTDIR)$(MANDIR)/man7/$${fn}$(MANSUFFIX); \
++		chmod 755 $(DESTDIR)$(MANDIR)/man7/$${fn}$(MANSUFFIX); \
+ 	done
+ 
+ uninstall_man_docs:
+@@ -891,26 +891,26 @@ install_man_docs: build_man_docs
+ 	@set -e; for x in dummy $(MANDOCS1); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man1/$$fn"; \
+-		$(RM) $(DESTDIR)$(MANDIR)/man1/$$fn$(MANSUFFIX); \
++		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man1/$${fn}$(MANSUFFIX)"; \
++		$(RM) $(DESTDIR)$(MANDIR)/man1/$${fn}$(MANSUFFIX); \
+ 	done
+ 	@set -e; for x in dummy $(MANDOCS3); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man3/$$fn"; \
+-		$(RM) $(DESTDIR)$(MANDIR)/man3/$$fn$(MANSUFFIX); \
++		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man3/$${fn}$(MANSUFFIX)"; \
++		$(RM) $(DESTDIR)$(MANDIR)/man3/$${fn}$(MANSUFFIX); \
+ 	done
+ 	@set -e; for x in dummy $(MANDOCS5); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man5/$$fn"; \
+-		$(RM) $(DESTDIR)$(MANDIR)/man5/$$fn$(MANSUFFIX); \
++		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man5/$${fn}$(MANSUFFIX)"; \
++		$(RM) $(DESTDIR)$(MANDIR)/man5/$${fn}$(MANSUFFIX); \
+ 	done
+ 	@set -e; for x in dummy $(MANDOCS7); do \
+ 		if [ "$$x" = "dummy" ]; then continue; fi; \
+ 		fn=`basename $$x`; \
+-		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man7/$$fn"; \
+-		$(RM) $(DESTDIR)$(MANDIR)/man7/$$fn$(MANSUFFIX); \
++		$(ECHO) "$(RM) $(DESTDIR)$(MANDIR)/man7/$${fn}$(MANSUFFIX)"; \
++		$(RM) $(DESTDIR)$(MANDIR)/man7/$${fn}$(MANSUFFIX); \
+ 	done
+ 
+ install_html_docs: build_html_docs
