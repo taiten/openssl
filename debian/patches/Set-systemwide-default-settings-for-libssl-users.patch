@@ -10,11 +10,11 @@ security level to the 112 bit security level.
 
 Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- apps/openssl.cnf | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ apps/openssl.cnf | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
 diff --git a/apps/openssl.cnf b/apps/openssl.cnf
-index 4acca4b0446f..a6fed92a2e75 100644
+index 4fd5286d2e25..d13b002bd8d1 100644
 --- a/apps/openssl.cnf
 +++ b/apps/openssl.cnf
 @@ -15,6 +15,9 @@ HOME			= .
@@ -27,10 +27,11 @@ index 4acca4b0446f..a6fed92a2e75 100644
  # To use this configuration file with the "-extfile" option of the
  # "openssl x509" utility, name here the section containing the
  # X.509v3 extensions to use:
-@@ -348,3 +351,12 @@ ess_cert_id_chain	= no	# Must the ESS cert id chain be included?
- 				# (optional, default: no)
- ess_cert_id_alg		= sha1	# algorithm to compute certificate
- 				# identifier (optional, default: sha1)
+@@ -351,3 +354,13 @@ oldcert = $insta::certout # insta.cert.pem
+ # Certificate revocation
+ cmd = rr
+ oldcert = $insta::certout # insta.cert.pem
++
 +[default_conf]
 +ssl_conf = ssl_sect
 +

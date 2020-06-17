@@ -19,6 +19,9 @@
 #include <openssl/x509_vfy.h>
 #include <openssl/x509v3.h>
 
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF_STRING()
+
 static int save_certs(char *signerfile, STACK_OF(X509) *signers);
 static int smime_cb(int ok, X509_STORE_CTX *ctx);
 
@@ -60,7 +63,7 @@ const OPTIONS smime_options[] = {
      "Output format SMIME (default), PEM or DER"},
     {"inkey", OPT_INKEY, 's',
      "Input private key (if not signer or recipient)"},
-    {"keyform", OPT_KEYFORM, 'f', "Input private key format (PEM or ENGINE)"},
+    {"keyform", OPT_KEYFORM, 'f', "Input private key format (ENGINE, other values ignored)"},
 #ifndef OPENSSL_NO_ENGINE
     {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
 #endif
@@ -426,7 +429,7 @@ int smime_main(int argc, char **argv)
         if (encerts == NULL)
             goto end;
         while (*argv != NULL) {
-            cert = load_cert(*argv, FORMAT_PEM,
+            cert = load_cert(*argv, FORMAT_UNDEF,
                              "recipient certificate file");
             if (cert == NULL)
                 goto end;
@@ -445,7 +448,7 @@ int smime_main(int argc, char **argv)
     }
 
     if (recipfile != NULL && (operation == SMIME_DECRYPT)) {
-        if ((recip = load_cert(recipfile, FORMAT_PEM,
+        if ((recip = load_cert(recipfile, FORMAT_UNDEF,
                                "recipient certificate file")) == NULL) {
             ERR_print_errors(bio_err);
             goto end;
@@ -545,7 +548,7 @@ int smime_main(int argc, char **argv)
         for (i = 0; i < sk_OPENSSL_STRING_num(sksigners); i++) {
             signerfile = sk_OPENSSL_STRING_value(sksigners, i);
             keyfile = sk_OPENSSL_STRING_value(skkeys, i);
-            signer = load_cert(signerfile, FORMAT_PEM,
+            signer = load_cert(signerfile, FORMAT_UNDEF,
                                "signer certificate");
             if (signer == NULL)
                 goto end;

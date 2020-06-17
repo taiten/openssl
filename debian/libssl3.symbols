@@ -1,4 +1,6 @@
 libcrypto.so.3 libssl3 #MINVER#
+* Build-Depends-Package: libssl-dev
  *@OPENSSL_3.0.0 3.0.0~~alpha1
 libssl.so.3 libssl3 #MINVER#
+* Build-Depends-Package: libssl-dev
  *@OPENSSL_3.0.0 3.0.0~~alpha1

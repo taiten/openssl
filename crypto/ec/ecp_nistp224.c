@@ -75,6 +75,7 @@ typedef uint64_t u64;
  */
 
 typedef uint64_t limb;
+typedef uint64_t limb_aX __attribute((__aligned__(1)));
 typedef uint128_t widelimb;
 
 typedef limb felem[4];
@@ -311,10 +312,10 @@ const EC_METHOD *EC_GFp_nistp224_method(void)
  */
 static void bin28_to_felem(felem out, const u8 in[28])
 {
-    out[0] = *((const uint64_t *)(in)) & 0x00ffffffffffffff;
-    out[1] = (*((const uint64_t *)(in + 7))) & 0x00ffffffffffffff;
-    out[2] = (*((const uint64_t *)(in + 14))) & 0x00ffffffffffffff;
-    out[3] = (*((const uint64_t *)(in+20))) >> 8;
+    out[0] = *((const limb *)(in)) & 0x00ffffffffffffff;
+    out[1] = (*((const limb_aX *)(in + 7))) & 0x00ffffffffffffff;
+    out[2] = (*((const limb_aX *)(in + 14))) & 0x00ffffffffffffff;
+    out[3] = (*((const limb_aX *)(in + 20))) >> 8;
 }
 
 static void felem_to_bin28(u8 out[28], const felem in)
@@ -1299,7 +1300,7 @@ int ec_GFp_nistp224_group_set_curve(EC_GROUP *group, const BIGNUM *p,
 {
     int ret = 0;
     BIGNUM *curve_p, *curve_a, *curve_b;
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 
     if (ctx == NULL)
@@ -1326,7 +1327,7 @@ int ec_GFp_nistp224_group_set_curve(EC_GROUP *group, const BIGNUM *p,
     ret = ec_GFp_simple_group_set_curve(group, p, a, b, ctx);
  err:
     BN_CTX_end(ctx);
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);
 #endif
     return ret;
@@ -1617,14 +1618,14 @@ int ec_GFp_nistp224_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
     BIGNUM *x, *y;
     EC_POINT *generator = NULL;
     felem tmp_felems[32];
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
 
     /* throw away old precomputation */
     EC_pre_comp_free(group);
 
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     if (ctx == NULL)
         ctx = new_ctx = BN_CTX_new();
 #endif
@@ -1738,7 +1739,7 @@ int ec_GFp_nistp224_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
  err:
     BN_CTX_end(ctx);
     EC_POINT_free(generator);
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);
 #endif
     EC_nistp224_pre_comp_free(pre);

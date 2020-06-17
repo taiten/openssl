@@ -24,9 +24,6 @@ my $no_fips = disabled('fips') || ($ENV{NO_FIPS} // 0);
 
 my @types = ( "digest", "cipher" );
 
-$ENV{OPENSSL_MODULES} = bldtop_dir("providers");
-$ENV{OPENSSL_CONF_INCLUDE} = bldtop_dir("providers");
-
 my @setups = ();
 my @testdata = (
     { config    => srctop_file("test", "default.cnf"),
@@ -48,7 +45,7 @@ my @testdata = (
 unless ($no_fips) {
     push @setups, {
         cmd     => app(['openssl', 'fipsinstall',
-                        '-out', bldtop_file('providers', 'fipsinstall.cnf'),
+                        '-out', bldtop_file('providers', 'fipsmodule.cnf'),
                         '-module', bldtop_file('providers', platform->dso('fips')),
                         '-provider_name', 'fips', '-mac_name', 'HMAC',
                         '-macopt', 'digest:SHA256', '-macopt', 'hexkey:00',

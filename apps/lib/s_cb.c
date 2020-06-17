@@ -26,6 +26,11 @@
 
 #define COOKIE_SECRET_LENGTH    16
 
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(X509_CRL)
+DEFINE_STACK_OF(X509_NAME)
+DEFINE_STACK_OF_STRING()
+
 VERIFY_CB_ARGS verify_args = { -1, 0, X509_V_OK, 0 };
 
 #ifndef OPENSSL_NO_SOCK
@@ -1089,11 +1094,11 @@ int args_excert(int opt, SSL_EXCERT **pexc)
         exc->build_chain = 1;
         break;
     case OPT_X_CERTFORM:
-        if (!opt_format(opt_arg(), OPT_FMT_PEMDER, &exc->certform))
+        if (!opt_format(opt_arg(), OPT_FMT_ANY, &exc->certform))
             return 0;
         break;
     case OPT_X_KEYFORM:
-        if (!opt_format(opt_arg(), OPT_FMT_PEMDER, &exc->keyform))
+        if (!opt_format(opt_arg(), OPT_FMT_ANY, &exc->keyform))
             return 0;
         break;
     }

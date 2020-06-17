@@ -20,6 +20,10 @@
 #include <openssl/x509v3.h>
 #include "internal/cryptlib.h"
 
+DEFINE_STACK_OF(X509_NAME)
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF_CONST(SSL_CIPHER)
+
 #define TLS13_NUM_CIPHERS       OSSL_NELEM(tls13_ciphers)
 #define SSL3_NUM_CIPHERS        OSSL_NELEM(ssl3_ciphers)
 #define SSL3_NUM_SCSVS          OSSL_NELEM(ssl3_scsvs)
@@ -2683,6 +2687,38 @@ static SSL_CIPHER ssl3_ciphers[] = {
      0,
      0,
      },
+    {
+     1,
+     "GOST2012-KUZNYECHIK-KUZNYECHIKOMAC",
+     NULL,
+     0x0300C100,
+     SSL_kGOST18,
+     SSL_aGOST12,
+     SSL_KUZNYECHIK,
+     SSL_KUZNYECHIKOMAC,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_GOST12_256 | TLS1_PRF_GOST12_256 | TLS1_TLSTREE,
+     256,
+     256,
+     },
+    {
+     1,
+     "GOST2012-MAGMA-MAGMAOMAC",
+     NULL,
+     0x0300C101,
+     SSL_kGOST18,
+     SSL_aGOST12,
+     SSL_MAGMA,
+     SSL_MAGMAOMAC,
+     TLS1_2_VERSION, TLS1_2_VERSION,
+     0, 0,
+     SSL_HIGH,
+     SSL_HANDSHAKE_MAC_GOST12_256 | TLS1_PRF_GOST12_256 | TLS1_TLSTREE,
+     256,
+     256,
+     },
 #endif                          /* OPENSSL_NO_GOST */
 
 #ifndef OPENSSL_NO_IDEA
@@ -4370,11 +4406,17 @@ int ssl3_get_req_cert_type(SSL *s, WPACKET *pkt)
 
 #ifndef OPENSSL_NO_GOST
     if (s->version >= TLS1_VERSION && (alg_k & SSL_kGOST))
-            return WPACKET_put_bytes_u8(pkt, TLS_CT_GOST01_SIGN)
-                    && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_IANA_SIGN)
-                    && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_IANA_512_SIGN)
-                    && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_LEGACY_SIGN)
-                    && WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_LEGACY_512_SIGN);
+        if (!WPACKET_put_bytes_u8(pkt, TLS_CT_GOST01_SIGN)
+            || !WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_IANA_SIGN)
+            || !WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_IANA_512_SIGN)
+            || !WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_LEGACY_SIGN)
+            || !WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_LEGACY_512_SIGN))
+            return 0;
+
+    if (s->version >= TLS1_2_VERSION && (alg_k & SSL_kGOST18))
+        if (!WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_IANA_SIGN)
+            || !WPACKET_put_bytes_u8(pkt, TLS_CT_GOST12_IANA_512_SIGN))
+            return 0;
 #endif
 
     if ((s->version == SSL3_VERSION) && (alg_k & SSL_kDHE)) {

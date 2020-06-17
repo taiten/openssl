@@ -40,6 +40,11 @@
 extern "C" {
 #endif
 
+/* Needed stacks for types defined in other headers */
+DEFINE_OR_DECLARE_STACK_OF(X509_NAME)
+DEFINE_OR_DECLARE_STACK_OF(X509)
+DEFINE_OR_DECLARE_STACK_OF(X509_REVOKED)
+DEFINE_OR_DECLARE_STACK_OF(X509_CRL)
 
 /* Flags for X509_get_signature_info() */
 /* Signature info is valid */
@@ -77,32 +82,20 @@ typedef struct X509_val_st {
 typedef struct X509_sig_st X509_SIG;
 
 typedef struct X509_name_entry_st X509_NAME_ENTRY;
+DEFINE_OR_DECLARE_STACK_OF(X509_NAME_ENTRY)
 
-DEFINE_STACK_OF(X509_NAME_ENTRY)
-
-DEFINE_STACK_OF(X509_NAME)
 
 # define X509_EX_V_NETSCAPE_HACK         0x8000
 # define X509_EX_V_INIT                  0x0001
 typedef struct X509_extension_st X509_EXTENSION;
-
+DEFINE_OR_DECLARE_STACK_OF(X509_EXTENSION)
 typedef STACK_OF(X509_EXTENSION) X509_EXTENSIONS;
-
-DEFINE_STACK_OF(X509_EXTENSION)
-
 typedef struct x509_attributes_st X509_ATTRIBUTE;
-
-DEFINE_STACK_OF(X509_ATTRIBUTE)
-
+DEFINE_OR_DECLARE_STACK_OF(X509_ATTRIBUTE)
 typedef struct X509_req_info_st X509_REQ_INFO;
-
 typedef struct X509_req_st X509_REQ;
-
 typedef struct x509_cert_aux_st X509_CERT_AUX;
-
 typedef struct x509_cinf_st X509_CINF;
-
-DEFINE_STACK_OF(X509)
 
 /* This is used for a table of trust checking functions */
 
@@ -114,8 +107,8 @@ typedef struct x509_trust_st {
     int arg1;
     void *arg2;
 } X509_TRUST;
+DEFINE_OR_DECLARE_STACK_OF(X509_TRUST)
 
-DEFINE_STACK_OF(X509_TRUST)
 
 /* standard trust ids */
 
@@ -227,11 +220,7 @@ DEFINE_STACK_OF(X509_TRUST)
                         XN_FLAG_FN_LN | \
                         XN_FLAG_FN_ALIGN)
 
-DEFINE_STACK_OF(X509_REVOKED)
-
 typedef struct X509_crl_info_st X509_CRL_INFO;
-
-DEFINE_STACK_OF(X509_CRL)
 
 typedef struct private_key_st {
     int version;
@@ -256,8 +245,7 @@ typedef struct X509_info_st {
     int enc_len;
     char *enc_data;
 } X509_INFO;
-
-DEFINE_STACK_OF(X509_INFO)
+DEFINE_OR_DECLARE_STACK_OF(X509_INFO)
 
 /*
  * The next 2 structures and their 8 routines are used to manipulate Netscape's
@@ -531,8 +519,8 @@ DECLARE_ASN1_FUNCTIONS(X509_VAL)
 DECLARE_ASN1_FUNCTIONS(X509_PUBKEY)
 
 int X509_PUBKEY_set(X509_PUBKEY **x, EVP_PKEY *pkey);
-EVP_PKEY *X509_PUBKEY_get0(X509_PUBKEY *key);
-EVP_PKEY *X509_PUBKEY_get(X509_PUBKEY *key);
+EVP_PKEY *X509_PUBKEY_get0(const X509_PUBKEY *key);
+EVP_PKEY *X509_PUBKEY_get(const X509_PUBKEY *key);
 int X509_get_pubkey_parameters(EVP_PKEY *pkey, STACK_OF(X509) *chain);
 long X509_get_pathlen(X509 *x);
 DECLARE_ASN1_ENCODE_FUNCTIONS_only(EVP_PKEY, PUBKEY)
@@ -1064,7 +1052,8 @@ int X509_PUBKEY_set0_param(X509_PUBKEY *pub, ASN1_OBJECT *aobj,
                            unsigned char *penc, int penclen);
 int X509_PUBKEY_get0_param(ASN1_OBJECT **ppkalg,
                            const unsigned char **pk, int *ppklen,
-                           X509_ALGOR **pa, X509_PUBKEY *pub);
+                           X509_ALGOR **pa, const X509_PUBKEY *pub);
+int X509_PUBKEY_eq(const X509_PUBKEY *a, const X509_PUBKEY *b);
 
 int X509_check_trust(X509 *x, int id, int flags);
 int X509_TRUST_get_count(void);

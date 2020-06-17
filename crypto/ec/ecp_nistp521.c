@@ -131,6 +131,7 @@ static const felem_bytearray nistp521_curve_params[5] = {
 #define NLIMBS 9
 
 typedef uint64_t limb;
+typedef limb limb_aX __attribute((__aligned__(1)));
 typedef limb felem[NLIMBS];
 typedef uint128_t largefelem[NLIMBS];
 
@@ -144,14 +145,14 @@ static const limb bottom58bits = 0x3ffffffffffffff;
 static void bin66_to_felem(felem out, const u8 in[66])
 {
     out[0] = (*((limb *) & in[0])) & bottom58bits;
-    out[1] = (*((limb *) & in[7]) >> 2) & bottom58bits;
-    out[2] = (*((limb *) & in[14]) >> 4) & bottom58bits;
-    out[3] = (*((limb *) & in[21]) >> 6) & bottom58bits;
-    out[4] = (*((limb *) & in[29])) & bottom58bits;
-    out[5] = (*((limb *) & in[36]) >> 2) & bottom58bits;
-    out[6] = (*((limb *) & in[43]) >> 4) & bottom58bits;
-    out[7] = (*((limb *) & in[50]) >> 6) & bottom58bits;
-    out[8] = (*((limb *) & in[58])) & bottom57bits;
+    out[1] = (*((limb_aX *) & in[7]) >> 2) & bottom58bits;
+    out[2] = (*((limb_aX *) & in[14]) >> 4) & bottom58bits;
+    out[3] = (*((limb_aX *) & in[21]) >> 6) & bottom58bits;
+    out[4] = (*((limb_aX *) & in[29])) & bottom58bits;
+    out[5] = (*((limb_aX *) & in[36]) >> 2) & bottom58bits;
+    out[6] = (*((limb_aX *) & in[43]) >> 4) & bottom58bits;
+    out[7] = (*((limb_aX *) & in[50]) >> 6) & bottom58bits;
+    out[8] = (*((limb_aX *) & in[58])) & bottom57bits;
 }
 
 /*
@@ -162,14 +163,14 @@ static void felem_to_bin66(u8 out[66], const felem in)
 {
     memset(out, 0, 66);
     (*((limb *) & out[0])) = in[0];
-    (*((limb *) & out[7])) |= in[1] << 2;
-    (*((limb *) & out[14])) |= in[2] << 4;
-    (*((limb *) & out[21])) |= in[3] << 6;
-    (*((limb *) & out[29])) = in[4];
-    (*((limb *) & out[36])) |= in[5] << 2;
-    (*((limb *) & out[43])) |= in[6] << 4;
-    (*((limb *) & out[50])) |= in[7] << 6;
-    (*((limb *) & out[58])) = in[8];
+    (*((limb_aX *) & out[7])) |= in[1] << 2;
+    (*((limb_aX *) & out[14])) |= in[2] << 4;
+    (*((limb_aX *) & out[21])) |= in[3] << 6;
+    (*((limb_aX *) & out[29])) = in[4];
+    (*((limb_aX *) & out[36])) |= in[5] << 2;
+    (*((limb_aX *) & out[43])) |= in[6] << 4;
+    (*((limb_aX *) & out[50])) |= in[7] << 6;
+    (*((limb_aX *) & out[58])) = in[8];
 }
 
 /* BN_to_felem converts an OpenSSL BIGNUM into an felem */
@@ -1752,7 +1753,7 @@ int ec_GFp_nistp521_group_set_curve(EC_GROUP *group, const BIGNUM *p,
 {
     int ret = 0;
     BIGNUM *curve_p, *curve_a, *curve_b;
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 
     if (ctx == NULL)
@@ -1779,7 +1780,7 @@ int ec_GFp_nistp521_group_set_curve(EC_GROUP *group, const BIGNUM *p,
     ret = ec_GFp_simple_group_set_curve(group, p, a, b, ctx);
  err:
     BN_CTX_end(ctx);
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);
 #endif
     return ret;
@@ -2075,14 +2076,14 @@ int ec_GFp_nistp521_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
     BIGNUM *x, *y;
     EC_POINT *generator = NULL;
     felem tmp_felems[16];
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX *new_ctx = NULL;
 #endif
 
     /* throw away old precomputation */
     EC_pre_comp_free(group);
 
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     if (ctx == NULL)
         ctx = new_ctx = BN_CTX_new();
 #endif
@@ -2176,7 +2177,7 @@ int ec_GFp_nistp521_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
  err:
     BN_CTX_end(ctx);
     EC_POINT_free(generator);
-#ifndef FIPS_MODE
+#ifndef FIPS_MODULE
     BN_CTX_free(new_ctx);
 #endif
     EC_nistp521_pre_comp_free(pre);

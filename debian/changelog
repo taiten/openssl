@@ -1,3 +1,10 @@
+openssl (3.0.0~~alpha3-1) experimental; urgency=medium
+
+  * Import 3.0.0-alpha3
+  * Install the .so files only in the -dev package (Closes: #962548).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 17 Jun 2020 23:24:43 +0200
+
 openssl (3.0.0~~alpha1-1) experimental; urgency=medium
 
   * Import 3.0.0-alpha1 (Closes: #934836).

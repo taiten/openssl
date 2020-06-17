@@ -4,5 +4,6 @@ no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
 Set-systemwide-default-settings-for-libssl-users.patch
-VERSION-remove-quotes-from-RELEASE_DATE.patch
-Configurations-Identify-the-shell-variables-around-MANSUF.patch
+APPS-Properly-pass-no-CAstore.patch
+TEST-Pass-no-CAstore-in-80-test_ocsp.t.patch
+TEST-Provide-a-default-openssl.cnf-for-tests.patch

@@ -26,6 +26,14 @@
 #include "internal/refcount.h"
 #include "internal/ktls.h"
 
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(X509_NAME)
+DEFINE_STACK_OF_CONST(SSL_CIPHER)
+DEFINE_STACK_OF(X509_EXTENSION)
+DEFINE_STACK_OF(OCSP_RESPID)
+DEFINE_STACK_OF(SRTP_PROTECTION_PROFILE)
+DEFINE_STACK_OF(SCT)
+
 static int ssl_undefined_function_1(SSL *ssl, SSL3_RECORD *r, size_t s, int t)
 {
     (void)r;
@@ -2295,6 +2303,15 @@ int SSL_renegotiate_pending(const SSL *s)
     return (s->renegotiate != 0);
 }
 
+int SSL_new_session_ticket(SSL *s)
+{
+    if (SSL_in_init(s) || SSL_IS_FIRST_HANDSHAKE(s) || !s->server
+            || !SSL_IS_TLS13(s))
+        return 0;
+    s->ext.extra_tickets_expected++;
+    return 1;
+}
+
 long SSL_ctrl(SSL *s, int cmd, long larg, void *parg)
 {
     long l;
@@ -3478,11 +3495,11 @@ void ssl_set_masks(SSL *s)
 
 #ifndef OPENSSL_NO_GOST
     if (ssl_has_cert(s, SSL_PKEY_GOST12_512)) {
-        mask_k |= SSL_kGOST;
+        mask_k |= SSL_kGOST | SSL_kGOST18;
         mask_a |= SSL_aGOST12;
     }
     if (ssl_has_cert(s, SSL_PKEY_GOST12_256)) {
-        mask_k |= SSL_kGOST;
+        mask_k |= SSL_kGOST | SSL_kGOST18;
         mask_a |= SSL_aGOST12;
     }
     if (ssl_has_cert(s, SSL_PKEY_GOST01)) {
@@ -4322,7 +4339,6 @@ int SSL_CTX_load_verify_store(SSL_CTX *ctx, const char *CAstore)
     return X509_STORE_load_store(ctx->cert_store, CAstore);
 }
 
-#ifndef OPENSSL_NO_DEPRECATED_3_0
 int SSL_CTX_load_verify_locations(SSL_CTX *ctx, const char *CAfile,
                                   const char *CApath)
 {
@@ -4334,7 +4350,6 @@ int SSL_CTX_load_verify_locations(SSL_CTX *ctx, const char *CAfile,
         return 0;
     return 1;
 }
-#endif
 
 void SSL_set_info_callback(SSL *ssl,
                            void (*cb) (const SSL *ssl, int type, int val))

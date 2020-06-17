@@ -17,6 +17,8 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 
+DEFINE_STACK_OF(X509)
+
 static int ssl_set_cert(CERT *c, X509 *x509);
 static int ssl_set_pkey(CERT *c, EVP_PKEY *pkey);
 
@@ -1113,7 +1115,7 @@ static int ssl_set_cert_and_key(SSL *ssl, SSL_CTX *ctx, X509 *x509, EVP_PKEY *pr
         else
 #endif
         /* check that key <-> cert match */
-        if (EVP_PKEY_cmp(pubkey, privatekey) != 1) {
+        if (EVP_PKEY_eq(pubkey, privatekey) != 1) {
             SSLerr(SSL_F_SSL_SET_CERT_AND_KEY, SSL_R_PRIVATE_KEY_MISMATCH);
             goto out;
         }

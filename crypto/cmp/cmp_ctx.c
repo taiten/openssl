@@ -20,7 +20,16 @@
 #include <openssl/crmf.h>
 #include <openssl/err.h>
 
-/* Get current certificate store containing trusted root CA certs */
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(X509_EXTENSION)
+DEFINE_STACK_OF(POLICYINFO)
+DEFINE_STACK_OF(ASN1_UTF8STRING)
+DEFINE_STACK_OF(GENERAL_NAME)
+DEFINE_STACK_OF(OSSL_CMP_ITAV)
+
+/*
+ * Get current certificate store containing trusted root CA certs
+ */
 X509_STORE *OSSL_CMP_CTX_get0_trustedStore(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
@@ -155,7 +164,7 @@ void OSSL_CMP_CTX_free(OSSL_CMP_CTX *ctx)
     X509_STORE_free(ctx->trusted);
     sk_X509_pop_free(ctx->untrusted_certs, X509_free);
 
-    X509_free(ctx->clCert);
+    X509_free(ctx->cert);
     EVP_PKEY_free(ctx->pkey);
     ASN1_OCTET_STRING_free(ctx->referenceValue);
     if (ctx->secretValue != NULL)
@@ -667,12 +676,12 @@ int OSSL_CMP_CTX_push1_subjectAltName(OSSL_CMP_CTX *ctx,
  * Set our own client certificate, used for example in KUR and when
  * doing the IR with existing certificate.
  */
-DEFINE_OSSL_CMP_CTX_set1_up_ref(clCert, X509)
+DEFINE_OSSL_CMP_CTX_set1_up_ref(cert, X509)
 
 /*
  * Set the old certificate that we are updating in KUR
  * or the certificate to be revoked in RR, respectively.
- * Also used as reference cert (defaulting to clCert) for deriving subject DN
+ * Also used as reference cert (defaulting to cert) for deriving subject DN
  * and SANs. Its issuer is used as default recipient in the CMP message header.
  */
 DEFINE_OSSL_CMP_CTX_set1_up_ref(oldCert, X509)

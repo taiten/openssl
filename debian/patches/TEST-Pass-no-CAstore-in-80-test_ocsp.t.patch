@@ -1,0 +1,27 @@
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Tue, 16 Jun 2020 23:50:26 +0200
+Subject: TEST: Pass -no-CAstore in 80-test_ocsp.t
+
+Without passing -no-CAstore the default CAstore will be used and the
+testsuite will fail the system has certificates installed.
+
+Fixes: #11645
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ test/recipes/80-test_ocsp.t | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/recipes/80-test_ocsp.t b/test/recipes/80-test_ocsp.t
+index 3aedd093e591..3727c360ba0a 100644
+--- a/test/recipes/80-test_ocsp.t
++++ b/test/recipes/80-test_ocsp.t
+@@ -45,7 +45,7 @@ sub test_ocsp {
+                            "-partial_chain", @check_time,
+                            "-CAfile", catfile($ocspdir, $CAfile),
+                            "-verify_other", catfile($ocspdir, $untrusted),
+-                           "-no-CApath"])),
++                           "-no-CApath", "-no-CAstore"])),
+                   $title); });
+ }
+ 

@@ -18,6 +18,10 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(X509_CRL)
+DEFINE_STACK_OF_STRING()
+
 static int cb(int ok, X509_STORE_CTX *ctx);
 static int check(X509_STORE *ctx, const char *file,
                  STACK_OF(X509) *uchain, STACK_OF(X509) *tchain,
@@ -56,7 +60,7 @@ const OPTIONS verify_options[] = {
      "Do not load the default trusted certificates file"},
     {"no-CApath", OPT_NOCAPATH, '-',
      "Do not load trusted certificates from the default directory"},
-    {"no-CAstore", OPT_NOCAPATH, '-',
+    {"no-CAstore", OPT_NOCASTORE, '-',
      "Do not load trusted certificates from the default certificates store"},
     {"untrusted", OPT_UNTRUSTED, '<', "A file of untrusted certificates"},
     {"CRLfile", OPT_CRLFILE, '<',
@@ -252,7 +256,7 @@ static int check(X509_STORE *ctx, const char *file,
     STACK_OF(X509) *chain = NULL;
     int num_untrusted;
 
-    x = load_cert(file, FORMAT_PEM, "certificate file");
+    x = load_cert(file, FORMAT_UNDEF, "certificate file");
     if (x == NULL)
         goto end;
 

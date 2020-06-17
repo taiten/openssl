@@ -21,6 +21,12 @@
 
 #include "openssl/cmp_util.h"
 
+DEFINE_STACK_OF(ASN1_UTF8STRING)
+DEFINE_STACK_OF(X509_CRL)
+DEFINE_STACK_OF(OSSL_CMP_CERTRESPONSE)
+DEFINE_STACK_OF(OSSL_CMP_PKISI)
+DEFINE_STACK_OF(OSSL_CRMF_CERTID)
+
 #define IS_CREP(t) ((t) == OSSL_CMP_PKIBODY_IP || (t) == OSSL_CMP_PKIBODY_CP \
                         || (t) == OSSL_CMP_PKIBODY_KUP)
 
@@ -170,7 +176,7 @@ static int send_receive_check(OSSL_CMP_CTX *ctx, const OSSL_CMP_MSG *req,
 
     if (*rep == NULL) {
         CMPerr(0, CMP_R_TRANSFER_ERROR); /* or receiving response */
-        ERR_add_error_data(1, req_type_str);
+        ERR_add_error_data(2, "request sent: ", req_type_str);
         ERR_add_error_data(2, ", expected response: ", expected_type_str);
         return 0;
     }
@@ -205,7 +211,8 @@ static int send_receive_check(OSSL_CMP_CTX *ctx, const OSSL_CMP_MSG *req,
         char buf[OSSL_CMP_PKISI_BUFLEN];
 
         if (save_statusInfo(ctx, si)
-                && OSSL_CMP_CTX_snprint_PKIStatus(ctx, buf, sizeof(buf)) != NULL)
+                && OSSL_CMP_CTX_snprint_PKIStatus(ctx, buf,
+                                                  sizeof(buf)) != NULL)
             ERR_add_error_data(1, buf);
         if (emc->errorCode != NULL
                 && BIO_snprintf(buf, sizeof(buf), "; errorCode: %ld",
