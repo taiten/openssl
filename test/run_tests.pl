@@ -27,7 +27,7 @@ my $bldtop = $ENV{BLDTOP} || $ENV{TOP};
 my $recipesdir = catdir($srctop, "test", "recipes");
 my $libdir = rel2abs(catdir($srctop, "util", "perl"));
 
-$ENV{OPENSSL_CONF} = rel2abs(catdir($srctop, "apps", "openssl.cnf"));
+$ENV{OPENSSL_CONF} = rel2abs(catdir($srctop, "test", "openssl.cnf"));
 $ENV{OPENSSL_CONF_INCLUDE} = rel2abs(catdir($bldtop, "providers"));
 $ENV{OPENSSL_MODULES} = rel2abs(catdir($bldtop, "providers"));
 $ENV{OPENSSL_ENGINES} = rel2abs(catdir($bldtop, "engines"));
