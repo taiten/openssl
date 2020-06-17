@@ -10,6 +10,8 @@
 #include "crypto/cryptlib.h"
 #include "internal/thread_once.h"
 
+DEFINE_STACK_OF(void)
+
 int do_ex_data_init(OPENSSL_CTX *ctx)
 {
     OSSL_EX_DATA_GLOBAL *global = openssl_ctx_get_ex_data_global(ctx);
@@ -94,7 +96,7 @@ static void dummy_free(void *parent, void *ptr, CRYPTO_EX_DATA *ad, int idx,
 }
 
 static int dummy_dup(CRYPTO_EX_DATA *to, const CRYPTO_EX_DATA *from,
-                     void *from_d, int idx,
+                     void **from_d, int idx,
                      long argl, void *argp)
 {
     return 1;

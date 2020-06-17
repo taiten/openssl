@@ -16,6 +16,8 @@
 #include <openssl/core_names.h>
 #include "crypto/x509.h"
 
+DEFINE_STACK_OF(X509)
+
 int X509_issuer_and_serial_cmp(const X509 *a, const X509 *b)
 {
     int i;
@@ -298,7 +300,7 @@ int X509_check_private_key(const X509 *x, const EVP_PKEY *k)
     xk = X509_get0_pubkey(x);
 
     if (xk)
-        ret = EVP_PKEY_cmp(xk, k);
+        ret = EVP_PKEY_eq(xk, k);
     else
         ret = -2;
 

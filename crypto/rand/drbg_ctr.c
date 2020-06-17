@@ -366,9 +366,11 @@ __owur static int drbg_ctr_generate(RAND_DRBG *drbg,
         ctr32 = GETU32(ctr->V + 12) + blocks;
         if (ctr32 < blocks) {
             /* 32-bit counter overflow into V. */
-            blocks -= ctr32;
-            buflen = blocks * 16;
-            ctr32 = 0;
+            if (ctr32 != 0) {
+                blocks -= ctr32;
+                buflen = blocks * 16;
+                ctr32 = 0;
+            }
             ctr96_inc(ctr->V);
         }
         PUTU32(ctr->V + 12, ctr32);
@@ -480,7 +482,7 @@ int drbg_ctr_init(RAND_DRBG *drbg)
         drbg->max_perslen = DRBG_MAX_LENGTH;
         drbg->max_adinlen = DRBG_MAX_LENGTH;
     } else {
-#ifdef FIPS_MODE
+#ifdef FIPS_MODULE
         RANDerr(RAND_F_DRBG_CTR_INIT,
                 RAND_R_DERIVATION_FUNCTION_MANDATORY_FOR_FIPS);
         return 0;

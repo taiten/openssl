@@ -18,6 +18,7 @@
 #include "crypto/asn1.h"
 #include "crypto/evp.h"
 
+DEFINE_STACK_OF(ASN1_TYPE)
 EVP_PKEY *d2i_PrivateKey_ex(int type, EVP_PKEY **a, const unsigned char **pp,
                             long length, OPENSSL_CTX *libctx, const char *propq)
 {
@@ -57,6 +58,8 @@ EVP_PKEY *d2i_PrivateKey_ex(int type, EVP_PKEY **a, const unsigned char **pp,
                 goto err;
             EVP_PKEY_free(ret);
             ret = tmp;
+            if (EVP_PKEY_type(type) != EVP_PKEY_base_id(ret))
+                goto err;
         } else {
             ASN1err(0, ERR_R_ASN1_LIB);
             goto err;

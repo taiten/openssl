@@ -12,6 +12,10 @@
 #include "statem_local.h"
 #include "internal/cryptlib.h"
 
+DEFINE_STACK_OF(SRTP_PROTECTION_PROFILE)
+DEFINE_STACK_OF(OCSP_RESPID)
+DEFINE_STACK_OF(X509_EXTENSION)
+
 #define COOKIE_STATE_FORMAT_VERSION     0
 
 /*
@@ -1644,7 +1648,9 @@ EXT_RETURN tls_construct_stoc_etm(SSL *s, WPACKET *pkt, unsigned int context,
     if (s->s3.tmp.new_cipher->algorithm_mac == SSL_AEAD
         || s->s3.tmp.new_cipher->algorithm_enc == SSL_RC4
         || s->s3.tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT
-        || s->s3.tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT12) {
+        || s->s3.tmp.new_cipher->algorithm_enc == SSL_eGOST2814789CNT12
+        || s->s3.tmp.new_cipher->algorithm_enc == SSL_MAGMA
+        || s->s3.tmp.new_cipher->algorithm_enc == SSL_KUZNYECHIK) {
         s->ext.use_etm = 0;
         return EXT_RETURN_NOT_SENT;
     }

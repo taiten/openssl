@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -84,4 +84,12 @@ int OSSL_PROVIDER_add_builtin(OPENSSL_CTX *libctx, const char *name,
 const char *OSSL_PROVIDER_name(const OSSL_PROVIDER *prov)
 {
     return ossl_provider_name(prov);
+}
+
+int OSSL_PROVIDER_do_all(OPENSSL_CTX *ctx,
+                         int (*cb)(OSSL_PROVIDER *provider,
+                                   void *cbdata),
+                         void *cbdata)
+{
+    return ossl_provider_forall_loaded(ctx, cb, cbdata);
 }

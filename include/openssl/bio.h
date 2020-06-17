@@ -61,6 +61,7 @@ extern "C" {
 # ifndef OPENSSL_NO_SCTP
 #  define BIO_TYPE_DGRAM_SCTP    (24|BIO_TYPE_SOURCE_SINK|BIO_TYPE_DESCRIPTOR)
 # endif
+# define BIO_TYPE_CORE_TO_PROV   (25|BIO_TYPE_FILTER)
 
 #define BIO_TYPE_START           128
 
@@ -286,7 +287,7 @@ int BIO_method_type(const BIO *b);
 typedef int BIO_info_cb(BIO *, int, int);
 typedef BIO_info_cb bio_info_cb;  /* backward compatibility */
 
-DEFINE_STACK_OF(BIO)
+DEFINE_OR_DECLARE_STACK_OF(BIO)
 
 /* Prefix and suffix callback in ASN1 BIO */
 typedef int asn1_ps_func (BIO *b, unsigned char **pbuf, int *plen,

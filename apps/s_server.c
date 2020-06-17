@@ -60,6 +60,12 @@ typedef unsigned int u_int;
 #endif
 #include "internal/sockets.h"
 
+DEFINE_STACK_OF(X509_EXTENSION)
+DEFINE_STACK_OF(X509_CRL)
+DEFINE_STACK_OF(X509)
+DEFINE_STACK_OF(SSL_CIPHER)
+DEFINE_STACK_OF_STRING()
+
 static int not_resumable_sess_cb(SSL *s, int is_forward_secure);
 static int sv_body(int s, int stype, int prot, unsigned char *context);
 static int www_body(int s, int stype, int prot, unsigned char *context);
@@ -755,7 +761,7 @@ typedef enum OPTION_choice {
     OPT_SRTP_PROFILES, OPT_KEYMATEXPORT, OPT_KEYMATEXPORTLEN,
     OPT_KEYLOG_FILE, OPT_MAX_EARLY, OPT_RECV_MAX_EARLY, OPT_EARLY_DATA,
     OPT_S_NUM_TICKETS, OPT_ANTI_REPLAY, OPT_NO_ANTI_REPLAY, OPT_SCTP_LABEL_BUG,
-    OPT_HTTP_SERVER_BINMODE,
+    OPT_HTTP_SERVER_BINMODE, OPT_NOCANAMES, OPT_IGNORE_UNEXPECTED_EOF,
     OPT_R_ENUM,
     OPT_S_ENUM,
     OPT_V_ENUM,
@@ -807,7 +813,7 @@ const OPTIONS s_server_options[] = {
     {"cert2", OPT_CERT2, '<',
      "Certificate file to use for servername; default is" TEST_CERT2},
     {"certform", OPT_CERTFORM, 'F',
-     "Server certificate file format (PEM or DER) PEM default"},
+     "Server certificate file format (PEM/DER/P12); has no effect"},
     {"cert_chain", OPT_CERT_CHAIN, '<',
      "Server certificate chain file in PEM format"},
     {"build_chain", OPT_BUILD_CHAIN, '-', "Build server certificate chain"},
@@ -817,19 +823,18 @@ const OPTIONS s_server_options[] = {
      "Private key file to use; default is -cert file or else" TEST_CERT},
     {"key2", OPT_KEY2, '<',
      "-Private Key file to use for servername if not in -cert2"},
-    {"keyform", OPT_KEYFORM, 'f',
-     "Key format (PEM, DER or ENGINE) PEM default"},
+    {"keyform", OPT_KEYFORM, 'f', "Key format (ENGINE, other values ignored)"},
     {"pass", OPT_PASS, 's', "Private key file pass phrase source"},
     {"dcert", OPT_DCERT, '<',
      "Second server certificate file to use (usually for DSA)"},
     {"dcertform", OPT_DCERTFORM, 'F',
-     "Second server certificate file format (PEM or DER) PEM default"},
+     "Second server certificate file format (PEM/DER/P12); has no effect"},
     {"dcert_chain", OPT_DCERT_CHAIN, '<',
      "second server certificate chain file in PEM format"},
     {"dkey", OPT_DKEY, '<',
      "Second private key file to use (usually for DSA)"},
     {"dkeyform", OPT_DKEYFORM, 'F',
-     "Second key file format (PEM, DER or ENGINE) PEM default"},
+     "Second key file format (ENGINE, other values ignored)"},
     {"dpass", OPT_DPASS, 's', "Second private key file pass phrase source"},
     {"dhparam", OPT_DHPARAM, '<', "DH parameters file to use"},
     {"servername", OPT_SERVERNAME, 's',
@@ -845,6 +850,8 @@ const OPTIONS s_server_options[] = {
      "Disable caching and tickets if ephemeral (EC)DH is used"},
     {"www", OPT_WWW, '-', "Respond to a 'GET /' with a status page"},
     {"WWW", OPT_UPPER_WWW, '-', "Respond to a 'GET with the file ./path"},
+    {"ignore_unexpected_eof", OPT_IGNORE_UNEXPECTED_EOF, '-',
+     "Do not treat lack of close_notify from a peer as an error"},
     {"tlsextdebug", OPT_TLSEXTDEBUG, '-',
      "Hex dump of all TLS extensions received"},
     {"HTTP", OPT_HTTP, '-', "Like -WWW but ./path includes HTTP headers"},
@@ -946,6 +953,8 @@ const OPTIONS s_server_options[] = {
     {"anti_replay", OPT_ANTI_REPLAY, '-', "Switch on anti-replay protection (default)"},
     {"no_anti_replay", OPT_NO_ANTI_REPLAY, '-', "Switch off anti-replay protection"},
     {"http_server_binmode", OPT_HTTP_SERVER_BINMODE, '-', "opening files in binary mode when acting as http server (-WWW and -HTTP)"},
+    {"no_ca_names", OPT_NOCANAMES, '-',
+     "Disable TLS Extension CA Names"},
     {"stateless", OPT_STATELESS, '-', "Require TLSv1.3 cookies"},
 #ifndef OPENSSL_NO_SSL3
     {"ssl3", OPT_SSL3, '-', "Just talk SSLv3"},
@@ -1083,9 +1092,11 @@ int s_server_main(int argc, char *argv[])
     const char *keylog_file = NULL;
     int max_early_data = -1, recv_max_early_data = -1;
     char *psksessf = NULL;
+    int no_ca_names = 0;
 #ifndef OPENSSL_NO_SCTP
     int sctp_label_bug = 0;
 #endif
+    int ignore_unexpected_eof = 0;
 
     /* Init of few remaining global variables */
     local_argc = argc;
@@ -1237,14 +1248,14 @@ int s_server_main(int argc, char *argv[])
             s_serverinfo_file = opt_arg();
             break;
         case OPT_CERTFORM:
-            if (!opt_format(opt_arg(), OPT_FMT_PEMDER, &s_cert_format))
+            if (!opt_format(opt_arg(), OPT_FMT_ANY, &s_cert_format))
                 goto opthelp;
             break;
         case OPT_KEY:
             s_key_file = opt_arg();
             break;
         case OPT_KEYFORM:
-            if (!opt_format(opt_arg(), OPT_FMT_PDE, &s_key_format))
+            if (!opt_format(opt_arg(), OPT_FMT_ANY, &s_key_format))
                 goto opthelp;
             break;
         case OPT_PASS:
@@ -1259,14 +1270,14 @@ int s_server_main(int argc, char *argv[])
 #endif
             break;
         case OPT_DCERTFORM:
-            if (!opt_format(opt_arg(), OPT_FMT_PEMDER, &s_dcert_format))
+            if (!opt_format(opt_arg(), OPT_FMT_ANY, &s_dcert_format))
                 goto opthelp;
             break;
         case OPT_DCERT:
             s_dcert_file = opt_arg();
             break;
         case OPT_DKEYFORM:
-            if (!opt_format(opt_arg(), OPT_FMT_PDE, &s_dkey_format))
+            if (!opt_format(opt_arg(), OPT_FMT_ANY, &s_dkey_format))
                 goto opthelp;
             break;
         case OPT_DPASS:
@@ -1568,7 +1579,9 @@ int s_server_main(int argc, char *argv[])
             session_id_prefix = opt_arg();
             break;
         case OPT_ENGINE:
-            engine = setup_engine(opt_arg(), 1);
+#ifndef OPENSSL_NO_ENGINE
+            engine = setup_engine(opt_arg(), s_debug);
+#endif
             break;
         case OPT_R_CASES:
             if (!opt_rand(o))
@@ -1649,10 +1662,16 @@ int s_server_main(int argc, char *argv[])
         case OPT_HTTP_SERVER_BINMODE:
             http_server_binmode = 1;
             break;
+        case OPT_NOCANAMES:
+            no_ca_names = 1;
+            break;
         case OPT_SENDFILE:
 #ifndef OPENSSL_NO_KTLS
             use_sendfile = 1;
 #endif
+            break;
+        case OPT_IGNORE_UNEXPECTED_EOF:
+            ignore_unexpected_eof = 1;
             break;
         }
     }
@@ -1730,18 +1749,14 @@ int s_server_main(int argc, char *argv[])
     if (nocert == 0) {
         s_key = load_key(s_key_file, s_key_format, 0, pass, engine,
                          "server certificate private key file");
-        if (s_key == NULL) {
-            ERR_print_errors(bio_err);
+        if (s_key == NULL)
             goto end;
-        }
 
         s_cert = load_cert(s_cert_file, s_cert_format,
                            "server certificate file");
 
-        if (s_cert == NULL) {
-            ERR_print_errors(bio_err);
+        if (s_cert == NULL)
             goto end;
-        }
         if (s_chain_file != NULL) {
             if (!load_certs(s_chain_file, &s_chain, FORMAT_PEM, NULL,
                             "server certificate chain"))
@@ -1751,18 +1766,14 @@ int s_server_main(int argc, char *argv[])
         if (tlsextcbp.servername != NULL) {
             s_key2 = load_key(s_key_file2, s_key_format, 0, pass, engine,
                               "second server certificate private key file");
-            if (s_key2 == NULL) {
-                ERR_print_errors(bio_err);
+            if (s_key2 == NULL)
                 goto end;
-            }
 
             s_cert2 = load_cert(s_cert_file2, s_cert_format,
                                 "second server certificate file");
 
-            if (s_cert2 == NULL) {
-                ERR_print_errors(bio_err);
+            if (s_cert2 == NULL)
                 goto end;
-            }
         }
     }
 #if !defined(OPENSSL_NO_NEXTPROTONEG)
@@ -1781,12 +1792,9 @@ int s_server_main(int argc, char *argv[])
 
     if (crl_file != NULL) {
         X509_CRL *crl;
-        crl = load_crl(crl_file, crl_format);
-        if (crl == NULL) {
-            BIO_puts(bio_err, "Error loading CRL\n");
-            ERR_print_errors(bio_err);
+        crl = load_crl(crl_file, crl_format, "CRL");
+        if (crl == NULL)
             goto end;
-        }
         crls = sk_X509_CRL_new_null();
         if (crls == NULL || !sk_X509_CRL_push(crls, crl)) {
             BIO_puts(bio_err, "Error adding CRL\n");
@@ -1803,10 +1811,8 @@ int s_server_main(int argc, char *argv[])
 
         s_dkey = load_key(s_dkey_file, s_dkey_format,
                           0, dpass, engine, "second certificate private key file");
-        if (s_dkey == NULL) {
-            ERR_print_errors(bio_err);
+        if (s_dkey == NULL)
             goto end;
-        }
 
         s_dcert = load_cert(s_dcert_file, s_dcert_format,
                             "second server certificate file");
@@ -1867,7 +1873,6 @@ int s_server_main(int argc, char *argv[])
             goto end;
         }
     }
-
 #ifndef OPENSSL_NO_SCTP
     if (protocol == IPPROTO_SCTP && sctp_label_bug == 1)
         SSL_CTX_set_mode(ctx, SSL_MODE_DTLS_SCTP_LABEL_LENGTH_BUG);
@@ -1891,7 +1896,6 @@ int s_server_main(int argc, char *argv[])
         }
         BIO_printf(bio_err, "id_prefix '%s' set.\n", session_id_prefix);
     }
-    SSL_CTX_set_quiet_shutdown(ctx, 1);
     if (exc != NULL)
         ssl_ctx_set_excert(ctx, exc);
 
@@ -1907,6 +1911,13 @@ int s_server_main(int argc, char *argv[])
     if (async) {
         SSL_CTX_set_mode(ctx, SSL_MODE_ASYNC);
     }
+
+    if (no_ca_names) {
+        SSL_CTX_set_options(ctx, SSL_OP_DISABLE_TLSEXT_CA_NAMES);
+    }
+
+    if (ignore_unexpected_eof)
+        SSL_CTX_set_options(ctx, SSL_OP_IGNORE_UNEXPECTED_EOF);
 
     if (max_send_fragment > 0
         && !SSL_CTX_set_max_send_fragment(ctx, max_send_fragment)) {
@@ -1989,7 +2000,6 @@ int s_server_main(int argc, char *argv[])
             }
             BIO_printf(bio_err, "id_prefix '%s' set.\n", session_id_prefix);
         }
-        SSL_CTX_set_quiet_shutdown(ctx2, 1);
         if (exc != NULL)
             ssl_ctx_set_excert(ctx2, exc);
 
@@ -2777,7 +2787,7 @@ static int sv_body(int s, int stype, int prot, unsigned char *context)
  err:
     if (con != NULL) {
         BIO_printf(bio_s_out, "shutting down SSL\n");
-        SSL_set_shutdown(con, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+        do_ssl_shutdown(con);
         SSL_free(con);
     }
     BIO_printf(bio_s_out, "CONNECTION CLOSED\n");
@@ -3446,7 +3456,7 @@ static int www_body(int s, int stype, int prot, unsigned char *context)
     }
  end:
     /* make sure we re-use sessions */
-    SSL_set_shutdown(con, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+    do_ssl_shutdown(con);
 
  err:
     OPENSSL_free(buf);
@@ -3600,7 +3610,7 @@ static int rev_body(int s, int stype, int prot, unsigned char *context)
     }
  end:
     /* make sure we re-use sessions */
-    SSL_set_shutdown(con, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+    do_ssl_shutdown(con);
 
  err:
 
