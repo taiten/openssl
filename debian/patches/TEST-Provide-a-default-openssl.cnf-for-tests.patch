@@ -372,10 +372,10 @@ index 000000000000..4fd5286d2e25
 +cmd = rr
 +oldcert = $insta::certout # insta.cert.pem
 diff --git a/test/run_tests.pl b/test/run_tests.pl
-index b75f763979eb..503ea689fc1d 100644
+index 8306c6018ae0..dc0d3f8010eb 100644
 --- a/test/run_tests.pl
 +++ b/test/run_tests.pl
-@@ -27,7 +27,7 @@ my $bldtop = $ENV{BLDTOP} || $ENV{TOP};
+@@ -31,7 +31,7 @@ my $bldtop = $ENV{BLDTOP} || $ENV{TOP};
  my $recipesdir = catdir($srctop, "test", "recipes");
  my $libdir = rel2abs(catdir($srctop, "util", "perl"));
  

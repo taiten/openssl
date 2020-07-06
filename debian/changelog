@@ -1,3 +1,11 @@
+openssl (3.0.0~~alpha4-1) experimental; urgency=medium
+
+  * Import 3.0.0-alpha4.
+  * Add `lsof' which is needed by the test suite.
+  * Add ossl-modules to libcrypto's udeb.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 07 Jul 2020 00:16:54 +0200
+
 openssl (3.0.0~~alpha3-1) experimental; urgency=medium
 
   * Import 3.0.0-alpha3

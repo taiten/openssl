@@ -1,0 +1,24 @@
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Mon, 6 Jul 2020 23:54:18 +0200
+Subject: tests: Skip test/recipes/81-test_cmp_cli.t
+
+It times out most of the time.
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ test/recipes/81-test_cmp_cli.t | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test/recipes/81-test_cmp_cli.t b/test/recipes/81-test_cmp_cli.t
+index 82441327fe13..7d53bb097c3d 100644
+--- a/test/recipes/81-test_cmp_cli.t
++++ b/test/recipes/81-test_cmp_cli.t
+@@ -20,6 +20,8 @@ use Data::Dumper; # for debugging purposes only
+ 
+ setup("test_cmp_cli");
+ 
++plan skip_all => "These tests timeout.";
++
+ plan skip_all => "These tests are not supported in a no-cmp build"
+     if disabled("cmp");
+ plan skip_all => "These tests are not supported in a no-ec build"

@@ -2429,10 +2429,8 @@ long SSL_CTX_ctrl(SSL_CTX *ctx, int cmd, long larg, void *parg)
     /* For some cases with ctx == NULL perform syntax checks */
     if (ctx == NULL) {
         switch (cmd) {
-#ifndef OPENSSL_NO_EC
         case SSL_CTRL_SET_GROUPS_LIST:
-            return tls1_set_groups_list(NULL, NULL, parg);
-#endif
+            return tls1_set_groups_list(ctx, NULL, NULL, parg);
         case SSL_CTRL_SET_SIGALGS_LIST:
         case SSL_CTRL_SET_CLIENT_SIGALGS_LIST:
             return tls1_set_sigalgs_list(NULL, parg, 0);
@@ -3166,6 +3164,13 @@ SSL_CTX *SSL_CTX_new_with_libctx(OPENSSL_CTX *libctx, const char *propq,
     /* initialize cipher/digest methods table */
     if (!ssl_load_ciphers(ret))
         goto err2;
+    /* initialise sig algs */
+    if (!ssl_setup_sig_algs(ret))
+        goto err2;
+
+
+    if (!ssl_load_groups(ret))
+        goto err2;
 
     if (!SSL_CTX_set_ciphersuites(ret, OSSL_default_ciphersuites()))
         goto err;
@@ -3322,6 +3327,7 @@ int SSL_CTX_up_ref(SSL_CTX *ctx)
 void SSL_CTX_free(SSL_CTX *a)
 {
     int i;
+    size_t j;
 
     if (a == NULL)
         return;
@@ -3381,10 +3387,18 @@ void SSL_CTX_free(SSL_CTX *a)
     ssl_evp_md_free(a->md5);
     ssl_evp_md_free(a->sha1);
 
-    for (i = 0; i < SSL_ENC_NUM_IDX; i++)
-        ssl_evp_cipher_free(a->ssl_cipher_methods[i]);
-    for (i = 0; i < SSL_MD_NUM_IDX; i++)
-        ssl_evp_md_free(a->ssl_digest_methods[i]);
+    for (j = 0; j < SSL_ENC_NUM_IDX; j++)
+        ssl_evp_cipher_free(a->ssl_cipher_methods[j]);
+    for (j = 0; j < SSL_MD_NUM_IDX; j++)
+        ssl_evp_md_free(a->ssl_digest_methods[j]);
+    for (j = 0; j < a->group_list_len; j++) {
+        OPENSSL_free(a->group_list[j].tlsname);
+        OPENSSL_free(a->group_list[j].realname);
+        OPENSSL_free(a->group_list[j].algorithm);
+    }
+    OPENSSL_free(a->group_list);
+
+    OPENSSL_free(a->sigalg_lookup_cache);
 
     CRYPTO_THREAD_lock_free(a->lock);
 
@@ -3992,6 +4006,8 @@ SSL *SSL_dup(SSL *s)
         goto err;
     ret->version = s->version;
     ret->options = s->options;
+    ret->min_proto_version = s->min_proto_version;
+    ret->max_proto_version = s->max_proto_version;
     ret->mode = s->mode;
     SSL_set_max_cert_list(ret, SSL_get_max_cert_list(s));
     SSL_set_read_ahead(ret, SSL_get_read_ahead(s));
@@ -4006,21 +4022,6 @@ SSL *SSL_dup(SSL *s)
     /* copy app data, a little dangerous perhaps */
     if (!CRYPTO_dup_ex_data(CRYPTO_EX_INDEX_SSL, &ret->ex_data, &s->ex_data))
         goto err;
-
-    /* setup rbio, and wbio */
-    if (s->rbio != NULL) {
-        if (!BIO_dup_state(s->rbio, (char *)&ret->rbio))
-            goto err;
-    }
-    if (s->wbio != NULL) {
-        if (s->wbio != s->rbio) {
-            if (!BIO_dup_state(s->wbio, (char *)&ret->wbio))
-                goto err;
-        } else {
-            BIO_up_ref(ret->rbio);
-            ret->wbio = ret->rbio;
-        }
-    }
 
     ret->server = s->server;
     if (s->handshake_func) {
@@ -4639,11 +4640,18 @@ int SSL_CTX_set_block_padding(SSL_CTX *ctx, size_t block_size)
     return 1;
 }
 
-void SSL_set_record_padding_callback(SSL *ssl,
+int SSL_set_record_padding_callback(SSL *ssl,
                                      size_t (*cb) (SSL *ssl, int type,
                                                    size_t len, void *arg))
 {
-    ssl->record_padding_cb = cb;
+    BIO *b;
+
+    b = SSL_get_wbio(ssl);
+    if (b == NULL || !BIO_get_ktls_send(b)) {
+        ssl->record_padding_cb = cb;
+        return 1;
+    }
+    return 0;
 }
 
 void SSL_set_record_padding_callback_arg(SSL *ssl, void *arg)
