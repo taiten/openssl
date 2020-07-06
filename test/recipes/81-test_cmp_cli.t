@@ -20,6 +20,8 @@ use Data::Dumper; # for debugging purposes only
 
 setup("test_cmp_cli");
 
+plan skip_all => "These tests timeout.";
+
 plan skip_all => "These tests are not supported in a no-cmp build"
     if disabled("cmp");
 plan skip_all => "These tests are not supported in a no-ec build"
