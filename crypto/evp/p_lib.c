@@ -595,7 +595,7 @@ EVP_PKEY *EVP_PKEY_new_CMAC_key(ENGINE *e, const unsigned char *priv,
         prov == NULL ? NULL : ossl_provider_library_context(prov);
     EVP_PKEY *ret = EVP_PKEY_new();
     EVP_MAC *cmac = EVP_MAC_fetch(libctx, OSSL_MAC_NAME_CMAC, NULL);
-    EVP_MAC_CTX *cmctx = cmac != NULL ? EVP_MAC_CTX_new(cmac) : NULL;
+    EVP_MAC_CTX *cmctx = cmac != NULL ? EVP_MAC_new_ctx(cmac) : NULL;
     OSSL_PARAM params[4];
     size_t paramsn = 0;
 
@@ -620,7 +620,7 @@ EVP_PKEY *EVP_PKEY_new_CMAC_key(ENGINE *e, const unsigned char *priv,
                                           (char *)priv, len);
     params[paramsn] = OSSL_PARAM_construct_end();
 
-    if (!EVP_MAC_CTX_set_params(cmctx, params)) {
+    if (!EVP_MAC_set_ctx_params(cmctx, params)) {
         EVPerr(EVP_F_EVP_PKEY_NEW_CMAC_KEY, EVP_R_KEY_SETUP_FAILED);
         goto err;
     }
@@ -630,7 +630,7 @@ EVP_PKEY *EVP_PKEY_new_CMAC_key(ENGINE *e, const unsigned char *priv,
 
  err:
     EVP_PKEY_free(ret);
-    EVP_MAC_CTX_free(cmctx);
+    EVP_MAC_free_ctx(cmctx);
     EVP_MAC_free(cmac);
     return NULL;
 # else
@@ -1000,7 +1000,7 @@ static int get_ec_curve_name_cb(const OSSL_PARAM params[], void *arg)
 {
     const OSSL_PARAM *p = NULL;
 
-    if ((p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_EC_NAME)) != NULL)
+    if ((p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_GROUP_NAME)) != NULL)
         return OSSL_PARAM_get_utf8_string(p, arg, 0);
 
     /* If there is no curve name, this is not an EC key */
@@ -1215,6 +1215,18 @@ int EVP_PKEY_supports_digest_nid(EVP_PKEY *pkey, int nid)
 int EVP_PKEY_set1_tls_encodedpoint(EVP_PKEY *pkey,
                                const unsigned char *pt, size_t ptlen)
 {
+    if (pkey->ameth == NULL) {
+        OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
+
+        if (pkey->keymgmt == NULL || pkey->keydata == NULL)
+            return 0;
+
+        params[0] =
+            OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_TLS_ENCODED_PT,
+                                              (unsigned char *)pt, ptlen);
+        return evp_keymgmt_set_params(pkey->keymgmt, pkey->keydata, params);
+    }
+
     if (ptlen > INT_MAX)
         return 0;
     if (evp_pkey_asn1_ctrl(pkey, ASN1_PKEY_CTRL_SET1_TLS_ENCPT, ptlen,
@@ -1226,6 +1238,33 @@ int EVP_PKEY_set1_tls_encodedpoint(EVP_PKEY *pkey,
 size_t EVP_PKEY_get1_tls_encodedpoint(EVP_PKEY *pkey, unsigned char **ppt)
 {
     int rv;
+
+    if (pkey->ameth == NULL) {
+        OSSL_PARAM params[2] = { OSSL_PARAM_END, OSSL_PARAM_END };
+
+        if (pkey->keymgmt == NULL || pkey->keydata == NULL)
+            return 0;
+
+        params[0] =
+            OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_TLS_ENCODED_PT,
+                                              NULL, 0);
+        if (!evp_keymgmt_get_params(pkey->keymgmt, pkey->keydata, params))
+            return 0;
+
+        *ppt = OPENSSL_malloc(params[0].return_size);
+        if (*ppt == NULL)
+            return 0;
+
+        params[0] =
+            OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_TLS_ENCODED_PT,
+                                              *ppt, params[0].return_size);
+        if (!evp_keymgmt_get_params(pkey->keymgmt, pkey->keydata, params))
+            return 0;
+
+        return params[0].return_size;
+    }
+
+
     rv = evp_pkey_asn1_ctrl(pkey, ASN1_PKEY_CTRL_GET1_TLS_ENCPT, 0, ppt);
     if (rv <= 0)
         return 0;

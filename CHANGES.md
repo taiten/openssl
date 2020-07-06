@@ -21,7 +21,27 @@ OpenSSL Releases
 OpenSSL 3.0
 -----------
 
-### Changes between 1.1.1 and 3.0 alpha 3 [4 Jun 2020]
+### Changes between 1.1.1 and 3.0 alpha 4 [25 Jun 2020]
+
+ * Handshake now fails if Extended Master Secret extension is dropped
+   on renegotiation.
+
+   *Tomas Mraz*
+
+ * Dropped interactive mode from the 'openssl' program.  From now on,
+   the `openssl` command without arguments is equivalent to `openssl
+   help`.
+
+   *Richard Levitte*
+
+ * Renamed EVP_PKEY_cmp() to EVP_PKEY_eq() and
+   EVP_PKEY_cmp_parameters() to EVP_PKEY_parameters_eq().
+   While the old function names have been retained for backward compatibility
+   they should not be used in new developments
+   because their return values are confusing: Unlike other `_cmp()` functions
+   they do not return 0 in case their arguments are equal.
+
+   *David von Oheimb*
 
  * Deprecated EC_METHOD_get_field_type(). Applications should switch to
    EC_GROUP_get_field_type().
@@ -154,6 +174,12 @@ OpenSSL 3.0
  * Generalized the HTTP client code from crypto/ocsp/ into crpyto/http/.
    The legacy OCSP-focused and only partly documented API is retained.
    See L<OSSL_CMP_MSG_http_perform(3)> etc. for details.
+
+   *David von Oheimb*
+
+ * BIO_do_connect and BIO_do_handshake have been extended:
+   If domain name resolution yields multiple IP addresses all of them are tried
+   after connect() failures.
 
    *David von Oheimb*
 
@@ -335,8 +361,8 @@ OpenSSL 3.0
    and HMAC_CTX_get_md.
 
    Use of these low level functions has been informally discouraged for a long
-   time.  Instead applications should use L<EVP_MAC_CTX_new(3)>,
-   L<EVP_MAC_CTX_free(3)>, L<EVP_MAC_init(3)>, L<EVP_MAC_update(3)>
+   time.  Instead applications should use L<EVP_MAC_new_ctx(3)>,
+   L<EVP_MAC_free_ctx(3)>, L<EVP_MAC_init(3)>, L<EVP_MAC_update(3)>
    and L<EVP_MAC_final(3)>.
 
    *Paul Dale*
@@ -359,8 +385,8 @@ OpenSSL 3.0
    CMAC_CTX_copy, CMAC_Init, CMAC_Update, CMAC_Final and CMAC_resume.
 
    Use of these low level functions has been informally discouraged for a long
-   time.  Instead applications should use L<EVP_MAC_CTX_new(3)>,
-   L<EVP_MAC_CTX_free(3)>, L<EVP_MAC_init(3)>, L<EVP_MAC_update(3)>
+   time.  Instead applications should use L<EVP_MAC_new_ctx(3)>,
+   L<EVP_MAC_free_ctx(3)>, L<EVP_MAC_init(3)>, L<EVP_MAC_update(3)>
    and L<EVP_MAC_final(3)>.
 
    *Paul Dale*
