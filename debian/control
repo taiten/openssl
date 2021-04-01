@@ -1,5 +1,5 @@
 Source: openssl
-Build-Depends: debhelper-compat (= 12), m4, bc, dpkg-dev (>= 1.15.7), lsof
+Build-Depends: debhelper-compat (= 12), m4, bc, dpkg-dev (>= 1.15.7), linux-headers-generic [linux-any]
 Section: utils
 Priority: optional
 Maintainer: Debian OpenSSL Team <pkg-openssl-devel@alioth-lists.debian.net>

@@ -36,9 +36,9 @@ provider-asym_cipher - The asym_cipher library E<lt>-E<gt> provider functions
 
  /* Asymmetric Cipher parameters */
  int OSSL_FUNC_asym_cipher_get_ctx_params(void *ctx, OSSL_PARAM params[]);
- const OSSL_PARAM *OSSL_FUNC_asym_cipher_gettable_ctx_params(void);
+ const OSSL_PARAM *OSSL_FUNC_asym_cipher_gettable_ctx_params(void *provctx);
  int OSSL_FUNC_asym_cipher_set_ctx_params(void *ctx, const OSSL_PARAM params[]);
- const OSSL_PARAM *OSSL_FUNC_asym_cipher_settable_ctx_params(void);
+ const OSSL_PARAM *OSSL_FUNC_asym_cipher_settable_ctx_params(void *provctx);
 
 =head1 DESCRIPTION
 
@@ -183,7 +183,7 @@ algorithms:
 
 The type of padding to be used. The interpretation of this value will depend
 on the algorithm in use. The default provider understands these RSA padding
-modes: 1 (RSA_PKCS1_PADDING), 2 (RSA_SSLV23_PADDING), 3 (RSA_NO_PADDING),
+modes: 1 (RSA_PKCS1_PADDING), 3 (RSA_NO_PADDING),
 4 (RSA_PKCS1_OAEP_PADDING), 5 (RSA_X931_PADDING), 6 (RSA_PKCS1_PSS_PADDING) and
 7 (RSA_PKCS1_WITH_TLS_PADDING). See L<EVP_PKEY_CTX_set_rsa_padding(3)> for
 further details.
@@ -193,9 +193,18 @@ further details.
 Gets or sets the name of the OAEP digest algorithm used when OAEP padding is in
 use.
 
+=item "digest" (B<OSSL_ASYM_CIPHER_PARAM_DIGEST>) <UTF8 string>
+
+Gets or sets the name of the digest algorithm used by the algorithm (where
+applicable).
+
 =item "digest-props" (B<OSSL_ASYM_CIPHER_PARAM_OAEP_DIGEST_PROPS>) <UTF8 string>
 
 Gets or sets the properties to use when fetching the OAEP digest algorithm.
+
+=item "digest-props" (B<OSSL_ASYM_CIPHER_PARAM_DIGEST_PROPS>) <UTF8 string>
+
+Gets or sets the properties to use when fetching the cipher digest algorithm.
 
 =item "mgf1-digest" (B<OSSL_ASYM_CIPHER_PARAM_MGF1_DIGEST>) <UTF8 string>
 
@@ -209,10 +218,6 @@ Gets or sets the properties to use when fetching the MGF1 digest algorithm.
 =item "oaep-label" (B<OSSL_ASYM_CIPHER_PARAM_OAEP_LABEL>) <octet string>
 
 Gets or sets the OAEP label used when OAEP padding is in use.
-
-=item "oaep-label-len" (B<OSSL_ASYM_CIPHER_PARAM_OAEP_LABEL_LEN>) <size_t>
-
-Gets the length of an OAEP label when OAEP padding is in use.
 
 =item "tls-client-version" (B<OSSL_ASYM_CIPHER_PARAM_TLS_CLIENT_VERSION>) <unsigned integer>
 
@@ -249,7 +254,7 @@ The provider ASYM_CIPHER interface was introduced in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 
-Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

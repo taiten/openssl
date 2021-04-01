@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -16,7 +16,7 @@
 #include "internal/provider.h"
 
 struct construct_data_st {
-    OPENSSL_CTX *libctx;
+    OSSL_LIB_CTX *libctx;
     OSSL_METHOD_STORE *store;
     int operation_id;
     int force_store;
@@ -100,7 +100,7 @@ static void ossl_method_construct_this(OSSL_PROVIDER *provider,
     data->mcm->destruct(method, data->mcm_data);
 }
 
-void *ossl_method_construct(OPENSSL_CTX *libctx, int operation_id,
+void *ossl_method_construct(OSSL_LIB_CTX *libctx, int operation_id,
                             int force_store,
                             OSSL_METHOD_CONSTRUCT_METHOD *mcm, void *mcm_data)
 {
@@ -128,6 +128,16 @@ void *ossl_method_construct(OPENSSL_CTX *libctx, int operation_id,
                               &cbdata);
 
         method = mcm->get(libctx, cbdata.store, mcm_data);
+        if (method == NULL) {
+            /*
+             * If we get here then we did not construct the method that we
+             * attempted to construct. It's possible that another thread got
+             * there first and so we skipped construction (pre-condition
+             * failed). We check the global store again to see if it has
+             * appeared by now.
+             */
+            method = mcm->get(libctx, NULL, mcm_data);
+        }
         mcm->dealloc_tmp_store(cbdata.store);
     }
 

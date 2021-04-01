@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -9,6 +9,7 @@
 
 #ifndef OPENSSL_CORE_H
 # define OPENSSL_CORE_H
+# pragma once
 
 # include <stddef.h>
 # include <openssl/types.h>
@@ -107,18 +108,18 @@ struct ossl_param_st {
 # define OSSL_PARAM_REAL                 3
 /*-
  * OSSL_PARAM_UTF8_STRING
- * is a printable string.  Is expteced to be printed as it is.
+ * is a printable string.  It is expected to be printed as it is.
  */
 # define OSSL_PARAM_UTF8_STRING          4
 /*-
  * OSSL_PARAM_OCTET_STRING
- * is a string of bytes with no further specification.  Is expected to be
+ * is a string of bytes with no further specification.  It is expected to be
  * printed as a hexdump.
  */
 # define OSSL_PARAM_OCTET_STRING         5
 /*-
  * OSSL_PARAM_UTF8_PTR
- * is a pointer to a printable string.  Is expteced to be printed as it is.
+ * is a pointer to a printable string.  It is expected to be printed as it is.
  *
  * The difference between this and OSSL_PARAM_UTF8_STRING is that only pointers
  * are manipulated for this type.

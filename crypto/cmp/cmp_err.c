@@ -10,8 +10,11 @@
 
 #include <openssl/err.h>
 #include <openssl/cmperr.h>
+#include "crypto/cmperr.h"
 
-#ifndef OPENSSL_NO_ERR
+#ifndef OPENSSL_NO_CMP
+
+# ifndef OPENSSL_NO_ERR
 
 static const ERR_STRING_DATA CMP_str_reasons[] = {
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ALGORITHM_NOT_SUPPORTED),
@@ -33,8 +36,6 @@ static const ERR_STRING_DATA CMP_str_reasons[] = {
     "cert and key do not match"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_CHECKAFTER_OUT_OF_RANGE),
     "checkafter out of range"},
-    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_CHECKING_PBM_NO_SECRET_AVAILABLE),
-    "checking pbm no secret available"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ENCOUNTERED_KEYUPDATEWARNING),
     "encountered keyupdatewarning"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ENCOUNTERED_WAITING),
@@ -45,17 +46,14 @@ static const ERR_STRING_DATA CMP_str_reasons[] = {
     "error creating certconf"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_CERTREP),
     "error creating certrep"},
-    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_CR), "error creating cr"},
+    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_CERTREQ),
+    "error creating certreq"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_ERROR),
     "error creating error"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_GENM),
     "error creating genm"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_GENP),
     "error creating genp"},
-    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_IR), "error creating ir"},
-    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_KUR), "error creating kur"},
-    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_P10CR),
-    "error creating p10cr"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_PKICONF),
     "error creating pkiconf"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_CREATING_POLLREP),
@@ -78,6 +76,8 @@ static const ERR_STRING_DATA CMP_str_reasons[] = {
     "error validating protection"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_ERROR_VALIDATING_SIGNATURE),
     "error validating signature"},
+    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_FAILED_BUILDING_OWN_CHAIN),
+    "failed building own chain"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_FAILED_EXTRACTING_PUBKEY),
     "failed extracting pubkey"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_FAILURE_OBTAINING_RANDOM),
@@ -90,6 +90,8 @@ static const ERR_STRING_DATA CMP_str_reasons[] = {
     "missing key input for creating protection"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_MISSING_KEY_USAGE_DIGITALSIGNATURE),
     "missing key usage digitalsignature"},
+    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_MISSING_P10CSR), "missing p10csr"},
+    {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_MISSING_PBM_SECRET), "missing pbm secret"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_MISSING_PRIVATE_KEY),
     "missing private key"},
     {ERR_PACK(ERR_LIB_CMP, 0, CMP_R_MISSING_PROTECTION), "missing protection"},
@@ -156,13 +158,16 @@ static const ERR_STRING_DATA CMP_str_reasons[] = {
     {0, NULL}
 };
 
-#endif
+# endif
 
-int ERR_load_CMP_strings(void)
+int err_load_CMP_strings_int(void)
 {
-#ifndef OPENSSL_NO_ERR
+# ifndef OPENSSL_NO_ERR
     if (ERR_reason_error_string(CMP_str_reasons[0].error) == NULL)
         ERR_load_strings_const(CMP_str_reasons);
-#endif
+# endif
     return 1;
 }
+#else
+NON_EMPTY_TRANSLATION_UNIT
+#endif

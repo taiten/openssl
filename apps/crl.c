@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -84,6 +84,7 @@ int crl_main(int argc, char **argv)
     EVP_PKEY *pkey;
     const EVP_MD *digest = EVP_sha1();
     char *infile = NULL, *outfile = NULL, *crldiff = NULL, *keyfile = NULL;
+    char *digestname = NULL;
     const char *CAfile = NULL, *CApath = NULL, *CAstore = NULL, *prog;
     OPTION_CHOICE o;
     int hash = 0, issuer = 0, lastupdate = 0, nextupdate = 0, noout = 0;
@@ -192,8 +193,7 @@ int crl_main(int argc, char **argv)
                 goto opthelp;
             break;
         case OPT_MD:
-            if (!opt_md(opt_unknown(), &digest))
-                goto opthelp;
+            digestname = opt_unknown();
             break;
         case OPT_PROV_CASES:
             if (!opt_provider(o))
@@ -201,11 +201,17 @@ int crl_main(int argc, char **argv)
             break;
         }
     }
+
+    /* No remaining args. */
     argc = opt_num_rest();
     if (argc != 0)
         goto opthelp;
 
-    x = load_crl(infile, informat, "CRL");
+    if (digestname != NULL) {
+        if (!opt_md(digestname, &digest))
+            goto opthelp;
+    }
+    x = load_crl(infile, "CRL");
     if (x == NULL)
         goto end;
 
@@ -250,7 +256,7 @@ int crl_main(int argc, char **argv)
             BIO_puts(bio_err, "Missing CRL signing key\n");
             goto end;
         }
-        newcrl = load_crl(crldiff, informat, "other CRL");
+        newcrl = load_crl(crldiff, "other CRL");
         if (!newcrl)
             goto end;
         pkey = load_key(keyfile, keyformat, 0, NULL, NULL, "CRL signing key");
@@ -280,26 +286,37 @@ int crl_main(int argc, char **argv)
     if (num) {
         for (i = 1; i <= num; i++) {
             if (issuer == i) {
-                print_name(bio_out, "issuer=", X509_CRL_get_issuer(x),
-                           get_nameopt());
+                print_name(bio_out, "issuer=", X509_CRL_get_issuer(x));
             }
             if (crlnumber == i) {
                 ASN1_INTEGER *crlnum;
+
                 crlnum = X509_CRL_get_ext_d2i(x, NID_crl_number, NULL, NULL);
                 BIO_printf(bio_out, "crlNumber=");
                 if (crlnum) {
+                    BIO_puts(bio_out, "0x");
                     i2a_ASN1_INTEGER(bio_out, crlnum);
                     ASN1_INTEGER_free(crlnum);
-                } else
+                } else {
                     BIO_puts(bio_out, "<NONE>");
+                }
                 BIO_printf(bio_out, "\n");
             }
             if (hash == i) {
-                BIO_printf(bio_out, "%08lx\n",
-                           X509_NAME_hash(X509_CRL_get_issuer(x)));
+                int ok;
+                unsigned long hash_value =
+                    X509_NAME_hash_ex(X509_CRL_get_issuer(x), app_get0_libctx(),
+                                      app_get0_propq(), &ok);
+
+                BIO_printf(bio_out, "issuer name hash=");
+                if (ok)
+                    BIO_printf(bio_out, "%08lx\n", hash_value);
+                else
+                    BIO_puts(bio_out, "<ERROR>");
             }
 #ifndef OPENSSL_NO_MD5
             if (hash_old == i) {
+                BIO_printf(bio_out, "issuer name old hash=");
                 BIO_printf(bio_out, "%08lx\n",
                            X509_NAME_hash_old(X509_CRL_get_issuer(x)));
             }

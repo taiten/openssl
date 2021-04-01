@@ -18,10 +18,6 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF_STRING()
-
 static int cb(int ok, X509_STORE_CTX *ctx);
 static int check(X509_STORE *ctx, const char *file,
                  STACK_OF(X509) *uchain, STACK_OF(X509) *tchain,
@@ -149,7 +145,7 @@ int verify_main(int argc, char **argv)
             break;
         case OPT_UNTRUSTED:
             /* Zero or more times */
-            if (!load_certs(opt_arg(), &untrusted, FORMAT_PEM, NULL,
+            if (!load_certs(opt_arg(), &untrusted, NULL,
                             "untrusted certificates"))
                 goto end;
             break;
@@ -158,14 +154,12 @@ int verify_main(int argc, char **argv)
             noCAfile = 1;
             noCApath = 1;
             noCAstore = 1;
-            if (!load_certs(opt_arg(), &trusted, FORMAT_PEM, NULL,
-                            "trusted certificates"))
+            if (!load_certs(opt_arg(), &trusted, NULL, "trusted certificates"))
                 goto end;
             break;
         case OPT_CRLFILE:
             /* Zero or more times */
-            if (!load_crls(opt_arg(), &crls, FORMAT_PEM, NULL,
-                           "other CRLs"))
+            if (!load_crls(opt_arg(), &crls, NULL, "other CRLs"))
                 goto end;
             break;
         case OPT_CRL_DOWNLOAD:
@@ -199,8 +193,11 @@ int verify_main(int argc, char **argv)
             break;
         }
     }
+
+    /* Extra arguments are certificates to verify. */
     argc = opt_num_rest();
     argv = opt_rest();
+
     if (trusted != NULL
         && (CAfile != NULL || CApath != NULL || CAstore != NULL)) {
         BIO_printf(bio_err,
@@ -256,7 +253,7 @@ static int check(X509_STORE *ctx, const char *file,
     STACK_OF(X509) *chain = NULL;
     int num_untrusted;
 
-    x = load_cert(file, FORMAT_UNDEF, "certificate file");
+    x = load_cert(file, "certificate file");
     if (x == NULL)
         goto end;
 
@@ -356,19 +353,34 @@ static int cb(int ok, X509_STORE_CTX *ctx)
             policies_print(ctx);
             /* fall thru */
         case X509_V_ERR_CERT_HAS_EXPIRED:
-            /* Continue even if the leaf is a self signed cert */
+            /* Continue even if the leaf is a self-signed cert */
         case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
             /* Continue after extension errors too */
         case X509_V_ERR_INVALID_CA:
         case X509_V_ERR_INVALID_NON_CA:
         case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-        case X509_V_ERR_INVALID_PURPOSE:
         case X509_V_ERR_CRL_HAS_EXPIRED:
         case X509_V_ERR_CRL_NOT_YET_VALID:
         case X509_V_ERR_UNHANDLED_CRITICAL_EXTENSION:
+            /* errors due to strict conformance checking (-x509_strict) */
+        case X509_V_ERR_INVALID_PURPOSE:
+        case X509_V_ERR_PATHLEN_INVALID_FOR_NON_CA:
+        case X509_V_ERR_PATHLEN_WITHOUT_KU_KEY_CERT_SIGN:
+        case X509_V_ERR_CA_BCONS_NOT_CRITICAL:
+        case X509_V_ERR_CA_CERT_MISSING_KEY_USAGE:
+        case X509_V_ERR_KU_KEY_CERT_SIGN_INVALID_FOR_NON_CA:
+        case X509_V_ERR_ISSUER_NAME_EMPTY:
+        case X509_V_ERR_SUBJECT_NAME_EMPTY:
+        case X509_V_ERR_EMPTY_SUBJECT_SAN_NOT_CRITICAL:
+        case X509_V_ERR_EMPTY_SUBJECT_ALT_NAME:
+        case X509_V_ERR_SIGNATURE_ALGORITHM_INCONSISTENCY:
+        case X509_V_ERR_AUTHORITY_KEY_IDENTIFIER_CRITICAL:
+        case X509_V_ERR_SUBJECT_KEY_IDENTIFIER_CRITICAL:
+        case X509_V_ERR_MISSING_AUTHORITY_KEY_IDENTIFIER:
+        case X509_V_ERR_MISSING_SUBJECT_KEY_IDENTIFIER:
+        case X509_V_ERR_EXTENSIONS_REQUIRE_VERSION_3:
             ok = 1;
         }
-
         return ok;
 
     }

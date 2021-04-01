@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -160,7 +160,7 @@ int ts_main(int argc, char **argv)
     CONF *conf = NULL;
     const char *CAfile = NULL, *untrusted = NULL, *prog;
     const char *configfile = default_config_file, *engine = NULL;
-    const char *section = NULL;
+    const char *section = NULL, *digestname = NULL;
     char **helpp;
     char *password = NULL;
     char *data = NULL, *digest = NULL, *policy = NULL;
@@ -276,8 +276,7 @@ int ts_main(int argc, char **argv)
             engine = opt_arg();
             break;
         case OPT_MD:
-            if (!opt_md(opt_unknown(), &md))
-                goto opthelp;
+            digestname = opt_unknown();
             break;
         case OPT_V_CASES:
             if (!opt_verify(o, vpm))
@@ -286,9 +285,17 @@ int ts_main(int argc, char **argv)
             break;
         }
     }
-    if (mode == OPT_ERR || opt_num_rest() != 0)
+
+    /* No extra arguments. */
+    argc = opt_num_rest();
+    if (argc != 0 || mode == OPT_ERR)
         goto opthelp;
 
+    app_RAND_load();
+    if (digestname != NULL) {
+        if (!opt_md(digestname, &md))
+            goto opthelp;
+    }
     if (mode == OPT_REPLY && passin &&
         !app_passwd(passin, NULL, &password, NULL)) {
         BIO_printf(bio_err, "Error getting password.\n");
@@ -957,6 +964,8 @@ static X509_STORE *create_cert_store(const char *CApath, const char *CAfile,
 {
     X509_STORE *cert_ctx = NULL;
     X509_LOOKUP *lookup = NULL;
+    OSSL_LIB_CTX *libctx = app_get0_libctx();
+    const char *propq = app_get0_propq();
 
     cert_ctx = X509_STORE_new();
     X509_STORE_set_verify_cb(cert_ctx, verify_cb);
@@ -978,7 +987,8 @@ static X509_STORE *create_cert_store(const char *CApath, const char *CAfile,
             BIO_printf(bio_err, "memory allocation failure\n");
             goto err;
         }
-        if (!X509_LOOKUP_load_file(lookup, CAfile, X509_FILETYPE_PEM)) {
+        if (!X509_LOOKUP_load_file_ex(lookup, CAfile, X509_FILETYPE_PEM, libctx,
+                                      propq)) {
             BIO_printf(bio_err, "Error loading file %s\n", CAfile);
             goto err;
         }
@@ -990,7 +1000,7 @@ static X509_STORE *create_cert_store(const char *CApath, const char *CAfile,
             BIO_printf(bio_err, "memory allocation failure\n");
             goto err;
         }
-        if (!X509_LOOKUP_load_store(lookup, CAstore)) {
+        if (!X509_LOOKUP_load_store_ex(lookup, CAstore, libctx, propq)) {
             BIO_printf(bio_err, "Error loading store URI %s\n", CAstore);
             goto err;
         }

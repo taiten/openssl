@@ -1,11 +1,14 @@
 /*
- * Copyright 2016-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
+
+/* We need to use some deprecated APIs */
+#define OPENSSL_SUPPRESS_DEPRECATED
 
 /* Required for vmsplice */
 #ifndef _GNU_SOURCE
@@ -121,27 +124,56 @@ static ossl_inline int io_read(aio_context_t ctx, long n, struct iocb **iocb)
     return syscall(__NR_io_submit, ctx, n, iocb);
 }
 
+/* A version of 'struct timespec' with 32-bit time_t and nanoseconds.  */
+struct __timespec32
+{
+  __kernel_long_t tv_sec;
+  __kernel_long_t tv_nsec;
+};
+
 static ossl_inline int io_getevents(aio_context_t ctx, long min, long max,
                                struct io_event *events,
                                struct timespec *timeout)
 {
-#if defined(__NR_io_getevents)
-    return syscall(__NR_io_getevents, ctx, min, max, events, timeout);
-#elif defined(__NR_io_pgetevents_time64)
-    /* Let's only support the 64 suffix syscalls for 64-bit time_t.
-     * This simplifies the code for us as we don't need to use a 64-bit
-     * version of timespec with a 32-bit time_t and handle converting
-     * between 64-bit and 32-bit times and check for overflows.
-     */
-    if (sizeof(timeout->tv_sec) == 8)
-        return syscall(__NR_io_pgetevents_time64, ctx, min, max, events, timeout, NULL);
-    else {
-        errno = ENOSYS;
-        return -1;
+#if defined(__NR_io_pgetevents_time64)
+    /* Check if we are a 32-bit architecture with a 64-bit time_t */
+    if (sizeof(*timeout) != sizeof(struct __timespec32)) {
+        int ret = syscall(__NR_io_pgetevents_time64, ctx, min, max, events,
+                          timeout, NULL);
+        if (ret == 0 || errno != ENOSYS)
+            return ret;
     }
-#else
-# error "We require either the io_getevents syscall or __NR_io_pgetevents_time64."
 #endif
+
+#if defined(__NR_io_getevents)
+    if (sizeof(*timeout) == sizeof(struct __timespec32))
+        /*
+         * time_t matches our architecture length, we can just use
+         * __NR_io_getevents
+         */
+        return syscall(__NR_io_getevents, ctx, min, max, events, timeout);
+    else {
+        /*
+         * We don't have __NR_io_pgetevents_time64, but we are using a
+         * 64-bit time_t on a 32-bit architecture. If we can fit the
+         * timeout value in a 32-bit time_t, then let's do that
+         * and then use the __NR_io_getevents syscall.
+         */
+        if (timeout && timeout->tv_sec == (long)timeout->tv_sec) {
+            struct __timespec32 ts32;
+
+            ts32.tv_sec = (__kernel_long_t) timeout->tv_sec;
+            ts32.tv_nsec = (__kernel_long_t) timeout->tv_nsec;
+
+            return syscall(__NR_io_getevents, ctx, min, max, events, ts32);
+        } else {
+            return syscall(__NR_io_getevents, ctx, min, max, events, NULL);
+        }
+    }
+#endif
+
+    errno = ENOSYS;
+    return -1;
 }
 
 static void afalg_waitfd_cleanup(ASYNC_WAIT_CTX *ctx, const void *key,
@@ -678,6 +710,9 @@ static cbc_handles *get_cipher_handle(int nid)
 static const EVP_CIPHER *afalg_aes_cbc(int nid)
 {
     cbc_handles *cipher_handle = get_cipher_handle(nid);
+
+    if (cipher_handle == NULL)
+            return NULL;
     if (cipher_handle->_hidden == NULL
         && ((cipher_handle->_hidden =
          EVP_CIPHER_meth_new(nid,
@@ -845,9 +880,19 @@ void engine_load_afalg_int(void)
     toadd = engine_afalg();
     if (toadd == NULL)
         return;
+    ERR_set_mark();
     ENGINE_add(toadd);
+    /*
+     * If the "add" worked, it gets a structural reference. So either way, we
+     * release our just-created reference.
+     */
     ENGINE_free(toadd);
-    ERR_clear_error();
+    /*
+     * If the "add" didn't work, it was probably a conflict because it was
+     * already added (eg. someone calling ENGINE_load_blah then calling
+     * ENGINE_load_builtin_engines() perhaps).
+     */
+    ERR_pop_to_mark();
 }
 # endif
 

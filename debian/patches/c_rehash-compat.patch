@@ -7,7 +7,7 @@ Subject: [PATCH] also create old hash for compatibility
  1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/tools/c_rehash.in b/tools/c_rehash.in
-index ad72b51cfebd..61ff2a18f35e 100644
+index 1566d141d3b0..7ef840ab9f31 100644
 --- a/tools/c_rehash.in
 +++ b/tools/c_rehash.in
 @@ -17,8 +17,6 @@ my $prefix = {- quotify1($config{prefix}) -};
@@ -46,7 +46,7 @@ index ad72b51cfebd..61ff2a18f35e 100644
  sub link_hash_cert {
  		my $fname = $_[0];
 +		my $x509hash = $_[1] || '-subject_hash';
- 		$fname =~ s/'/'\\''/g;
+ 		$fname =~ s/\"/\\\"/g;
  		my ($hash, $fprint) = `"$openssl" x509 $x509hash -fingerprint -noout -in "$fname"`;
  		chomp $hash;
 @@ -198,10 +196,20 @@ sub link_hash_cert {

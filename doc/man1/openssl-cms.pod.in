@@ -72,7 +72,7 @@ B<openssl> B<cms>
 [B<-secretkey> I<key>]
 [B<-secretkeyid> I<id>]
 [B<-econtent_type> I<type>]
-[B<-inkey> I<file>]
+[B<-inkey> I<filename>|I<uri>]
 [B<-keyopt> I<name>:I<parameter>]
 [B<-passin> I<arg>]
 [B<-to> I<addr>]
@@ -81,8 +81,8 @@ B<openssl> B<cms>
 {- $OpenSSL::safe::opt_v_synopsis -}
 {- $OpenSSL::safe::opt_trust_synopsis -}
 {- $OpenSSL::safe::opt_r_synopsis -}
-{- $OpenSSL::safe::opt_engine_synopsis -}
-{- $OpenSSL::safe::opt_provider_synopsis -}
+{- $OpenSSL::safe::opt_engine_synopsis -}{- $OpenSSL::safe::opt_provider_synopsis -}
+{- $OpenSSL::safe::opt_config_synopsis -}
 [I<recipient-cert> ...]
 
 =for openssl ifdef des-wrap engine
@@ -228,25 +228,25 @@ format message that has been signed or verified.
 
 The input format of the CMS structure (if one is being read);
 the default is B<SMIME>.
-See L<openssl(1)/Format Options> for details.
+See L<openssl-format-options(1)> for details.
 
 =item B<-outform> B<DER>|B<PEM>|B<SMIME>
 
 The output format of the CMS structure (if one is being written);
 the default is B<SMIME>.
-See L<openssl(1)/Format Options> for details.
+See L<openssl-format-options(1)> for details.
 
 =item B<-keyform> B<DER>|B<PEM>|B<P12>|B<ENGINE>
 
 The format of the private key file; the default is B<PEM>.
 The only value with effect is B<ENGINE>; all others have become obsolete.
-See L<openssl(1)/Format Options> for details.
+See L<openssl-format-options(1)> for details.
 
 =item B<-rctform> B<DER>|B<PEM>|B<SMIME>
 
 The signed receipt format for use with the B<-receipt_verify>; the default
 is B<SMIME>.
-See L<openssl(1)/Format Options> for details.
+See L<openssl-format-options(1)> for details.
 
 =item B<-stream>, B<-indef>
 
@@ -293,7 +293,7 @@ is mainly useful for testing purposes.
 
 For the B<-cmsout> operation when B<-print> option is in use, specifies
 printing options for string fields. For most cases B<utf8> is reasonable value.
-See L<openssl(1)/Name Format Options> for details.
+See L<openssl-namedisplay-options(1)> for details.
 
 =item B<-md> I<digest>
 
@@ -307,6 +307,9 @@ or 256 bit AES - B<-aes256>. Any standard algorithm name (as used by the
 EVP_get_cipherbyname() function) can also be used preceded by a dash, for
 example B<-aes-128-cbc>. See L<openssl-enc(1)> for a list of ciphers
 supported by your version of OpenSSL.
+
+Currently the AES variants with GCM mode are the only supported AEAD
+algorithms.
 
 If not specified triple DES is used. Only used with B<-encrypt> and
 B<-EncryptedData_create> commands.
@@ -379,6 +382,7 @@ the MIME type multipart/signed is used.
 Allows additional certificates to be specified. When signing these will
 be included with the message. When verifying these will be searched for
 the signers certificates.
+The input can be in PEM, DER, or PKCS#12 format.
 
 =item B<-certsout> I<file>
 
@@ -462,7 +466,7 @@ Set the encapsulated content type to I<type> if not supplied the B<Data> type
 is used. The I<type> argument can be any valid OID name in either text or
 numerical format.
 
-=item B<-inkey> I<file>
+=item B<-inkey> I<filename>|I<uri>
 
 The private key to use when signing or decrypting. This must match the
 corresponding certificate. If this option is not specified then the
@@ -480,7 +484,7 @@ or to modify default parameters for ECDH.
 =item B<-passin> I<arg>
 
 The private key password source. For more information about the format of B<arg>
-see L<openssl(1)/Pass Phrase Options>.
+see L<openssl-passphrase-options(1)>.
 
 =item B<-to>, B<-from>, B<-subject>
 
@@ -500,6 +504,8 @@ Any verification errors cause the command to exit.
 {- $OpenSSL::safe::opt_engine_item -}
 
 {- $OpenSSL::safe::opt_provider_item -}
+
+{- $OpenSSL::safe::opt_config_item -}
 
 =item I<recipient-cert> ...
 
@@ -780,6 +786,8 @@ All B<-keyform> values except B<ENGINE> have become obsolete in OpenSSL 3.0.0
 and have no effect.
 
 The B<-nameopt> option was added in OpenSSL 3.0.0.
+
+The B<-engine> option was deprecated in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 

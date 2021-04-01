@@ -15,8 +15,6 @@
 #include <openssl/x509v3.h>
 #include "ext_dat.h"
 
-DEFINE_STACK_OF(CONF_VALUE)
-
 static STACK_OF(CONF_VALUE) *i2v_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD
                                                     *method, void *bcons, STACK_OF(CONF_VALUE)
                                                     *extlist);
@@ -63,7 +61,7 @@ static void *v2i_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD *method,
     int i;
 
     if ((pcons = POLICY_CONSTRAINTS_new()) == NULL) {
-        X509V3err(X509V3_F_V2I_POLICY_CONSTRAINTS, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     for (i = 0; i < sk_CONF_VALUE_num(values); i++) {
@@ -75,15 +73,14 @@ static void *v2i_POLICY_CONSTRAINTS(const X509V3_EXT_METHOD *method,
             if (!X509V3_get_value_int(val, &pcons->inhibitPolicyMapping))
                 goto err;
         } else {
-            X509V3err(X509V3_F_V2I_POLICY_CONSTRAINTS, X509V3_R_INVALID_NAME);
-            X509V3_conf_err(val);
+            ERR_raise_data(ERR_LIB_X509V3, X509V3_R_INVALID_NAME,
+                           "%s", val->name);
             goto err;
         }
     }
     if (pcons->inhibitPolicyMapping == NULL
             && pcons->requireExplicitPolicy == NULL) {
-        X509V3err(X509V3_F_V2I_POLICY_CONSTRAINTS,
-                  X509V3_R_ILLEGAL_EMPTY_EXTENSION);
+        ERR_raise(ERR_LIB_X509V3, X509V3_R_ILLEGAL_EMPTY_EXTENSION);
         goto err;
     }
 

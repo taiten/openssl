@@ -1,3 +1,14 @@
+openssl (3.0.0~~alpha13-1) experimental; urgency=medium
+
+  * Import 3.0.0-alpha13.
+  * Move configuration.h to architecture specific include folder. Patch from
+    Antonio Terceiro (Closes: #985555).
+  * Enable LFS. Thanks to Dan Nicholson for debugging (Closes: #923479).
+  * drop `lsof', the testsuite is not using it anymore.
+  * Enable ktls.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Thu, 01 Apr 2021 23:07:05 +0200
+
 openssl (3.0.0~~alpha4-1) experimental; urgency=medium
 
   * Import 3.0.0-alpha4.

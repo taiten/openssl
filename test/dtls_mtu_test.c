@@ -14,13 +14,11 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-#include "ssltestlib.h"
+#include "helpers/ssltestlib.h"
 #include "testutil.h"
 
 /* for SSL_READ_ETM() */
 #include "../ssl/ssl_local.h"
-
-DEFINE_STACK_OF(SSL_CIPHER)
 
 static int debug = 0;
 

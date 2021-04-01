@@ -10,6 +10,7 @@
 
 #include <openssl/err.h>
 #include <openssl/randerr.h>
+#include "crypto/randerr.h"
 
 #ifndef OPENSSL_NO_ERR
 
@@ -79,12 +80,14 @@ static const ERR_STRING_DATA RAND_str_reasons[] = {
     "too little nonce requested"},
     {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_TOO_MUCH_NONCE_REQUESTED),
     "too much nonce requested"},
+    {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNABLE_TO_CREATE_DRBG),
+    "unable to create drbg"},
+    {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNABLE_TO_FETCH_DRBG),
+    "unable to fetch drbg"},
     {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNABLE_TO_GET_PARENT_RESEED_PROP_COUNTER),
     "unable to get parent reseed prop counter"},
     {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNABLE_TO_GET_PARENT_STRENGTH),
     "unable to get parent strength"},
-    {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNABLE_TO_GET_RESEED_PROP_CTR),
-    "unable to get reseed prop ctr"},
     {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNABLE_TO_LOCK_PARENT),
     "unable to lock parent"},
     {ERR_PACK(ERR_LIB_RAND, 0, RAND_R_UNSUPPORTED_DRBG_FLAGS),
@@ -96,7 +99,7 @@ static const ERR_STRING_DATA RAND_str_reasons[] = {
 
 #endif
 
-int ERR_load_RAND_strings(void)
+int err_load_RAND_strings_int(void)
 {
 #ifndef OPENSSL_NO_ERR
     if (ERR_reason_error_string(RAND_str_reasons[0].error) == NULL)

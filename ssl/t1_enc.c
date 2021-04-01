@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2005 Nokia. All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -40,16 +40,15 @@ static int tls1_PRF(SSL *s,
     if (md == NULL) {
         /* Should never happen */
         if (fatal)
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_PRF,
-                     ERR_R_INTERNAL_ERROR);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         else
-            SSLerr(SSL_F_TLS1_PRF, ERR_R_INTERNAL_ERROR);
+            ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
         return 0;
     }
     kdf = EVP_KDF_fetch(s->ctx->libctx, OSSL_KDF_NAME_TLS1_PRF, s->ctx->propq);
     if (kdf == NULL)
         goto err;
-    kctx = EVP_KDF_new_ctx(kdf);
+    kctx = EVP_KDF_CTX_new(kdf);
     EVP_KDF_free(kdf);
     if (kctx == NULL)
         goto err;
@@ -70,19 +69,17 @@ static int tls1_PRF(SSL *s,
     *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SEED,
                                              (void *)seed5, (size_t)seed5_len);
     *p = OSSL_PARAM_construct_end();
-    if (EVP_KDF_set_ctx_params(kctx, params)
-            && EVP_KDF_derive(kctx, out, olen)) {
-        EVP_KDF_free_ctx(kctx);
+    if (EVP_KDF_derive(kctx, out, olen, params)) {
+        EVP_KDF_CTX_free(kctx);
         return 1;
     }
 
  err:
     if (fatal)
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_PRF,
-                 ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
     else
-        SSLerr(SSL_F_TLS1_PRF, ERR_R_INTERNAL_ERROR);
-    EVP_KDF_free_ctx(kctx);
+        ERR_raise(ERR_LIB_SSL, ERR_R_INTERNAL_ERROR);
+    EVP_KDF_CTX_free(kctx);
     return 0;
 }
 
@@ -136,6 +133,56 @@ static int count_unprocessed_records(SSL *s)
 # endif
 #endif
 
+
+int tls_provider_set_tls_params(SSL *s, EVP_CIPHER_CTX *ctx,
+                                const EVP_CIPHER *ciph,
+                                const EVP_MD *md)
+{
+    /*
+     * Provided cipher, the TLS padding/MAC removal is performed provider
+     * side so we need to tell the ctx about our TLS version and mac size
+     */
+    OSSL_PARAM params[3], *pprm = params;
+    size_t macsize = 0;
+    int imacsize = -1;
+
+    if ((EVP_CIPHER_flags(ciph) & EVP_CIPH_FLAG_AEAD_CIPHER) == 0
+               /*
+                * We look at s->ext.use_etm instead of SSL_READ_ETM() or
+                * SSL_WRITE_ETM() because this test applies to both reading
+                * and writing.
+                */
+            && !s->ext.use_etm)
+        imacsize = EVP_MD_size(md);
+    if (imacsize >= 0)
+        macsize = (size_t)imacsize;
+
+    *pprm++ = OSSL_PARAM_construct_int(OSSL_CIPHER_PARAM_TLS_VERSION,
+                                       &s->version);
+    *pprm++ = OSSL_PARAM_construct_size_t(OSSL_CIPHER_PARAM_TLS_MAC_SIZE,
+                                          &macsize);
+    *pprm = OSSL_PARAM_construct_end();
+
+    if (!EVP_CIPHER_CTX_set_params(ctx, params)) {
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+        return 0;
+    }
+
+    return 1;
+}
+
+
+static int tls_iv_length_within_key_block(const EVP_CIPHER *c)
+{
+    /* If GCM/CCM mode only part of IV comes from PRF */
+    if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE)
+        return EVP_GCM_TLS_FIXED_IV_LEN;
+    else if (EVP_CIPHER_mode(c) == EVP_CIPH_CCM_MODE)
+        return EVP_CCM_TLS_FIXED_IV_LEN;
+    else
+        return EVP_CIPHER_iv_length(c);
+}
+
 int tls1_change_cipher_state(SSL *s, int which)
 {
     unsigned char *p, *mac_secret;
@@ -153,16 +200,12 @@ int tls1_change_cipher_state(SSL *s, int which)
     size_t n, i, j, k, cl;
     int reuse_dd = 0;
 #ifndef OPENSSL_NO_KTLS
-# ifdef __FreeBSD__
-    struct tls_enable crypto_info;
-# else
-    struct tls_crypto_info_all crypto_info;
+    ktls_crypto_info_t crypto_info;
     unsigned char *rec_seq;
     void *rl_sequence;
-#  ifndef OPENSSL_NO_KTLS_RX
+# ifndef OPENSSL_NO_KTLS_RX
     int count_unprocessed;
     int bit;
-#  endif
 # endif
     BIO *bio;
 #endif
@@ -193,8 +236,7 @@ int tls1_change_cipher_state(SSL *s, int which)
         if (s->enc_read_ctx != NULL) {
             reuse_dd = 1;
         } else if ((s->enc_read_ctx = EVP_CIPHER_CTX_new()) == NULL) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_MALLOC_FAILURE);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_MALLOC_FAILURE);
             goto err;
         } else {
             /*
@@ -205,8 +247,7 @@ int tls1_change_cipher_state(SSL *s, int which)
         dd = s->enc_read_ctx;
         mac_ctx = ssl_replace_hash(&s->read_hash, NULL);
         if (mac_ctx == NULL) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_INTERNAL_ERROR);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }
 #ifndef OPENSSL_NO_COMP
@@ -216,7 +257,6 @@ int tls1_change_cipher_state(SSL *s, int which)
             s->expand = COMP_CTX_new(comp->method);
             if (s->expand == NULL) {
                 SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-                         SSL_F_TLS1_CHANGE_CIPHER_STATE,
                          SSL_R_COMPRESSION_LIBRARY_ERROR);
                 goto err;
             }
@@ -248,26 +288,21 @@ int tls1_change_cipher_state(SSL *s, int which)
         if (s->enc_write_ctx != NULL && !SSL_IS_DTLS(s)) {
             reuse_dd = 1;
         } else if ((s->enc_write_ctx = EVP_CIPHER_CTX_new()) == NULL) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_MALLOC_FAILURE);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_MALLOC_FAILURE);
             goto err;
         }
         dd = s->enc_write_ctx;
         if (SSL_IS_DTLS(s)) {
             mac_ctx = EVP_MD_CTX_new();
             if (mac_ctx == NULL) {
-                SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-                         SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                         ERR_R_MALLOC_FAILURE);
+                SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_MALLOC_FAILURE);
                 goto err;
             }
             s->write_hash = mac_ctx;
         } else {
             mac_ctx = ssl_replace_hash(&s->write_hash, NULL);
             if (mac_ctx == NULL) {
-                SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-                         SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                         ERR_R_MALLOC_FAILURE);
+                SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_MALLOC_FAILURE);
                 goto err;
             }
         }
@@ -278,8 +313,7 @@ int tls1_change_cipher_state(SSL *s, int which)
             s->compress = COMP_CTX_new(comp->method);
             if (s->compress == NULL) {
                 SSLfatal(s, SSL_AD_INTERNAL_ERROR,
-                         SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                        SSL_R_COMPRESSION_LIBRARY_ERROR);
+                         SSL_R_COMPRESSION_LIBRARY_ERROR);
                 goto err;
             }
         }
@@ -302,14 +336,7 @@ int tls1_change_cipher_state(SSL *s, int which)
     /* TODO(size_t): convert me */
     cl = EVP_CIPHER_key_length(c);
     j = cl;
-    /* Was j=(exp)?5:EVP_CIPHER_key_length(c); */
-    /* If GCM/CCM mode only part of IV comes from PRF */
-    if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE)
-        k = EVP_GCM_TLS_FIXED_IV_LEN;
-    else if (EVP_CIPHER_mode(c) == EVP_CIPH_CCM_MODE)
-        k = EVP_CCM_TLS_FIXED_IV_LEN;
-    else
-        k = EVP_CIPHER_iv_length(c);
+    k = tls_iv_length_within_key_block(c);
     if ((which == SSL3_CHANGE_CIPHER_CLIENT_WRITE) ||
         (which == SSL3_CHANGE_CIPHER_SERVER_READ)) {
         ms = &(p[0]);
@@ -329,24 +356,31 @@ int tls1_change_cipher_state(SSL *s, int which)
     }
 
     if (n > s->s3.tmp.key_block_length) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                 ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         goto err;
     }
 
     memcpy(mac_secret, ms, i);
 
     if (!(EVP_CIPHER_flags(c) & EVP_CIPH_FLAG_AEAD_CIPHER)) {
-        /* TODO(size_t): Convert this function */
-        mac_key = EVP_PKEY_new_mac_key(mac_type, NULL, mac_secret,
-                                               (int)*mac_secret_size);
+        if (mac_type == EVP_PKEY_HMAC) {
+            mac_key = EVP_PKEY_new_raw_private_key_ex(s->ctx->libctx, "HMAC",
+                                                      s->ctx->propq, mac_secret,
+                                                      *mac_secret_size);
+        } else {
+            /*
+             * If its not HMAC then the only other types of MAC we support are
+             * the GOST MACs, so we need to use the old style way of creating
+             * a MAC key.
+             */
+            mac_key = EVP_PKEY_new_mac_key(mac_type, NULL, mac_secret,
+                                           (int)*mac_secret_size);
+        }
         if (mac_key == NULL
-            || EVP_DigestSignInit_ex(mac_ctx, NULL,
-                                     EVP_MD_name(m), s->ctx->propq,
-                                     mac_key, s->ctx->libctx) <= 0) {
+            || EVP_DigestSignInit_ex(mac_ctx, NULL, EVP_MD_name(m),
+                                     s->ctx->libctx, s->ctx->propq, mac_key) <= 0) {
             EVP_PKEY_free(mac_key);
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_INTERNAL_ERROR);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }
         EVP_PKEY_free(mac_key);
@@ -361,8 +395,7 @@ int tls1_change_cipher_state(SSL *s, int which)
         if (!EVP_CipherInit_ex(dd, c, NULL, key, NULL, (which & SSL3_CC_WRITE))
             || !EVP_CIPHER_CTX_ctrl(dd, EVP_CTRL_GCM_SET_IV_FIXED, (int)k,
                                     iv)) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_INTERNAL_ERROR);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }
     } else if (EVP_CIPHER_mode(c) == EVP_CIPH_CCM_MODE) {
@@ -377,14 +410,12 @@ int tls1_change_cipher_state(SSL *s, int which)
             || !EVP_CIPHER_CTX_ctrl(dd, EVP_CTRL_AEAD_SET_TAG, taglen, NULL)
             || !EVP_CIPHER_CTX_ctrl(dd, EVP_CTRL_CCM_SET_IV_FIXED, (int)k, iv)
             || !EVP_CipherInit_ex(dd, NULL, NULL, key, NULL, -1)) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_INTERNAL_ERROR);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }
     } else {
         if (!EVP_CipherInit_ex(dd, c, NULL, key, iv, (which & SSL3_CC_WRITE))) {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                     ERR_R_INTERNAL_ERROR);
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             goto err;
         }
     }
@@ -392,10 +423,15 @@ int tls1_change_cipher_state(SSL *s, int which)
     if ((EVP_CIPHER_flags(c) & EVP_CIPH_FLAG_AEAD_CIPHER) && *mac_secret_size
         && !EVP_CIPHER_CTX_ctrl(dd, EVP_CTRL_AEAD_SET_MAC_KEY,
                                 (int)*mac_secret_size, mac_secret)) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                 ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         goto err;
     }
+    if (EVP_CIPHER_provider(c) != NULL
+            && !tls_provider_set_tls_params(s, dd, c, m)) {
+        /* SSLfatal already called */
+        goto err;
+    }
+
 #ifndef OPENSSL_NO_KTLS
     if (s->compress)
         goto skip_ktls;
@@ -408,53 +444,9 @@ int tls1_change_cipher_state(SSL *s, int which)
     if (ssl_get_max_send_fragment(s) != SSL3_RT_MAX_PLAIN_LENGTH)
         goto skip_ktls;
 
-# ifdef __FreeBSD__
-    memset(&crypto_info, 0, sizeof(crypto_info));
-    switch (s->s3.tmp.new_cipher->algorithm_enc) {
-    case SSL_AES128GCM:
-    case SSL_AES256GCM:
-        crypto_info.cipher_algorithm = CRYPTO_AES_NIST_GCM_16;
-        crypto_info.iv_len = EVP_GCM_TLS_FIXED_IV_LEN;
-        break;
-    case SSL_AES128:
-    case SSL_AES256:
-        if (s->ext.use_etm)
-            goto skip_ktls;
-        switch (s->s3.tmp.new_cipher->algorithm_mac) {
-        case SSL_SHA1:
-            crypto_info.auth_algorithm = CRYPTO_SHA1_HMAC;
-            break;
-        case SSL_SHA256:
-            crypto_info.auth_algorithm = CRYPTO_SHA2_256_HMAC;
-            break;
-        case SSL_SHA384:
-            crypto_info.auth_algorithm = CRYPTO_SHA2_384_HMAC;
-            break;
-        default:
-            goto skip_ktls;
-        }
-        crypto_info.cipher_algorithm = CRYPTO_AES_CBC;
-        crypto_info.iv_len = EVP_CIPHER_iv_length(c);
-        crypto_info.auth_key = ms;
-        crypto_info.auth_key_len = *mac_secret_size;
-        break;
-    default:
-        goto skip_ktls;
-    }
-    crypto_info.cipher_key = key;
-    crypto_info.cipher_key_len = EVP_CIPHER_key_length(c);
-    crypto_info.iv = iv;
-    crypto_info.tls_vmajor = (s->version >> 8) & 0x000000ff;
-    crypto_info.tls_vminor = (s->version & 0x000000ff);
-# else /* !defined(__FreeBSD__) */
     /* check that cipher is supported */
-    if (!ktls_check_supported_cipher(c, dd))
+    if (!ktls_check_supported_cipher(s, c, dd))
         goto skip_ktls;
-
-    /* check version */
-    if (s->version != TLS1_2_VERSION)
-        goto skip_ktls;
-# endif
 
     if (which & SSL3_CC_WRITE)
         bio = s->wbio;
@@ -462,8 +454,7 @@ int tls1_change_cipher_state(SSL *s, int which)
         bio = s->rbio;
 
     if (!ossl_assert(bio != NULL)) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                 ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
         goto err;
     }
 
@@ -476,23 +467,21 @@ int tls1_change_cipher_state(SSL *s, int which)
     /* ktls doesn't support renegotiation */
     if ((BIO_get_ktls_send(s->wbio) && (which & SSL3_CC_WRITE)) ||
         (BIO_get_ktls_recv(s->rbio) && (which & SSL3_CC_READ))) {
-        SSLfatal(s, SSL_AD_NO_RENEGOTIATION, SSL_F_TLS1_CHANGE_CIPHER_STATE,
-                 ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_NO_RENEGOTIATION, ERR_R_INTERNAL_ERROR);
         goto err;
     }
 
-# ifndef __FreeBSD__
     if (which & SSL3_CC_WRITE)
         rl_sequence = RECORD_LAYER_get_write_sequence(&s->rlayer);
     else
         rl_sequence = RECORD_LAYER_get_read_sequence(&s->rlayer);
 
-    if (!ktls_configure_crypto(c, s->version, dd, rl_sequence, &crypto_info,
-                               &rec_seq, iv, key))
+    if (!ktls_configure_crypto(s, c, dd, rl_sequence, &crypto_info, &rec_seq,
+                               iv, key, ms, *mac_secret_size))
         goto skip_ktls;
 
     if (which & SSL3_CC_READ) {
-#  ifndef OPENSSL_NO_KTLS_RX
+# ifndef OPENSSL_NO_KTLS_RX
         count_unprocessed = count_unprocessed_records(s);
         if (count_unprocessed < 0)
             goto skip_ktls;
@@ -506,11 +495,10 @@ int tls1_change_cipher_state(SSL *s, int which)
             }
             count_unprocessed--;
         }
-#  else
+# else
         goto skip_ktls;
-#  endif
+# endif
     }
-# endif /* !__FreeBSD__ */
 
     /* ktls works with user provided buffers directly */
     if (BIO_set_ktls(bio, &crypto_info, which & SSL3_CC_WRITE)) {
@@ -550,8 +538,8 @@ int tls1_setup_key_block(SSL *s)
 
     if (!ssl_cipher_get_evp(s->ctx, s->session, &c, &hash, &mac_type,
                             &mac_secret_size, &comp, s->ext.use_etm)) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_SETUP_KEY_BLOCK,
-                 SSL_R_CIPHER_OR_HASH_UNAVAILABLE);
+        /* Error is already recorded */
+        SSLfatal_alert(s, SSL_AD_INTERNAL_ERROR);
         return 0;
     }
 
@@ -561,14 +549,13 @@ int tls1_setup_key_block(SSL *s)
     s->s3.tmp.new_hash = hash;
     s->s3.tmp.new_mac_pkey_type = mac_type;
     s->s3.tmp.new_mac_secret_size = mac_secret_size;
-    num = EVP_CIPHER_key_length(c) + mac_secret_size + EVP_CIPHER_iv_length(c);
+    num = mac_secret_size + EVP_CIPHER_key_length(c) + tls_iv_length_within_key_block(c);
     num *= 2;
 
     ssl3_cleanup_key_block(s);
 
     if ((p = OPENSSL_malloc(num)) == NULL) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS1_SETUP_KEY_BLOCK,
-                 ERR_R_MALLOC_FAILURE);
+        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_MALLOC_FAILURE);
         goto err;
     }
 
@@ -576,6 +563,7 @@ int tls1_setup_key_block(SSL *s)
     s->s3.tmp.key_block = p;
 
     OSSL_TRACE_BEGIN(TLS) {
+        BIO_printf(trc_out, "key block length: %ld\n", num);
         BIO_printf(trc_out, "client random\n");
         BIO_dump_indent(trc_out, s->s3.client_random, SSL3_RANDOM_SIZE, 4);
         BIO_printf(trc_out, "server random\n");
@@ -608,10 +596,8 @@ int tls1_setup_key_block(SSL *s)
             if (s->session->cipher->algorithm_enc == SSL_eNULL)
                 s->s3.need_empty_fragments = 0;
 
-#ifndef OPENSSL_NO_RC4
             if (s->session->cipher->algorithm_enc == SSL_RC4)
                 s->s3.need_empty_fragments = 0;
-#endif
         }
     }
 
@@ -785,11 +771,11 @@ int tls1_export_keying_material(SSL *s, unsigned char *out, size_t olen,
 
     goto ret;
  err1:
-    SSLerr(SSL_F_TLS1_EXPORT_KEYING_MATERIAL, SSL_R_TLS_ILLEGAL_EXPORTER_LABEL);
+    ERR_raise(ERR_LIB_SSL, SSL_R_TLS_ILLEGAL_EXPORTER_LABEL);
     rv = 0;
     goto ret;
  err2:
-    SSLerr(SSL_F_TLS1_EXPORT_KEYING_MATERIAL, ERR_R_MALLOC_FAILURE);
+    ERR_raise(ERR_LIB_SSL, ERR_R_MALLOC_FAILURE);
     rv = 0;
  ret:
     OPENSSL_clear_free(val, vallen);

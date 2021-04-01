@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -60,7 +60,7 @@ static void *evp_kdf_from_dispatch(int name_id,
     int fnkdfcnt = 0, fnctxcnt = 0;
 
     if ((kdf = evp_kdf_new()) == NULL) {
-        EVPerr(0, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     kdf->name_id = name_id;
@@ -147,7 +147,7 @@ static void *evp_kdf_from_dispatch(int name_id,
     return kdf;
 }
 
-EVP_KDF *EVP_KDF_fetch(OPENSSL_CTX *libctx, const char *algorithm,
+EVP_KDF *EVP_KDF_fetch(OSSL_LIB_CTX *libctx, const char *algorithm,
                        const char *properties)
 {
     return evp_generic_fetch(libctx, OSSL_OP_KDF, algorithm, properties,
@@ -169,24 +169,50 @@ const OSSL_PARAM *EVP_KDF_gettable_params(const EVP_KDF *kdf)
 {
     if (kdf->gettable_params == NULL)
         return NULL;
-    return kdf->gettable_params();
+    return kdf->gettable_params(ossl_provider_ctx(EVP_KDF_provider(kdf)));
 }
 
 const OSSL_PARAM *EVP_KDF_gettable_ctx_params(const EVP_KDF *kdf)
 {
+    void *alg;
+
     if (kdf->gettable_ctx_params == NULL)
         return NULL;
-    return kdf->gettable_ctx_params();
+    alg = ossl_provider_ctx(EVP_KDF_provider(kdf));
+    return kdf->gettable_ctx_params(NULL, alg);
 }
 
 const OSSL_PARAM *EVP_KDF_settable_ctx_params(const EVP_KDF *kdf)
 {
+    void *alg;
+
     if (kdf->settable_ctx_params == NULL)
         return NULL;
-    return kdf->settable_ctx_params();
+    alg = ossl_provider_ctx(EVP_KDF_provider(kdf));
+    return kdf->settable_ctx_params(NULL, alg);
 }
 
-void EVP_KDF_do_all_provided(OPENSSL_CTX *libctx,
+const OSSL_PARAM *EVP_KDF_CTX_gettable_params(EVP_KDF_CTX *ctx)
+{
+    void *alg;
+
+    if (ctx->meth->gettable_ctx_params == NULL)
+        return NULL;
+    alg = ossl_provider_ctx(EVP_KDF_provider(ctx->meth));
+    return ctx->meth->gettable_ctx_params(ctx->data, alg);
+}
+
+const OSSL_PARAM *EVP_KDF_CTX_settable_params(EVP_KDF_CTX *ctx)
+{
+    void *alg;
+
+    if (ctx->meth->settable_ctx_params == NULL)
+        return NULL;
+    alg = ossl_provider_ctx(EVP_KDF_provider(ctx->meth));
+    return ctx->meth->settable_ctx_params(ctx->data, alg);
+}
+
+void EVP_KDF_do_all_provided(OSSL_LIB_CTX *libctx,
                              void (*fn)(EVP_KDF *kdf, void *arg),
                              void *arg)
 {

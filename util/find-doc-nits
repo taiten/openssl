@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2002-2020 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2002-2021 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -91,14 +91,22 @@ my %mandatory_sections = (
                          );
 
 # Symbols that we ignored.
-# They are internal macros that we currently don't document
+# They are reserved macros that we currently don't document
 my $ignored = qr/(?| ^i2d_
                  |   ^d2i_
                  |   ^DEPRECATEDIN
+                 |   ^OSSL_DEPRECATED
                  |   \Q_fnsig(3)\E$
                  |   ^IMPLEMENT_
                  |   ^_?DECLARE_
+                 |   ^sk_
+                 |   ^SKM_DEFINE_STACK_OF_INTERNAL
+                 |   ^lh_
+                 |   ^DEFINE_LHASH_OF_INTERNAL
                  )/x;
+
+# A common regexp for C symbol names
+my $C_symbol = qr/\b[[:alpha:]][_[:alnum:]]*\b/;
 
 # Collect all POD files, both internal and public, and regardless of location
 # We collect them in a hash table with each file being a key, so we can attach
@@ -311,50 +319,95 @@ sub name_synopsis {
     # Find all functions in SYNOPSIS
     return unless $contents =~ /=head1 SYNOPSIS(.*)=head1 DESCRIPTION/ms;
     my $syn = $1;
-    foreach my $line ( split /\n+/, $syn ) {
-        next unless $line =~ /^\s/;
+    my $ignore_until = undef;   # If defined, this is a regexp
+    # Remove all non-code lines
+    $syn =~ s/^(?:\s*?|\S.*?)$//msg;
+    # Remove all comments
+    $syn =~ s/\/\*.*?\*\///msg;
+    while ( $syn ) {
+        # "env" lines end at a newline.
+        # Preprocessor lines start with a # and end at a newline.
+        # Other lines end with a semicolon, and may cover more than
+        # one physical line.
+        if ( $syn !~ /^ \s*(env .*?|#.*?|.*?;)\s*$/ms ) {
+            err($id, "Can't parse rest of synopsis:\n$syn\n(declarations not ending with a semicolon (;)?)");
+            last;
+        }
+        my $line = $1;
+        $syn = $';
+
+        print STDERR "DEBUG[name_synopsis] \$line = '$line'\n" if $debug;
+
+        # Special code to skip over documented structures
+        if ( defined $ignore_until) {
+            next if $line !~ /$ignore_until/;
+            $ignore_until = undef;
+            next;
+        }
+        if ( $line =~ /^\s*(?:typedef\s+)?struct(?:\s+\S+)\s*\{/ ) {
+            $ignore_until = qr/\}.*?;/;
+            next;
+        }
+
         my $sym;
         my $is_prototype = 1;
         $line =~ s/STACK_OF\([^)]+\)/int/g;
         $line =~ s/SPARSE_ARRAY_OF\([^)]+\)/int/g;
         $line =~ s/__declspec\([^)]+\)//;
-        if ( $line =~ /typedef.*\(\*\S+\)\s+\(/ ) {
-            # a callback function with whitespace before the argument list:
-            # typedef ... (*NAME) (...
-            err($id, "Function typedef has space before arg list: $line");
-        }
+
+        ## We don't prohibit that space, to allow typedefs looking like
+        ## this:
+        ##
+        ## typedef int (fantastically_long_name_breaks_80char_limit)
+        ##     (fantastically_long_name_breaks_80char_limit *something);
+        ##
+        #if ( $line =~ /typedef.*\(\*?\S+\)\s+\(/ ) {
+        #    # a callback function with whitespace before the argument list:
+        #    # typedef ... (*NAME) (...
+        #    # typedef ... (NAME) (...
+        #    err($id, "Function typedef has space before arg list: $line");
+        #}
+
         if ( $line =~ /env (\S*)=/ ) {
             # environment variable env NAME=...
             $sym = $1;
-        } elsif ( $line =~ /typedef.*\(\*(\S+)\)\s*\(/ ) {
+        } elsif ( $line =~ /typedef.*\(\*?($C_symbol)\)\s*\(/ ) {
             # a callback function pointer: typedef ... (*NAME)(...
+            # a callback function signature: typedef ... (NAME)(...
             $sym = $1;
-        } elsif ( $line =~ /typedef.* (\S+)\(/ ) {
+        } elsif ( $line =~ /typedef.*($C_symbol)\s*\(/ ) {
             # a callback function signature: typedef ... NAME(...
             $sym = $1;
-        } elsif ( $line =~ /typedef.* (\S+);/ ) {
+        } elsif ( $line =~ /typedef.*($C_symbol);/ ) {
             # a simple typedef: typedef ... NAME;
             $is_prototype = 0;
             $sym = $1;
-        } elsif ( $line =~ /enum (\S*) \{/ ) {
+        } elsif ( $line =~ /enum ($C_symbol) \{/ ) {
             # an enumeration: enum ... {
             $sym = $1;
-        } elsif ( $line =~ /#(?:define|undef) ([A-Za-z0-9_]+)/ ) {
+        } elsif ( $line =~ /#\s*(?:define|undef) ($C_symbol)/ ) {
             $is_prototype = 0;
             $sym = $1;
-        } elsif ( $line =~ /([A-Za-z0-9_]+)\(/ ) {
+        } elsif ( $line =~ /^[^\(]*?\(\*($C_symbol)\s*\(/ ) {
+            # a function returning a function pointer: TYPE (*NAME(args))(args)
+            $sym = $1;
+        } elsif ( $line =~ /^[^\(]*?($C_symbol)\s*\(/ ) {
+            # a simple function declaration
             $sym = $1;
         }
         else {
             next;
         }
+
+        print STDERR "DEBUG[name_synopsis] \$sym = '$sym'\n" if $debug;
+
         err($id, "$sym missing from NAME section")
             unless defined $names{$sym};
         $names{$sym} = 2;
 
         # Do some sanity checks on the prototype.
         err($id, "Prototype missing spaces around commas: $line")
-            if $is_prototype && $line =~ /[a-z0-9],[^ ]/;
+            if $is_prototype && $line =~ /[a-z0-9],[^\s]/;
     }
 
     foreach my $n ( keys %names ) {
@@ -551,42 +604,52 @@ sub functionname_check {
 
 # This is from http://man7.org/linux/man-pages/man7/man-pages.7.html
 my %preferred_words = (
+    '16bit'         => '16-bit',
+    'a.k.a.'        => 'aka',
     'bitmask'       => 'bit mask',
     'builtin'       => 'built-in',
    #'epoch'         => 'Epoch', # handled specially, below
+    'fall-back'     => 'fallback',
     'file name'     => 'filename',
     'file system'   => 'filesystem',
     'host name'     => 'hostname',
     'i-node'        => 'inode',
     'lower case'    => 'lowercase',
     'lower-case'    => 'lowercase',
+    'manpage'       => 'man page',
+    'non-blocking'  => 'nonblocking',
+    'non-default'   => 'nondefault',
+    'non-empty'     => 'nonempty',
+    'non-negative'  => 'nonnegative',
     'non-zero'      => 'nonzero',
     'path name'     => 'pathname',
+    'pre-allocated' => 'preallocated',
     'pseudo-terminal' => 'pseudoterminal',
-    'reserved port' => 'privileged port',
-    'system port'   => 'privileged port',
-    'realtime'      => 'real-time',
     'real time'     => 'real-time',
+    'realtime'      => 'real-time',
+    'reserved port' => 'privileged port',
     'runtime'       => 'run time',
     'saved group ID'=> 'saved set-group-ID',
     'saved set-GID' => 'saved set-group-ID',
-    'saved user ID' => 'saved set-user-ID',
     'saved set-UID' => 'saved set-user-ID',
+    'saved user ID' => 'saved set-user-ID',
     'set-GID'       => 'set-group-ID',
-    'setgid'        => 'set-group-ID',
     'set-UID'       => 'set-user-ID',
+    'setgid'        => 'set-group-ID',
     'setuid'        => 'set-user-ID',
-    'super user'    => 'superuser',
-    'super-user'    => 'superuser',
+    'sub-system'    => 'subsystem',
     'super block'   => 'superblock',
     'super-block'   => 'superblock',
+    'super user'    => 'superuser',
+    'super-user'    => 'superuser',
+    'system port'   => 'privileged port',
     'time stamp'    => 'timestamp',
     'time zone'     => 'timezone',
     'upper case'    => 'uppercase',
     'upper-case'    => 'uppercase',
     'useable'       => 'usable',
-    'userspace'     => 'user space',
     'user name'     => 'username',
+    'userspace'     => 'user space',
     'zeroes'        => 'zeros'
 );
 
@@ -716,7 +779,8 @@ sub check {
 
     open my $OUT, '>', $temp
         or die "Can't open $temp, $!";
-    podchecker($filename, $OUT);
+    err($id, "POD errors")
+        if podchecker($filename, $OUT) != 0;
     close $OUT;
     open $OUT, '<', $temp
         or die "Can't read $temp, $!";
@@ -822,7 +886,7 @@ sub checkstate () {
 
         err("$_ is supposedly public but is documented as internal")
             if ( $declared_public && $name_map{$_} =~ /\/internal\// );
-        err("$_ is supposedly internal but is documented as public")
+        err("$_ is supposedly internal (maybe missing from other.syms) but is documented as public")
             if ( $declared_internal && $name_map{$_} !~ /\/internal\// );
     }
 }
@@ -1110,7 +1174,8 @@ if ( $opt_n ) {
     # If not given args, check that all man1 commands are named properly.
     if ( scalar @ARGV == 0 ) {
         foreach ( files(TAGS => [ 'public_manual', 'man1' ]) ) {
-            next if /CA.pl/ || /openssl\.pod/ || /tsget\.pod/;
+            next if /openssl\.pod/
+                || /CA\.pl/ || /tsget\.pod/; # these commands are special cases
             err("$_ doesn't start with openssl-") unless /openssl-/;
         }
     }

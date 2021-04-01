@@ -9,7 +9,7 @@
 
 #include "internal/cryptlib.h"
 #include <openssl/rand.h>
-#include "prov/rand_pool.h"
+#include "crypto/rand_pool.h"
 #include "crypto/rand.h"
 #include "prov/seeding.h"
 
@@ -42,7 +42,7 @@
 #  define INTEL_DEF_PROV L"Intel Hardware Cryptographic Service Provider"
 # endif
 
-size_t prov_pool_acquire_entropy(RAND_POOL *pool)
+size_t ossl_pool_acquire_entropy(RAND_POOL *pool)
 {
 # ifndef USE_BCRYPTGENRANDOM
     HCRYPTPROV hProvider;
@@ -53,13 +53,13 @@ size_t prov_pool_acquire_entropy(RAND_POOL *pool)
 
 
 # ifdef OPENSSL_RAND_SEED_RDTSC
-    entropy_available = rand_acquire_entropy_from_tsc(pool);
+    entropy_available = prov_acquire_entropy_from_tsc(pool);
     if (entropy_available > 0)
         return entropy_available;
 # endif
 
 # ifdef OPENSSL_RAND_SEED_RDCPU
-    entropy_available = rand_acquire_entropy_from_cpu(pool);
+    entropy_available = prov_acquire_entropy_from_cpu(pool);
     if (entropy_available > 0)
         return entropy_available;
 # endif
@@ -122,7 +122,7 @@ size_t prov_pool_acquire_entropy(RAND_POOL *pool)
 }
 
 
-int prov_pool_add_nonce_data(RAND_POOL *pool)
+int ossl_pool_add_nonce_data(RAND_POOL *pool)
 {
     struct {
         DWORD pid;

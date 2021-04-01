@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -16,8 +16,6 @@
 #include <openssl/evp.h>
 #include <openssl/kdf.h>
 #include <openssl/params.h>
-
-DEFINE_STACK_OF_STRING()
 
 typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
@@ -91,20 +89,19 @@ opthelp:
             break;
         }
     }
+
+    /* One argument, the KDF name. */
     argc = opt_num_rest();
     argv = opt_rest();
-
-    if (argc != 1) {
-        BIO_printf(bio_err, "Invalid number of extra arguments\n");
+    if (argc != 1)
         goto opthelp;
-    }
 
     if ((kdf = EVP_KDF_fetch(NULL, argv[0], NULL)) == NULL) {
         BIO_printf(bio_err, "Invalid KDF name %s\n", argv[0]);
         goto opthelp;
     }
 
-    ctx = EVP_KDF_new_ctx(kdf);
+    ctx = EVP_KDF_CTX_new(kdf);
     if (ctx == NULL)
         goto err;
 
@@ -116,7 +113,7 @@ opthelp:
         if (params == NULL)
             goto err;
 
-        if (!EVP_KDF_set_ctx_params(ctx, params)) {
+        if (!EVP_KDF_CTX_set_params(ctx, params)) {
             BIO_printf(bio_err, "KDF parameter error\n");
             ERR_print_errors(bio_err);
             ok = 0;
@@ -138,7 +135,7 @@ opthelp:
     if (dkm_bytes == NULL)
         goto err;
 
-    if (!EVP_KDF_derive(ctx, dkm_bytes, dkm_len)) {
+    if (!EVP_KDF_derive(ctx, dkm_bytes, dkm_len, NULL)) {
         BIO_printf(bio_err, "EVP_KDF_derive failed\n");
         goto err;
     }
@@ -161,7 +158,7 @@ err:
     OPENSSL_clear_free(dkm_bytes, dkm_len);
     sk_OPENSSL_STRING_free(opts);
     EVP_KDF_free(kdf);
-    EVP_KDF_free_ctx(ctx);
+    EVP_KDF_CTX_free(ctx);
     BIO_free(out);
     OPENSSL_free(hexout);
     return ret;

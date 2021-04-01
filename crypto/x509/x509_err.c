@@ -10,6 +10,7 @@
 
 #include <openssl/err.h>
 #include <openssl/x509err.h>
+#include "crypto/x509err.h"
 
 #ifndef OPENSSL_NO_ERR
 
@@ -27,10 +28,15 @@ static const ERR_STRING_DATA X509_str_reasons[] = {
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_CRL_ALREADY_DELTA), "crl already delta"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_CRL_VERIFY_FAILURE),
     "crl verify failure"},
+    {ERR_PACK(ERR_LIB_X509, 0, X509_R_ERROR_GETTING_MD_BY_NID),
+    "error getting md by nid"},
+    {ERR_PACK(ERR_LIB_X509, 0, X509_R_ERROR_USING_SIGINF_SET),
+    "error using siginf set"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_IDP_MISMATCH), "idp mismatch"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_INVALID_ATTRIBUTES),
     "invalid attributes"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_INVALID_DIRECTORY), "invalid directory"},
+    {ERR_PACK(ERR_LIB_X509, 0, X509_R_INVALID_DISTPOINT), "invalid distpoint"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_INVALID_FIELD_NAME),
     "invalid field name"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_INVALID_TRUST), "invalid trust"},
@@ -66,6 +72,8 @@ static const ERR_STRING_DATA X509_str_reasons[] = {
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_UNKNOWN_NID), "unknown nid"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_UNKNOWN_PURPOSE_ID),
     "unknown purpose id"},
+    {ERR_PACK(ERR_LIB_X509, 0, X509_R_UNKNOWN_SIGID_ALGS),
+    "unknown sigid algs"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_UNKNOWN_TRUST_ID), "unknown trust id"},
     {ERR_PACK(ERR_LIB_X509, 0, X509_R_UNSUPPORTED_ALGORITHM),
     "unsupported algorithm"},
@@ -76,7 +84,7 @@ static const ERR_STRING_DATA X509_str_reasons[] = {
 
 #endif
 
-int ERR_load_X509_strings(void)
+int err_load_X509_strings_int(void)
 {
 #ifndef OPENSSL_NO_ERR
     if (ERR_reason_error_string(X509_str_reasons[0].error) == NULL)

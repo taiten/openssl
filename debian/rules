@@ -11,7 +11,7 @@
 include /usr/share/dpkg/architecture.mk
 include /usr/share/dpkg/pkg-info.mk
 
-export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all future=+lfs
 
 SHELL=/bin/bash
 
@@ -107,6 +107,7 @@ override_dh_auto_install-indep:
 		$(MAKE) -C build_shared install DESTDIR=`pwd`/debian/tmp ;\
 		mkdir -p debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl ;\
 		mv debian/tmp/usr/include/openssl/opensslconf.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/ ;\
+		mv debian/tmp/usr/include/openssl/configuration.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/ ;\
 	fi
 
 override_dh_auto_install-arch:
@@ -129,6 +130,7 @@ override_dh_auto_install-arch:
 	done
 	mkdir -p debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl
 	mv debian/tmp/usr/include/openssl/opensslconf.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/
+	mv debian/tmp/usr/include/openssl/configuration.h debian/tmp/usr/include/$(DEB_HOST_MULTIARCH)/openssl/
 
 override_dh_installchangelogs:
 	dh_installchangelogs CHANGES.md

@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -21,6 +21,7 @@
 #include <openssl/e_os2.h>
 #include <openssl/async.h>
 #include <openssl/ssl.h>
+#include <openssl/decoder.h>
 
 #ifndef OPENSSL_NO_SOCK
 
@@ -47,24 +48,13 @@ typedef unsigned int u_int;
 #ifndef OPENSSL_NO_DH
 # include <openssl/dh.h>
 #endif
-#ifndef OPENSSL_NO_RSA
-# include <openssl/rsa.h>
-#endif
-#ifndef OPENSSL_NO_SRP
-# include <openssl/srp.h>
-#endif
+#include <openssl/rsa.h>
 #include "s_apps.h"
 #include "timeouts.h"
 #ifdef CHARSET_EBCDIC
 #include <openssl/ebcdic.h>
 #endif
 #include "internal/sockets.h"
-
-DEFINE_STACK_OF(X509_EXTENSION)
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(SSL_CIPHER)
-DEFINE_STACK_OF_STRING()
 
 static int not_resumable_sess_cb(SSL *s, int is_forward_secure);
 static int sv_body(int s, int stype, int prot, unsigned char *context);
@@ -77,9 +67,6 @@ static int generate_session_id(SSL *ssl, unsigned char *id,
                                unsigned int *id_len);
 static void init_session_cache_ctx(SSL_CTX *sctx);
 static void free_sessions(void);
-#ifndef OPENSSL_NO_DH
-static DH *load_dh_param(const char *dhfile);
-#endif
 static void print_connection_info(SSL *con);
 
 static const int bufsize = 16 * 1024;
@@ -240,56 +227,7 @@ static int psk_find_session_cb(SSL *ssl, const unsigned char *identity,
 }
 
 #ifndef OPENSSL_NO_SRP
-/* This is a context that we pass to callbacks */
-typedef struct srpsrvparm_st {
-    char *login;
-    SRP_VBASE *vb;
-    SRP_user_pwd *user;
-} srpsrvparm;
 static srpsrvparm srp_callback_parm;
-
-/*
- * This callback pretends to require some asynchronous logic in order to
- * obtain a verifier. When the callback is called for a new connection we
- * return with a negative value. This will provoke the accept etc to return
- * with an LOOKUP_X509. The main logic of the reinvokes the suspended call
- * (which would normally occur after a worker has finished) and we set the
- * user parameters.
- */
-static int ssl_srp_server_param_cb(SSL *s, int *ad, void *arg)
-{
-    srpsrvparm *p = (srpsrvparm *) arg;
-    int ret = SSL3_AL_FATAL;
-
-    if (p->login == NULL && p->user == NULL) {
-        p->login = SSL_get_srp_username(s);
-        BIO_printf(bio_err, "SRP username = \"%s\"\n", p->login);
-        return -1;
-    }
-
-    if (p->user == NULL) {
-        BIO_printf(bio_err, "User %s doesn't exist\n", p->login);
-        goto err;
-    }
-
-    if (SSL_set_srp_server_param
-        (s, p->user->N, p->user->g, p->user->s, p->user->v,
-         p->user->info) < 0) {
-        *ad = SSL_AD_INTERNAL_ERROR;
-        goto err;
-    }
-    BIO_printf(bio_err,
-               "SRP parameters set: username = \"%s\" info=\"%s\" \n",
-               p->login, p->user->info);
-    ret = SSL_ERROR_NONE;
-
- err:
-    SRP_user_pwd_free(p->user);
-    p->user = NULL;
-    p->login = NULL;
-    return ret;
-}
-
 #endif
 
 static int local_argc = 0;
@@ -534,8 +472,8 @@ static int get_ocsp_resp_from_responder(SSL *s, tlsextstatusctx *srctx,
     x = SSL_get_certificate(s);
     aia = X509_get1_ocsp(x);
     if (aia != NULL) {
-        if (!OSSL_HTTP_parse_url(sk_OPENSSL_STRING_value(aia, 0),
-                                 &host, &port, &path, &use_ssl)) {
+        if (!OSSL_HTTP_parse_url(sk_OPENSSL_STRING_value(aia, 0), &use_ssl,
+                                 NULL, &host, &port, NULL, &path, NULL, NULL)) {
             BIO_puts(bio_err, "cert_status: can't parse AIA URL\n");
             goto err;
         }
@@ -809,9 +747,9 @@ const OPTIONS s_server_options[] = {
     {"Verify", OPT_UPPER_V_VERIFY, 'n',
      "Turn on peer certificate verification, must have a cert"},
     {"nameopt", OPT_NAMEOPT, 's', "Certificate subject/issuer name printing options"},
-    {"cert", OPT_CERT, '<', "Server certificate file to use; default is " TEST_CERT},
+    {"cert", OPT_CERT, '<', "Server certificate file to use; default " TEST_CERT},
     {"cert2", OPT_CERT2, '<',
-     "Certificate file to use for servername; default is" TEST_CERT2},
+     "Certificate file to use for servername; default " TEST_CERT2},
     {"certform", OPT_CERTFORM, 'F',
      "Server certificate file format (PEM/DER/P12); has no effect"},
     {"cert_chain", OPT_CERT_CHAIN, '<',
@@ -824,7 +762,7 @@ const OPTIONS s_server_options[] = {
     {"key2", OPT_KEY2, '<',
      "-Private Key file to use for servername if not in -cert2"},
     {"keyform", OPT_KEYFORM, 'f', "Key format (ENGINE, other values ignored)"},
-    {"pass", OPT_PASS, 's', "Private key file pass phrase source"},
+    {"pass", OPT_PASS, 's', "Private key and cert file pass phrase source"},
     {"dcert", OPT_DCERT, '<',
      "Second server certificate file to use (usually for DSA)"},
     {"dcertform", OPT_DCERTFORM, 'F',
@@ -835,16 +773,15 @@ const OPTIONS s_server_options[] = {
      "Second private key file to use (usually for DSA)"},
     {"dkeyform", OPT_DKEYFORM, 'F',
      "Second key file format (ENGINE, other values ignored)"},
-    {"dpass", OPT_DPASS, 's', "Second private key file pass phrase source"},
+    {"dpass", OPT_DPASS, 's',
+     "Second private key and cert file pass phrase source"},
     {"dhparam", OPT_DHPARAM, '<', "DH parameters file to use"},
     {"servername", OPT_SERVERNAME, 's',
      "Servername for HostName TLS extension"},
     {"servername_fatal", OPT_SERVERNAME_FATAL, '-',
      "mismatch send fatal alert (default warning alert)"},
-
     {"nbio_test", OPT_NBIO_TEST, '-', "Test with the non-blocking test bio"},
     {"crlf", OPT_CRLF, '-', "Convert LF from terminal into CRLF"},
-
     {"quiet", OPT_QUIET, '-', "No server output"},
     {"no_resume_ephemeral", OPT_NO_RESUME_EPHEMERAL, '-',
      "Disable caching and tickets if ephemeral (EC)DH is used"},
@@ -860,7 +797,7 @@ const OPTIONS s_server_options[] = {
     {"keymatexport", OPT_KEYMATEXPORT, 's',
      "Export keying material using label"},
     {"keymatexportlen", OPT_KEYMATEXPORTLEN, 'p',
-     "Export len bytes of keying material (default 20)"},
+     "Export len bytes of keying material; default 20"},
     {"CRL", OPT_CRL, '<', "CRL file to use"},
     {"CRLform", OPT_CRLFORM, 'F', "CRL file format (PEM or DER); default PEM"},
     {"crl_download", OPT_CRL_DOWNLOAD, '-',
@@ -937,9 +874,9 @@ const OPTIONS s_server_options[] = {
     {"psk", OPT_PSK, 's', "PSK in hex (without 0x)"},
     {"psk_session", OPT_PSK_SESS, '<', "File to read PSK SSL session from"},
 #ifndef OPENSSL_NO_SRP
-    {"srpvfile", OPT_SRPVFILE, '<', "The verifier file for SRP"},
+    {"srpvfile", OPT_SRPVFILE, '<', "(deprecated) The verifier file for SRP"},
     {"srpuserseed", OPT_SRPUSERSEED, 's',
-     "A seed string for a default user salt"},
+     "(deprecated) A seed string for a default user salt"},
 #endif
 
     OPT_SECTION("Protocol and version"),
@@ -990,9 +927,7 @@ const OPTIONS s_server_options[] = {
     {"use_srtp", OPT_SRTP_PROFILES, 's',
      "Offer SRTP key management with a colon-separated profile list"},
 #endif
-#ifndef OPENSSL_NO_DH
     {"no_dhe", OPT_NO_DHE, '-', "Disable ephemeral DH"},
-#endif
 #ifndef OPENSSL_NO_NEXTPROTONEG
     {"nextprotoneg", OPT_NEXTPROTONEG, 's',
      "Set the advertised protocols for the NPN extension (comma-separated list)"},
@@ -1038,10 +973,8 @@ int s_server_main(int argc, char *argv[])
 #endif
     do_server_cb server_cb;
     int vpmtouched = 0, build_chain = 0, no_cache = 0, ext_cache = 0;
-#ifndef OPENSSL_NO_DH
     char *dhfile = NULL;
     int no_dhe = 0;
-#endif
     int nocert = 0, ret = 1;
     int noCApath = 0, noCAfile = 0, noCAstore = 0;
     int s_cert_format = FORMAT_PEM, s_key_format = FORMAT_PEM;
@@ -1265,9 +1198,7 @@ int s_server_main(int argc, char *argv[])
             s_chain_file = opt_arg();
             break;
         case OPT_DHPARAM:
-#ifndef OPENSSL_NO_DH
             dhfile = opt_arg();
-#endif
             break;
         case OPT_DCERTFORM:
             if (!opt_format(opt_arg(), OPT_FMT_ANY, &s_dcert_format))
@@ -1406,10 +1337,10 @@ int s_server_main(int argc, char *argv[])
         case OPT_STATUS_URL:
 #ifndef OPENSSL_NO_OCSP
             s_tlsextstatus = 1;
-            if (!OSSL_HTTP_parse_url(opt_arg(),
-                                     &tlscstatp.host, &tlscstatp.port,
-                                     &tlscstatp.path, &tlscstatp.use_ssl)) {
-                BIO_printf(bio_err, "Error parsing URL\n");
+            if (!OSSL_HTTP_parse_url(opt_arg(), &tlscstatp.use_ssl, NULL,
+                                     &tlscstatp.host, &tlscstatp.port, NULL,
+                                     &tlscstatp.path, NULL, NULL)) {
+                BIO_printf(bio_err, "Error parsing -status_url argument\n");
                 goto end;
             }
 #endif
@@ -1450,9 +1381,7 @@ int s_server_main(int argc, char *argv[])
             s_quiet = s_brief = verify_args.quiet = 1;
             break;
         case OPT_NO_DHE:
-#ifndef OPENSSL_NO_DH
             no_dhe = 1;
-#endif
             break;
         case OPT_NO_RESUME_EPHEMERAL:
             no_resume_ephemeral = 1;
@@ -1675,9 +1604,13 @@ int s_server_main(int argc, char *argv[])
             break;
         }
     }
-    argc = opt_num_rest();
-    argv = opt_rest();
 
+    /* No extra arguments. */
+    argc = opt_num_rest();
+    if (argc != 0)
+        goto opthelp;
+
+    app_RAND_load();
 #ifndef OPENSSL_NO_NEXTPROTONEG
     if (min_version == TLS1_3_VERSION && next_proto_neg_in != NULL) {
         BIO_printf(bio_err, "Cannot supply -nextprotoneg with TLSv1.3\n");
@@ -1748,29 +1681,28 @@ int s_server_main(int argc, char *argv[])
 
     if (nocert == 0) {
         s_key = load_key(s_key_file, s_key_format, 0, pass, engine,
-                         "server certificate private key file");
+                         "server certificate private key");
         if (s_key == NULL)
             goto end;
 
-        s_cert = load_cert(s_cert_file, s_cert_format,
-                           "server certificate file");
+        s_cert = load_cert_pass(s_cert_file, 1, pass, "server certificate");
 
         if (s_cert == NULL)
             goto end;
         if (s_chain_file != NULL) {
-            if (!load_certs(s_chain_file, &s_chain, FORMAT_PEM, NULL,
+            if (!load_certs(s_chain_file, &s_chain, NULL,
                             "server certificate chain"))
                 goto end;
         }
 
         if (tlsextcbp.servername != NULL) {
             s_key2 = load_key(s_key_file2, s_key_format, 0, pass, engine,
-                              "second server certificate private key file");
+                              "second server certificate private key");
             if (s_key2 == NULL)
                 goto end;
 
-            s_cert2 = load_cert(s_cert_file2, s_cert_format,
-                                "second server certificate file");
+            s_cert2 = load_cert_pass(s_cert_file2, 1, pass,
+                                "second server certificate");
 
             if (s_cert2 == NULL)
                 goto end;
@@ -1792,7 +1724,7 @@ int s_server_main(int argc, char *argv[])
 
     if (crl_file != NULL) {
         X509_CRL *crl;
-        crl = load_crl(crl_file, crl_format, "CRL");
+        crl = load_crl(crl_file, "CRL");
         if (crl == NULL)
             goto end;
         crls = sk_X509_CRL_new_null();
@@ -1810,19 +1742,19 @@ int s_server_main(int argc, char *argv[])
             s_dkey_file = s_dcert_file;
 
         s_dkey = load_key(s_dkey_file, s_dkey_format,
-                          0, dpass, engine, "second certificate private key file");
+                          0, dpass, engine, "second certificate private key");
         if (s_dkey == NULL)
             goto end;
 
-        s_dcert = load_cert(s_dcert_file, s_dcert_format,
-                            "second server certificate file");
+        s_dcert = load_cert_pass(s_dcert_file, 1, dpass,
+                                 "second server certificate");
 
         if (s_dcert == NULL) {
             ERR_print_errors(bio_err);
             goto end;
         }
         if (s_dchain_file != NULL) {
-            if (!load_certs(s_dchain_file, &s_dchain, FORMAT_PEM, NULL,
+            if (!load_certs(s_dchain_file, &s_dchain, NULL,
                             "second server certificate chain"))
                 goto end;
         }
@@ -1839,10 +1771,7 @@ int s_server_main(int argc, char *argv[])
                 bio_s_out = dup_bio_out(FORMAT_TEXT);
         }
     }
-#if !defined(OPENSSL_NO_RSA) || !defined(OPENSSL_NO_DSA) || !defined(OPENSSL_NO_EC)
-    if (nocert)
-#endif
-    {
+    if (nocert) {
         s_cert_file = NULL;
         s_key_file = NULL;
         s_dcert_file = NULL;
@@ -1851,7 +1780,7 @@ int s_server_main(int argc, char *argv[])
         s_key_file2 = NULL;
     }
 
-    ctx = SSL_CTX_new(meth);
+    ctx = SSL_CTX_new_ex(app_get0_libctx(), app_get0_propq(), meth);
     if (ctx == NULL) {
         ERR_print_errors(bio_err);
         goto end;
@@ -1976,7 +1905,7 @@ int s_server_main(int argc, char *argv[])
     }
 
     if (s_cert2) {
-        ctx2 = SSL_CTX_new(meth);
+        ctx2 = SSL_CTX_new_ex(app_get0_libctx(), app_get0_propq(), meth);
         if (ctx2 == NULL) {
             ERR_print_errors(bio_err);
             goto end;
@@ -2039,54 +1968,67 @@ int s_server_main(int argc, char *argv[])
     if (alpn_ctx.data)
         SSL_CTX_set_alpn_select_cb(ctx, alpn_cb, &alpn_ctx);
 
-#ifndef OPENSSL_NO_DH
     if (!no_dhe) {
-        DH *dh = NULL;
+        EVP_PKEY *dhpkey = NULL;
 
         if (dhfile != NULL)
-            dh = load_dh_param(dhfile);
+            dhpkey = load_keyparams(dhfile, 0, "DH", "DH parameters");
         else if (s_cert_file != NULL)
-            dh = load_dh_param(s_cert_file);
+            dhpkey = load_keyparams(s_cert_file, 0, "DH", "DH parameters");
 
-        if (dh != NULL) {
+        if (dhpkey != NULL) {
             BIO_printf(bio_s_out, "Setting temp DH parameters\n");
         } else {
             BIO_printf(bio_s_out, "Using default temp DH parameters\n");
         }
         (void)BIO_flush(bio_s_out);
 
-        if (dh == NULL) {
+        if (dhpkey == NULL) {
             SSL_CTX_set_dh_auto(ctx, 1);
-        } else if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
-            BIO_puts(bio_err, "Error setting temp DH parameters\n");
-            ERR_print_errors(bio_err);
-            DH_free(dh);
-            goto end;
-        }
-
-        if (ctx2 != NULL) {
-            if (!dhfile) {
-                DH *dh2 = load_dh_param(s_cert_file2);
-                if (dh2 != NULL) {
-                    BIO_printf(bio_s_out, "Setting temp DH parameters\n");
-                    (void)BIO_flush(bio_s_out);
-
-                    DH_free(dh);
-                    dh = dh2;
-                }
+        } else {
+            /*
+             * We need 2 references: one for use by ctx and one for use by
+             * ctx2
+             */
+            if (!EVP_PKEY_up_ref(dhpkey)) {
+                EVP_PKEY_free(dhpkey);
+                goto end;
             }
-            if (dh == NULL) {
-                SSL_CTX_set_dh_auto(ctx2, 1);
-            } else if (!SSL_CTX_set_tmp_dh(ctx2, dh)) {
+            if (!SSL_CTX_set0_tmp_dh_pkey(ctx, dhpkey)) {
                 BIO_puts(bio_err, "Error setting temp DH parameters\n");
                 ERR_print_errors(bio_err);
-                DH_free(dh);
+                /* Free 2 references */
+                EVP_PKEY_free(dhpkey);
+                EVP_PKEY_free(dhpkey);
                 goto end;
             }
         }
-        DH_free(dh);
+
+        if (ctx2 != NULL) {
+            if (dhfile != NULL) {
+                EVP_PKEY *dhpkey2 = load_keyparams(s_cert_file2, 0, "DH",
+                                                   "DH parameters");
+
+                if (dhpkey2 != NULL) {
+                    BIO_printf(bio_s_out, "Setting temp DH parameters\n");
+                    (void)BIO_flush(bio_s_out);
+
+                    EVP_PKEY_free(dhpkey);
+                    dhpkey = dhpkey2;
+                }
+            }
+            if (dhpkey == NULL) {
+                SSL_CTX_set_dh_auto(ctx2, 1);
+            } else if (!SSL_CTX_set0_tmp_dh_pkey(ctx2, dhpkey)) {
+                BIO_puts(bio_err, "Error setting temp DH parameters\n");
+                ERR_print_errors(bio_err);
+                EVP_PKEY_free(dhpkey);
+                goto end;
+            }
+            dhpkey = NULL;
+        }
+        EVP_PKEY_free(dhpkey);
     }
-#endif
 
     if (!set_cert_key_stuff(ctx, s_cert, s_key, s_chain, build_chain))
         goto end;
@@ -2189,20 +2131,9 @@ int s_server_main(int argc, char *argv[])
 
 #ifndef OPENSSL_NO_SRP
     if (srp_verifier_file != NULL) {
-        srp_callback_parm.vb = SRP_VBASE_new(srpuserseed);
-        srp_callback_parm.user = NULL;
-        srp_callback_parm.login = NULL;
-        if ((ret =
-             SRP_VBASE_init(srp_callback_parm.vb,
-                            srp_verifier_file)) != SRP_NO_ERROR) {
-            BIO_printf(bio_err,
-                       "Cannot initialize SRP verifier file \"%s\":ret=%d\n",
-                       srp_verifier_file, ret);
+        if (!set_up_srp_verifier_file(ctx, &srp_callback_parm, srpuserseed,
+                                      srp_verifier_file))
             goto end;
-        }
-        SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, verify_callback);
-        SSL_CTX_set_srp_cb_arg(ctx, &srp_callback_parm);
-        SSL_CTX_set_srp_username_callback(ctx, ssl_srp_server_param_cb);
     } else
 #endif
     if (CAfile != NULL) {
@@ -2657,15 +2588,9 @@ static int sv_body(int s, int stype, int prot, unsigned char *context)
 #ifndef OPENSSL_NO_SRP
                 while (SSL_get_error(con, k) == SSL_ERROR_WANT_X509_LOOKUP) {
                     BIO_printf(bio_s_out, "LOOKUP renego during write\n");
-                    SRP_user_pwd_free(srp_callback_parm.user);
-                    srp_callback_parm.user =
-                        SRP_VBASE_get1_by_user(srp_callback_parm.vb,
-                                               srp_callback_parm.login);
-                    if (srp_callback_parm.user)
-                        BIO_printf(bio_s_out, "LOOKUP done %s\n",
-                                   srp_callback_parm.user->info);
-                    else
-                        BIO_printf(bio_s_out, "LOOKUP not successful\n");
+
+                    lookup_srp_user(&srp_callback_parm, bio_s_out);
+
                     k = SSL_write(con, &(buf[l]), (unsigned int)i);
                 }
 #endif
@@ -2732,15 +2657,9 @@ static int sv_body(int s, int stype, int prot, unsigned char *context)
 #ifndef OPENSSL_NO_SRP
                 while (SSL_get_error(con, i) == SSL_ERROR_WANT_X509_LOOKUP) {
                     BIO_printf(bio_s_out, "LOOKUP renego during read\n");
-                    SRP_user_pwd_free(srp_callback_parm.user);
-                    srp_callback_parm.user =
-                        SRP_VBASE_get1_by_user(srp_callback_parm.vb,
-                                               srp_callback_parm.login);
-                    if (srp_callback_parm.user)
-                        BIO_printf(bio_s_out, "LOOKUP done %s\n",
-                                   srp_callback_parm.user->info);
-                    else
-                        BIO_printf(bio_s_out, "LOOKUP not successful\n");
+
+                    lookup_srp_user(&srp_callback_parm, bio_s_out);
+
                     i = SSL_read(con, (char *)buf, bufsize);
                 }
 #endif
@@ -2882,15 +2801,9 @@ static int init_ssl_connection(SSL *con)
                    && SSL_get_error(con, i) == SSL_ERROR_WANT_X509_LOOKUP) {
                 BIO_printf(bio_s_out, "LOOKUP during accept %s\n",
                            srp_callback_parm.login);
-                SRP_user_pwd_free(srp_callback_parm.user);
-                srp_callback_parm.user =
-                    SRP_VBASE_get1_by_user(srp_callback_parm.vb,
-                                           srp_callback_parm.login);
-                if (srp_callback_parm.user)
-                    BIO_printf(bio_s_out, "LOOKUP done %s\n",
-                               srp_callback_parm.user->info);
-                else
-                    BIO_printf(bio_s_out, "LOOKUP not successful\n");
+
+                lookup_srp_user(&srp_callback_parm, bio_s_out);
+
                 i = SSL_accept(con);
                 if (i <= 0)
                     retry = is_retryable(con, i);
@@ -2939,12 +2852,11 @@ static void print_connection_info(SSL *con)
 
     PEM_write_bio_SSL_SESSION(bio_s_out, SSL_get_session(con));
 
-    peer = SSL_get_peer_certificate(con);
+    peer = SSL_get0_peer_certificate(con);
     if (peer != NULL) {
         BIO_printf(bio_s_out, "Client certificate\n");
         PEM_write_bio_X509(bio_s_out, peer);
         dump_cert_text(bio_s_out, peer);
-        X509_free(peer);
         peer = NULL;
     }
 
@@ -3012,21 +2924,6 @@ static void print_connection_info(SSL *con)
 
     (void)BIO_flush(bio_s_out);
 }
-
-#ifndef OPENSSL_NO_DH
-static DH *load_dh_param(const char *dhfile)
-{
-    DH *ret = NULL;
-    BIO *bio;
-
-    if ((bio = BIO_new_file(dhfile, "r")) == NULL)
-        goto err;
-    ret = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
- err:
-    BIO_free(bio);
-    return ret;
-}
-#endif
 
 static int www_body(int s, int stype, int prot, unsigned char *context)
 {
@@ -3122,15 +3019,9 @@ static int www_body(int s, int stype, int prot, unsigned char *context)
                 if (BIO_should_io_special(io)
                     && BIO_get_retry_reason(io) == BIO_RR_SSL_X509_LOOKUP) {
                     BIO_printf(bio_s_out, "LOOKUP renego during read\n");
-                    SRP_user_pwd_free(srp_callback_parm.user);
-                    srp_callback_parm.user =
-                        SRP_VBASE_get1_by_user(srp_callback_parm.vb,
-                                               srp_callback_parm.login);
-                    if (srp_callback_parm.user)
-                        BIO_printf(bio_s_out, "LOOKUP done %s\n",
-                                   srp_callback_parm.user->info);
-                    else
-                        BIO_printf(bio_s_out, "LOOKUP not successful\n");
+
+                    lookup_srp_user(&srp_callback_parm, bio_s_out);
+
                     continue;
                 }
 #endif
@@ -3265,12 +3156,11 @@ static int www_body(int s, int stype, int prot, unsigned char *context)
             BIO_printf(io, "---\n");
             print_stats(io, SSL_get_SSL_CTX(con));
             BIO_printf(io, "---\n");
-            peer = SSL_get_peer_certificate(con);
+            peer = SSL_get0_peer_certificate(con);
             if (peer != NULL) {
                 BIO_printf(io, "Client certificate\n");
                 X509_print(io, peer);
                 PEM_write_bio_X509(io, peer);
-                X509_free(peer);
                 peer = NULL;
             } else {
                 BIO_puts(io, "no client certificate available\n");
@@ -3535,15 +3425,9 @@ static int rev_body(int s, int stype, int prot, unsigned char *context)
         if (BIO_should_io_special(io)
             && BIO_get_retry_reason(io) == BIO_RR_SSL_X509_LOOKUP) {
             BIO_printf(bio_s_out, "LOOKUP renego during accept\n");
-            SRP_user_pwd_free(srp_callback_parm.user);
-            srp_callback_parm.user =
-                SRP_VBASE_get1_by_user(srp_callback_parm.vb,
-                                       srp_callback_parm.login);
-            if (srp_callback_parm.user)
-                BIO_printf(bio_s_out, "LOOKUP done %s\n",
-                           srp_callback_parm.user->info);
-            else
-                BIO_printf(bio_s_out, "LOOKUP not successful\n");
+
+            lookup_srp_user(&srp_callback_parm, bio_s_out);
+
             continue;
         }
 #endif
@@ -3564,15 +3448,9 @@ static int rev_body(int s, int stype, int prot, unsigned char *context)
                 if (BIO_should_io_special(io)
                     && BIO_get_retry_reason(io) == BIO_RR_SSL_X509_LOOKUP) {
                     BIO_printf(bio_s_out, "LOOKUP renego during read\n");
-                    SRP_user_pwd_free(srp_callback_parm.user);
-                    srp_callback_parm.user =
-                        SRP_VBASE_get1_by_user(srp_callback_parm.vb,
-                                               srp_callback_parm.login);
-                    if (srp_callback_parm.user)
-                        BIO_printf(bio_s_out, "LOOKUP done %s\n",
-                                   srp_callback_parm.user->info);
-                    else
-                        BIO_printf(bio_s_out, "LOOKUP not successful\n");
+
+                    lookup_srp_user(&srp_callback_parm, bio_s_out);
+
                     continue;
                 }
 #endif
@@ -3649,7 +3527,7 @@ static int generate_session_id(SSL *ssl, unsigned char *id,
 
 /*
  * By default s_server uses an in-memory cache which caches SSL_SESSION
- * structures without any serialisation. This hides some bugs which only
+ * structures without any serialization. This hides some bugs which only
  * become apparent in deployed servers. By implementing a basic external
  * session cache some issues can be debugged using s_server.
  */
