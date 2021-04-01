@@ -7,6 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use some engine deprecated APIs */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <openssl/opensslconf.h>
 
 #include "apps.h"
@@ -18,9 +21,6 @@
 #include <openssl/engine.h>
 #include <openssl/ssl.h>
 #include <openssl/store.h>
-
-DEFINE_STACK_OF_STRING()
-DEFINE_STACK_OF_CSTRING()
 
 typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
@@ -360,7 +360,7 @@ int engine_main(int argc, char **argv)
         }
     }
 
-    /* Allow any trailing parameters as engine names. */
+    /* Any remaining arguments are engine names. */
     argc = opt_num_rest();
     argv = opt_rest();
     for ( ; *argv; argv++) {

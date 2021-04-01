@@ -15,7 +15,7 @@ B<openssl> B<rsa>
 [B<-help>]
 [B<-inform> B<DER>|B<PEM>|B<P12>|B<ENGINE>]
 [B<-outform> B<DER>|B<PEM>]
-[B<-in> I<filename>]
+[B<-in> I<filename>|I<uri>]
 [B<-passin> I<arg>]
 [B<-out> I<filename>]
 [B<-passout> I<arg>]
@@ -34,23 +34,20 @@ B<openssl> B<rsa>
 [B<-text>]
 [B<-noout>]
 [B<-modulus>]
+[B<-traditional>]
 [B<-check>]
 [B<-pubin>]
 [B<-pubout>]
 [B<-RSAPublicKey_in>]
 [B<-RSAPublicKey_out>]
-{- $OpenSSL::safe::opt_engine_synopsis -}
-{- $OpenSSL::safe::opt_provider_synopsis -}
+{- $OpenSSL::safe::opt_engine_synopsis -}{- $OpenSSL::safe::opt_provider_synopsis -}
 
 =for openssl ifdef pvk-strong pvk-weak pvk-none engine
 
 =head1 DESCRIPTION
 
 This command processes RSA keys. They can be converted between
-various forms and their components printed out. B<Note> this command uses the
-traditional SSLeay compatible format for private key encryption: newer
-applications should use the more secure PKCS#8 format using the
-L<openssl-pkcs8(1)> command.
+various forms and their components printed out.
 
 =head1 OPTIONS
 
@@ -65,21 +62,21 @@ Print out a usage message.
 
 The key input format; the default is B<PEM>.
 The only value with effect is B<ENGINE>; all others have become obsolete.
-See L<openssl(1)/Format Options> for details.
+See L<openssl-format-options(1)> for details.
 
 =item B<-outform> B<DER>|B<PEM>
 
 The key output format; the default is B<PEM>.
-See L<openssl(1)/Format Options> for details.
+See L<openssl-format-options(1)> for details.
 
-=item B<-inform> B<DER>|B<PEM>
+=item B<-traditional>
 
-The data is a PKCS#1 B<RSAPrivateKey> or B<SubjectPublicKey> object.
-On input, PKCS#8 format private keys are also accepted.
+When writing a private key, use the traditional PKCS#1 format
+instead of the PKCS#8 format.
 
-=item B<-in> I<filename>
+=item B<-in> I<filename>|I<uri>
 
-This specifies the input filename to read a key from or standard input if this
+This specifies the input to read a key from or standard input if this
 option is not specified. If the key is encrypted a pass phrase will be
 prompted for.
 
@@ -87,7 +84,7 @@ prompted for.
 
 The password source for the input and output file.
 For more information about the format of B<arg>
-see L<openssl(1)/Pass Phrase Options>.
+see L<openssl-passphrase-options(1)>.
 
 =item B<-out> I<filename>
 
@@ -186,6 +183,10 @@ L<openssl-pkcs8(1)>,
 L<openssl-dsa(1)>,
 L<openssl-genrsa(1)>,
 L<openssl-gendsa(1)>
+
+=head1 HISTORY
+
+The B<-engine> option was deprecated in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 

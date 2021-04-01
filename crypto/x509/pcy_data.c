@@ -13,9 +13,6 @@
 
 #include "pcy_local.h"
 
-DEFINE_STACK_OF(ASN1_OBJECT)
-DEFINE_STACK_OF(POLICYQUALINFO)
-
 /* Policy Node routines */
 
 void policy_data_free(X509_POLICY_DATA *data)
@@ -54,14 +51,15 @@ X509_POLICY_DATA *policy_data_new(POLICYINFO *policy,
         id = NULL;
     ret = OPENSSL_zalloc(sizeof(*ret));
     if (ret == NULL) {
-        X509V3err(X509V3_F_POLICY_DATA_NEW, ERR_R_MALLOC_FAILURE);
+        ASN1_OBJECT_free(id);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     ret->expected_policy_set = sk_ASN1_OBJECT_new_null();
     if (ret->expected_policy_set == NULL) {
         OPENSSL_free(ret);
         ASN1_OBJECT_free(id);
-        X509V3err(X509V3_F_POLICY_DATA_NEW, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
 

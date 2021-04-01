@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -20,15 +20,16 @@
  * implementations alike.
  */
 
-int ecx_public_from_private(ECX_KEY *key)
+int ossl_ecx_public_from_private(ECX_KEY *key)
 {
     switch (key->type) {
     case ECX_KEY_TYPE_X25519:
         X25519_public_from_private(key->pubkey, key->privkey);
         break;
     case ECX_KEY_TYPE_ED25519:
-        if (!ED25519_public_from_private(key->libctx, key->pubkey, key->privkey)) {
-            ECerr(0, EC_R_FAILED_MAKING_PUBLIC_KEY);
+        if (!ED25519_public_from_private(key->libctx, key->pubkey, key->privkey,
+                                         key->propq)) {
+            ERR_raise(ERR_LIB_EC, EC_R_FAILED_MAKING_PUBLIC_KEY);
             return 0;
         }
         break;
@@ -36,8 +37,9 @@ int ecx_public_from_private(ECX_KEY *key)
         X448_public_from_private(key->pubkey, key->privkey);
         break;
     case ECX_KEY_TYPE_ED448:
-        if (!ED448_public_from_private(key->libctx, key->pubkey, key->privkey)) {
-            ECerr(0, EC_R_FAILED_MAKING_PUBLIC_KEY);
+        if (!ED448_public_from_private(key->libctx, key->pubkey, key->privkey,
+                                       key->propq)) {
+            ERR_raise(ERR_LIB_EC, EC_R_FAILED_MAKING_PUBLIC_KEY);
             return 0;
         }
         break;
@@ -45,8 +47,8 @@ int ecx_public_from_private(ECX_KEY *key)
     return 1;
 }
 
-int ecx_key_fromdata(ECX_KEY *ecx, const OSSL_PARAM params[],
-                     int include_private)
+int ossl_ecx_key_fromdata(ECX_KEY *ecx, const OSSL_PARAM params[],
+                          int include_private)
 {
     size_t privkeylen = 0, pubkeylen = 0;
     const OSSL_PARAM *param_priv_key = NULL, *param_pub_key;
@@ -80,7 +82,7 @@ int ecx_key_fromdata(ECX_KEY *ecx, const OSSL_PARAM params[],
         || (param_priv_key != NULL && privkeylen != ecx->keylen))
         return 0;
 
-    if (param_pub_key == NULL && !ecx_public_from_private(ecx))
+    if (param_pub_key == NULL && !ossl_ecx_public_from_private(ecx))
         return 0;
 
     ecx->haspubkey = 1;

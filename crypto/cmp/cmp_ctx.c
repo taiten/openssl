@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2007-2021 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Nokia 2007-2019
  * Copyright Siemens AG 2015-2019
  *
@@ -20,20 +20,13 @@
 #include <openssl/crmf.h>
 #include <openssl/err.h>
 
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_EXTENSION)
-DEFINE_STACK_OF(POLICYINFO)
-DEFINE_STACK_OF(ASN1_UTF8STRING)
-DEFINE_STACK_OF(GENERAL_NAME)
-DEFINE_STACK_OF(OSSL_CMP_ITAV)
-
 /*
  * Get current certificate store containing trusted root CA certs
  */
 X509_STORE *OSSL_CMP_CTX_get0_trustedStore(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
     return ctx->trusted;
@@ -47,7 +40,7 @@ X509_STORE *OSSL_CMP_CTX_get0_trustedStore(const OSSL_CMP_CTX *ctx)
 int OSSL_CMP_CTX_set0_trustedStore(OSSL_CMP_CTX *ctx, X509_STORE *store)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     X509_STORE_free(ctx->trusted);
@@ -56,48 +49,66 @@ int OSSL_CMP_CTX_set0_trustedStore(OSSL_CMP_CTX *ctx, X509_STORE *store)
 }
 
 /* Get current list of non-trusted intermediate certs */
-STACK_OF(X509) *OSSL_CMP_CTX_get0_untrusted_certs(const OSSL_CMP_CTX *ctx)
+STACK_OF(X509) *OSSL_CMP_CTX_get0_untrusted(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
-    return ctx->untrusted_certs;
+    return ctx->untrusted;
 }
 
 /*
  * Set untrusted certificates for path construction in authentication of
  * the CMP server and potentially others (TLS server, newly enrolled cert).
  */
-int OSSL_CMP_CTX_set1_untrusted_certs(OSSL_CMP_CTX *ctx, STACK_OF(X509) *certs)
+int OSSL_CMP_CTX_set1_untrusted(OSSL_CMP_CTX *ctx, STACK_OF(X509) *certs)
 {
-    STACK_OF(X509) *untrusted_certs;
+    STACK_OF(X509) *untrusted = NULL;
+
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
-    if ((untrusted_certs = sk_X509_new_null()) == NULL)
-        return 0;
-    if (ossl_cmp_sk_X509_add1_certs(untrusted_certs, certs, 0, 1, 0) != 1)
+    if (!ossl_x509_add_certs_new(&untrusted, certs,
+                                 X509_ADD_FLAG_UP_REF | X509_ADD_FLAG_NO_DUP))
         goto err;
-    sk_X509_pop_free(ctx->untrusted_certs, X509_free);
-    ctx->untrusted_certs = untrusted_certs;
+    sk_X509_pop_free(ctx->untrusted, X509_free);
+    ctx->untrusted = untrusted;
     return 1;
  err:
-    sk_X509_pop_free(untrusted_certs, X509_free);
+    sk_X509_pop_free(untrusted, X509_free);
     return 0;
+}
+
+static int cmp_ctx_set_md(OSSL_CMP_CTX *ctx, EVP_MD **pmd, int nid)
+{
+    EVP_MD *md = EVP_MD_fetch(ctx->libctx, OBJ_nid2sn(nid), ctx->propq);
+    /* fetching in advance to be able to throw error early if unsupported */
+
+    if (md == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_UNSUPPORTED_ALGORITHM);
+        return 0;
+    }
+    EVP_MD_free(*pmd);
+    *pmd = md;
+    return 1;
 }
 
 /*
  * Allocates and initializes OSSL_CMP_CTX context structure with default values.
  * Returns new context on success, NULL on error
  */
-OSSL_CMP_CTX *OSSL_CMP_CTX_new(void)
+OSSL_CMP_CTX *OSSL_CMP_CTX_new(OSSL_LIB_CTX *libctx, const char *propq)
 {
     OSSL_CMP_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
 
     if (ctx == NULL)
-        return NULL;
+        goto err;
+
+    ctx->libctx = libctx;
+    if (propq != NULL && (ctx->propq = OPENSSL_strdup(propq)) == NULL)
+        goto err;
 
     ctx->log_verbosity = OSSL_CMP_LOG_INFO;
 
@@ -106,15 +117,17 @@ OSSL_CMP_CTX *OSSL_CMP_CTX_new(void)
 
     ctx->msg_timeout = 2 * 60;
 
-    if ((ctx->untrusted_certs = sk_X509_new_null()) == NULL)
+    if ((ctx->untrusted = sk_X509_new_null()) == NULL)
         goto err;
 
     ctx->pbm_slen = 16;
-    ctx->pbm_owf = NID_sha256;
+    if (!cmp_ctx_set_md(ctx, &ctx->pbm_owf, NID_sha256))
+        goto err;
     ctx->pbm_itercnt = 500;
     ctx->pbm_mac = NID_hmac_sha1;
 
-    ctx->digest = NID_sha256;
+    if (!cmp_ctx_set_md(ctx, &ctx->digest, NID_sha256))
+        goto err;
     ctx->popoMethod = OSSL_CRMF_POPO_SIGNATURE;
     ctx->revocationReason = CRL_REASON_NONE;
 
@@ -123,6 +136,7 @@ OSSL_CMP_CTX *OSSL_CMP_CTX_new(void)
 
  err:
     OSSL_CMP_CTX_free(ctx);
+    ERR_raise(ERR_LIB_X509, ERR_R_MALLOC_FAILURE);
     return NULL;
 }
 
@@ -130,7 +144,7 @@ OSSL_CMP_CTX *OSSL_CMP_CTX_new(void)
 int OSSL_CMP_CTX_reinit(OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
@@ -139,6 +153,7 @@ int OSSL_CMP_CTX_reinit(OSSL_CMP_CTX *ctx)
 
     return ossl_cmp_ctx_set0_statusString(ctx, NULL)
         && ossl_cmp_ctx_set0_newCert(ctx, NULL)
+        && ossl_cmp_ctx_set1_newChain(ctx, NULL)
         && ossl_cmp_ctx_set1_caPubs(ctx, NULL)
         && ossl_cmp_ctx_set1_extraCertsIn(ctx, NULL)
         && ossl_cmp_ctx_set0_validatedSrvCert(ctx, NULL)
@@ -162,16 +177,19 @@ void OSSL_CMP_CTX_free(OSSL_CMP_CTX *ctx)
     X509_free(ctx->validatedSrvCert);
     X509_NAME_free(ctx->expected_sender);
     X509_STORE_free(ctx->trusted);
-    sk_X509_pop_free(ctx->untrusted_certs, X509_free);
+    sk_X509_pop_free(ctx->untrusted, X509_free);
 
     X509_free(ctx->cert);
+    sk_X509_pop_free(ctx->chain, X509_free);
     EVP_PKEY_free(ctx->pkey);
     ASN1_OCTET_STRING_free(ctx->referenceValue);
     if (ctx->secretValue != NULL)
         OPENSSL_cleanse(ctx->secretValue->data, ctx->secretValue->length);
     ASN1_OCTET_STRING_free(ctx->secretValue);
+    EVP_MD_free(ctx->pbm_owf);
 
     X509_NAME_free(ctx->recipient);
+    EVP_MD_free(ctx->digest);
     ASN1_OCTET_STRING_free(ctx->transactionID);
     ASN1_OCTET_STRING_free(ctx->senderNonce);
     ASN1_OCTET_STRING_free(ctx->recipNonce);
@@ -191,6 +209,7 @@ void OSSL_CMP_CTX_free(OSSL_CMP_CTX *ctx)
 
     sk_ASN1_UTF8STRING_pop_free(ctx->statusString, ASN1_UTF8STRING_free);
     X509_free(ctx->newCert);
+    sk_X509_pop_free(ctx->newChain, X509_free);
     sk_X509_pop_free(ctx->caPubs, X509_free);
     sk_X509_pop_free(ctx->extraCertsIn, X509_free);
 
@@ -212,7 +231,7 @@ int ossl_cmp_ctx_set_status(OSSL_CMP_CTX *ctx, int status)
 int OSSL_CMP_CTX_get_status(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return -1;
     }
     return ctx->status;
@@ -225,7 +244,7 @@ int OSSL_CMP_CTX_get_status(const OSSL_CMP_CTX *ctx)
 OSSL_CMP_PKIFREETEXT *OSSL_CMP_CTX_get0_statusString(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
     return ctx->statusString;
@@ -254,7 +273,7 @@ int ossl_cmp_ctx_set0_validatedSrvCert(OSSL_CMP_CTX *ctx, X509 *cert)
 int OSSL_CMP_CTX_set_certConf_cb(OSSL_CMP_CTX *ctx, OSSL_CMP_certConf_cb_t cb)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->certConf_cb = cb;
@@ -268,7 +287,7 @@ int OSSL_CMP_CTX_set_certConf_cb(OSSL_CMP_CTX *ctx, OSSL_CMP_certConf_cb_t cb)
 int OSSL_CMP_CTX_set_certConf_cb_arg(OSSL_CMP_CTX *ctx, void *arg)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->certConf_cb_arg = arg;
@@ -283,7 +302,7 @@ int OSSL_CMP_CTX_set_certConf_cb_arg(OSSL_CMP_CTX *ctx, void *arg)
 void *OSSL_CMP_CTX_get_certConf_cb_arg(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
     return ctx->certConf_cb_arg;
@@ -377,7 +396,7 @@ int ossl_cmp_print_log(OSSL_CMP_severity level, const OSSL_CMP_CTX *ctx,
 int OSSL_CMP_CTX_set_log_cb(OSSL_CMP_CTX *ctx, OSSL_CMP_log_cb_t cb)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->log_cb = cb;
@@ -395,6 +414,8 @@ int OSSL_CMP_CTX_set_log_cb(OSSL_CMP_CTX *ctx, OSSL_CMP_log_cb_t cb)
 /* Print OpenSSL and CMP errors via the log cb of the ctx or ERR_print_errors */
 void OSSL_CMP_CTX_print_errors(const OSSL_CMP_CTX *ctx)
 {
+    if (ctx != NULL && OSSL_CMP_LOG_ERR > ctx->log_verbosity)
+        return; /* suppress output since severity is not sufficient */
     OSSL_CMP_print_errors_cb(ctx == NULL ? NULL : ctx->log_cb);
 }
 
@@ -406,7 +427,7 @@ int OSSL_CMP_CTX_set1_referenceValue(OSSL_CMP_CTX *ctx,
                                      const unsigned char *ref, int len)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     return ossl_cmp_asn1_octet_string_set1_bytes(&ctx->referenceValue, ref,
@@ -419,7 +440,7 @@ int OSSL_CMP_CTX_set1_secretValue(OSSL_CMP_CTX *ctx, const unsigned char *sec,
 {
     ASN1_OCTET_STRING *secretValue = NULL;
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     if (ossl_cmp_asn1_octet_string_set1_bytes(&secretValue, sec, len) != 1)
@@ -432,19 +453,38 @@ int OSSL_CMP_CTX_set1_secretValue(OSSL_CMP_CTX *ctx, const unsigned char *sec,
     return 1;
 }
 
+/* Returns the cert chain computed by OSSL_CMP_certConf_cb(), NULL on error */
+STACK_OF(X509) *OSSL_CMP_CTX_get1_newChain(const OSSL_CMP_CTX *ctx)
+{
+    if (ctx == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return NULL;
+    }
+    return X509_chain_up_ref(ctx->newChain);
+}
+
 /*
- * Returns the stack of certificates received in a response message.
- * The stack is duplicated so the caller must handle freeing it!
- * Returns pointer to created stack on success, NULL on error
+ * Copies any given stack of inbound X509 certificates to newChain
+ * of the OSSL_CMP_CTX structure so that they may be retrieved later.
  */
+int ossl_cmp_ctx_set1_newChain(OSSL_CMP_CTX *ctx, STACK_OF(X509) *newChain)
+{
+    if (!ossl_assert(ctx != NULL))
+        return 0;
+
+    sk_X509_pop_free(ctx->newChain, X509_free);
+    ctx->newChain = NULL;
+    return newChain == NULL ||
+        (ctx->newChain = X509_chain_up_ref(newChain)) != NULL;
+}
+
+/* Returns the stack of extraCerts received in CertRepMessage, NULL on error */
 STACK_OF(X509) *OSSL_CMP_CTX_get1_extraCertsIn(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
-    if (ctx->extraCertsIn == NULL)
-        return sk_X509_new_null();
     return X509_chain_up_ref(ctx->extraCertsIn);
 }
 
@@ -460,28 +500,26 @@ int ossl_cmp_ctx_set1_extraCertsIn(OSSL_CMP_CTX *ctx,
 
     sk_X509_pop_free(ctx->extraCertsIn, X509_free);
     ctx->extraCertsIn = NULL;
-    if (extraCertsIn == NULL)
-        return 1;
-    return (ctx->extraCertsIn = X509_chain_up_ref(extraCertsIn)) != NULL;
+    return extraCertsIn == NULL
+        || (ctx->extraCertsIn = X509_chain_up_ref(extraCertsIn)) != NULL;
 }
 
 /*
- * Duplicate and set the given stack as the new stack of X509
+ * Copies any given stack as the new stack of X509
  * certificates to send out in the extraCerts field.
  */
 int OSSL_CMP_CTX_set1_extraCertsOut(OSSL_CMP_CTX *ctx,
                                     STACK_OF(X509) *extraCertsOut)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
     sk_X509_pop_free(ctx->extraCertsOut, X509_free);
     ctx->extraCertsOut = NULL;
-    if (extraCertsOut == NULL)
-        return 1;
-    return (ctx->extraCertsOut = X509_chain_up_ref(extraCertsOut)) != NULL;
+    return extraCertsOut == NULL
+        || (ctx->extraCertsOut = X509_chain_up_ref(extraCertsOut)) != NULL;
 }
 
 /*
@@ -491,7 +529,7 @@ int OSSL_CMP_CTX_set1_extraCertsOut(OSSL_CMP_CTX *ctx,
 int OSSL_CMP_CTX_push0_policy(OSSL_CMP_CTX *ctx, POLICYINFO *pinfo)
 {
     if (ctx == NULL || pinfo == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
@@ -506,7 +544,7 @@ int OSSL_CMP_CTX_push0_policy(OSSL_CMP_CTX *ctx, POLICYINFO *pinfo)
 int OSSL_CMP_CTX_push0_geninfo_ITAV(OSSL_CMP_CTX *ctx, OSSL_CMP_ITAV *itav)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     return OSSL_CMP_ITAV_push0_stack_item(&ctx->geninfo_ITAVs, itav);
@@ -516,7 +554,7 @@ int OSSL_CMP_CTX_push0_geninfo_ITAV(OSSL_CMP_CTX *ctx, OSSL_CMP_ITAV *itav)
 int OSSL_CMP_CTX_push0_genm_ITAV(OSSL_CMP_CTX *ctx, OSSL_CMP_ITAV *itav)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     return OSSL_CMP_ITAV_push0_stack_item(&ctx->genm_ITAVs, itav);
@@ -530,16 +568,14 @@ int OSSL_CMP_CTX_push0_genm_ITAV(OSSL_CMP_CTX *ctx, OSSL_CMP_ITAV *itav)
 STACK_OF(X509) *OSSL_CMP_CTX_get1_caPubs(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
-    if (ctx->caPubs == NULL)
-        return sk_X509_new_null();
     return X509_chain_up_ref(ctx->caPubs);
 }
 
 /*
- * Duplicate and copy the given stack of certificates to the given
+ * Copies any given stack of certificates to the given
  * OSSL_CMP_CTX structure so that they may be retrieved later.
  */
 int ossl_cmp_ctx_set1_caPubs(OSSL_CMP_CTX *ctx, STACK_OF(X509) *caPubs)
@@ -549,9 +585,7 @@ int ossl_cmp_ctx_set1_caPubs(OSSL_CMP_CTX *ctx, STACK_OF(X509) *caPubs)
 
     sk_X509_pop_free(ctx->caPubs, X509_free);
     ctx->caPubs = NULL;
-    if (caPubs == NULL)
-        return 1;
-    return (ctx->caPubs = X509_chain_up_ref(caPubs)) != NULL;
+    return caPubs == NULL || (ctx->caPubs = X509_chain_up_ref(caPubs)) != NULL;
 }
 
 #define char_dup OPENSSL_strdup
@@ -562,7 +596,7 @@ int OSSL_CMP_CTX_set1_##FIELD(OSSL_CMP_CTX *ctx, const TYPE *val) \
     TYPE *val_dup = NULL; \
     \
     if (ctx == NULL) { \
-        CMPerr(0, CMP_R_NULL_ARGUMENT); \
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT); \
         return 0; \
     } \
     \
@@ -573,14 +607,21 @@ int OSSL_CMP_CTX_set1_##FIELD(OSSL_CMP_CTX *ctx, const TYPE *val) \
     return 1; \
 }
 
+#define X509_invalid(cert) (!x509v3_cache_extensions(cert))
+#define EVP_PKEY_invalid(key) 0
 #define DEFINE_OSSL_CMP_CTX_set1_up_ref(FIELD, TYPE) \
 int OSSL_CMP_CTX_set1_##FIELD(OSSL_CMP_CTX *ctx, TYPE *val) \
 { \
     if (ctx == NULL) { \
-        CMPerr(0, CMP_R_NULL_ARGUMENT); \
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT); \
         return 0; \
     } \
     \
+    /* prevent misleading error later on malformed cert or provider issue */ \
+    if (val != NULL && TYPE##_invalid(val)) { \
+        ERR_raise(ERR_LIB_CMP, CMP_R_POTENTIALLY_INVALID_CERTIFICATE); \
+        return 0; \
+    } \
     if (val != NULL && !TYPE##_up_ref(val)) \
         return 0; \
     TYPE##_free(ctx->FIELD); \
@@ -614,13 +655,13 @@ DEFINE_OSSL_CMP_CTX_set1(subjectName, X509_NAME)
 int OSSL_CMP_CTX_set0_reqExtensions(OSSL_CMP_CTX *ctx, X509_EXTENSIONS *exts)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
     if (sk_GENERAL_NAME_num(ctx->subjectAltNames) > 0 && exts != NULL
             && X509v3_get_ext_by_NID(exts, NID_subject_alt_name, -1) >= 0) {
-        CMPerr(0, CMP_R_MULTIPLE_SAN_SOURCES);
+        ERR_raise(ERR_LIB_CMP, CMP_R_MULTIPLE_SAN_SOURCES);
         return 0;
     }
     sk_X509_EXTENSION_pop_free(ctx->reqExtensions, X509_EXTENSION_free);
@@ -632,7 +673,7 @@ int OSSL_CMP_CTX_set0_reqExtensions(OSSL_CMP_CTX *ctx, X509_EXTENSIONS *exts)
 int OSSL_CMP_CTX_reqExtensions_have_SAN(OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return -1;
     }
     /* if one of the following conditions 'fail' this is not an error */
@@ -651,12 +692,12 @@ int OSSL_CMP_CTX_push1_subjectAltName(OSSL_CMP_CTX *ctx,
     GENERAL_NAME *name_dup;
 
     if (ctx == NULL || name == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
     if (OSSL_CMP_CTX_reqExtensions_have_SAN(ctx) == 1) {
-        CMPerr(0, CMP_R_MULTIPLE_SAN_SOURCES);
+        ERR_raise(ERR_LIB_CMP, CMP_R_MULTIPLE_SAN_SOURCES);
         return 0;
     }
 
@@ -677,6 +718,32 @@ int OSSL_CMP_CTX_push1_subjectAltName(OSSL_CMP_CTX *ctx,
  * doing the IR with existing certificate.
  */
 DEFINE_OSSL_CMP_CTX_set1_up_ref(cert, X509)
+
+int OSSL_CMP_CTX_build_cert_chain(OSSL_CMP_CTX *ctx, X509_STORE *own_trusted,
+                                  STACK_OF(X509) *candidates)
+{
+    STACK_OF(X509) *chain;
+
+    if (ctx == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
+        return 0;
+    }
+
+    if (!ossl_x509_add_certs_new(&ctx->untrusted, candidates,
+                                 X509_ADD_FLAG_UP_REF | X509_ADD_FLAG_NO_DUP))
+        return 0;
+
+    ossl_cmp_debug(ctx, "trying to build chain for own CMP signer cert");
+    chain = ossl_cmp_build_cert_chain(ctx->libctx, ctx->propq, own_trusted,
+                                      ctx->untrusted, ctx->cert);
+    if (chain == NULL) {
+        ERR_raise(ERR_LIB_CMP, CMP_R_FAILED_BUILDING_OWN_CHAIN);
+        return 0;
+    }
+    ossl_cmp_debug(ctx, "success building chain for own CMP signer cert");
+    ctx->chain = chain;
+    return 1;
+}
 
 /*
  * Set the old certificate that we are updating in KUR
@@ -710,7 +777,7 @@ int ossl_cmp_ctx_set0_newCert(OSSL_CMP_CTX *ctx, X509 *cert)
 X509 *OSSL_CMP_CTX_get0_newCert(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
     return ctx->newCert;
@@ -723,7 +790,7 @@ DEFINE_OSSL_CMP_CTX_set1_up_ref(pkey, EVP_PKEY)
 int OSSL_CMP_CTX_set0_newPkey(OSSL_CMP_CTX *ctx, int priv, EVP_PKEY *pkey)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
@@ -737,7 +804,7 @@ int OSSL_CMP_CTX_set0_newPkey(OSSL_CMP_CTX *ctx, int priv, EVP_PKEY *pkey)
 EVP_PKEY *OSSL_CMP_CTX_get0_newPkey(const OSSL_CMP_CTX *ctx, int priv)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
 
@@ -753,7 +820,7 @@ int OSSL_CMP_CTX_set1_transactionID(OSSL_CMP_CTX *ctx,
                                     const ASN1_OCTET_STRING *id)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     return ossl_cmp_asn1_octet_string_set1(&ctx->transactionID, id);
@@ -773,7 +840,7 @@ int OSSL_CMP_CTX_set1_senderNonce(OSSL_CMP_CTX *ctx,
                                   const ASN1_OCTET_STRING *nonce)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     return ossl_cmp_asn1_octet_string_set1(&ctx->senderNonce, nonce);
@@ -792,7 +859,7 @@ DEFINE_OSSL_CMP_CTX_set1(no_proxy, char)
 int OSSL_CMP_CTX_set_http_cb(OSSL_CMP_CTX *ctx, OSSL_HTTP_bio_cb_t cb)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->http_cb = cb;
@@ -803,7 +870,7 @@ int OSSL_CMP_CTX_set_http_cb(OSSL_CMP_CTX *ctx, OSSL_HTTP_bio_cb_t cb)
 int OSSL_CMP_CTX_set_http_cb_arg(OSSL_CMP_CTX *ctx, void *arg)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->http_cb_arg = arg;
@@ -817,7 +884,7 @@ int OSSL_CMP_CTX_set_http_cb_arg(OSSL_CMP_CTX *ctx, void *arg)
 void *OSSL_CMP_CTX_get_http_cb_arg(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
     return ctx->http_cb_arg;
@@ -827,7 +894,7 @@ void *OSSL_CMP_CTX_get_http_cb_arg(const OSSL_CMP_CTX *ctx)
 int OSSL_CMP_CTX_set_transfer_cb(OSSL_CMP_CTX *ctx, OSSL_CMP_transfer_cb_t cb)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->transfer_cb = cb;
@@ -838,7 +905,7 @@ int OSSL_CMP_CTX_set_transfer_cb(OSSL_CMP_CTX *ctx, OSSL_CMP_transfer_cb_t cb)
 int OSSL_CMP_CTX_set_transfer_cb_arg(OSSL_CMP_CTX *ctx, void *arg)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->transfer_cb_arg = arg;
@@ -852,7 +919,7 @@ int OSSL_CMP_CTX_set_transfer_cb_arg(OSSL_CMP_CTX *ctx, void *arg)
 void *OSSL_CMP_CTX_get_transfer_cb_arg(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return NULL;
     }
     return ctx->transfer_cb_arg;
@@ -862,7 +929,7 @@ void *OSSL_CMP_CTX_get_transfer_cb_arg(const OSSL_CMP_CTX *ctx)
 int OSSL_CMP_CTX_set_serverPort(OSSL_CMP_CTX *ctx, int port)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
     ctx->serverPort = port;
@@ -888,7 +955,7 @@ int ossl_cmp_ctx_set_failInfoCode(OSSL_CMP_CTX *ctx, int fail_info)
 int OSSL_CMP_CTX_get_failInfoCode(const OSSL_CMP_CTX *ctx)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return -1;
     }
     return ctx->failInfoCode;
@@ -900,7 +967,7 @@ int OSSL_CMP_CTX_set_option(OSSL_CMP_CTX *ctx, int opt, int val)
     int min_val;
 
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return 0;
     }
 
@@ -916,14 +983,14 @@ int OSSL_CMP_CTX_set_option(OSSL_CMP_CTX *ctx, int opt, int val)
         break;
     }
     if (val < min_val) {
-        CMPerr(0, CMP_R_VALUE_TOO_SMALL);
+        ERR_raise(ERR_LIB_CMP, CMP_R_VALUE_TOO_SMALL);
         return 0;
     }
 
     switch (opt) {
     case OSSL_CMP_OPT_LOG_VERBOSITY:
-        if (val > OSSL_CMP_LOG_DEBUG) {
-            CMPerr(0, CMP_R_VALUE_TOO_LARGE);
+        if (val > OSSL_CMP_LOG_MAX) {
+            ERR_raise(ERR_LIB_CMP, CMP_R_VALUE_TOO_LARGE);
             return 0;
         }
         ctx->log_verbosity = val;
@@ -957,16 +1024,18 @@ int OSSL_CMP_CTX_set_option(OSSL_CMP_CTX *ctx, int opt, int val)
         break;
     case OSSL_CMP_OPT_POPO_METHOD:
         if (val > OSSL_CRMF_POPO_KEYAGREE) {
-            CMPerr(0, CMP_R_VALUE_TOO_LARGE);
+            ERR_raise(ERR_LIB_CMP, CMP_R_VALUE_TOO_LARGE);
             return 0;
         }
         ctx->popoMethod = val;
         break;
     case OSSL_CMP_OPT_DIGEST_ALGNID:
-        ctx->digest = val;
+        if (!cmp_ctx_set_md(ctx, &ctx->digest, val))
+            return 0;
         break;
     case OSSL_CMP_OPT_OWF_ALGNID:
-        ctx->pbm_owf = val;
+        if (!cmp_ctx_set_md(ctx, &ctx->pbm_owf, val))
+            return 0;
         break;
     case OSSL_CMP_OPT_MAC_ALGNID:
         ctx->pbm_mac = val;
@@ -982,13 +1051,13 @@ int OSSL_CMP_CTX_set_option(OSSL_CMP_CTX *ctx, int opt, int val)
         break;
     case OSSL_CMP_OPT_REVOCATION_REASON:
         if (val > OCSP_REVOKED_STATUS_AACOMPROMISE) {
-            CMPerr(0, CMP_R_VALUE_TOO_LARGE);
+            ERR_raise(ERR_LIB_CMP, CMP_R_VALUE_TOO_LARGE);
             return 0;
         }
         ctx->revocationReason = val;
         break;
     default:
-        CMPerr(0, CMP_R_INVALID_OPTION);
+        ERR_raise(ERR_LIB_CMP, CMP_R_INVALID_OPTION);
         return 0;
     }
 
@@ -1002,7 +1071,7 @@ int OSSL_CMP_CTX_set_option(OSSL_CMP_CTX *ctx, int opt, int val)
 int OSSL_CMP_CTX_get_option(const OSSL_CMP_CTX *ctx, int opt)
 {
     if (ctx == NULL) {
-        CMPerr(0, CMP_R_NULL_ARGUMENT);
+        ERR_raise(ERR_LIB_CMP, CMP_R_NULL_ARGUMENT);
         return -1;
     }
 
@@ -1030,9 +1099,9 @@ int OSSL_CMP_CTX_get_option(const OSSL_CMP_CTX *ctx, int opt)
     case OSSL_CMP_OPT_POPO_METHOD:
         return ctx->popoMethod;
     case OSSL_CMP_OPT_DIGEST_ALGNID:
-        return ctx->digest;
+        return EVP_MD_type(ctx->digest);
     case OSSL_CMP_OPT_OWF_ALGNID:
-        return ctx->pbm_owf;
+        return EVP_MD_type(ctx->pbm_owf);
     case OSSL_CMP_OPT_MAC_ALGNID:
         return ctx->pbm_mac;
     case OSSL_CMP_OPT_MSG_TIMEOUT:
@@ -1044,7 +1113,7 @@ int OSSL_CMP_CTX_get_option(const OSSL_CMP_CTX *ctx, int opt)
     case OSSL_CMP_OPT_REVOCATION_REASON:
         return ctx->revocationReason;
     default:
-        CMPerr(0, CMP_R_INVALID_OPTION);
+        ERR_raise(ERR_LIB_CMP, CMP_R_INVALID_OPTION);
         return -1;
     }
 }

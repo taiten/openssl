@@ -5,5 +5,4 @@ pic.patch
 c_rehash-compat.patch
 Set-systemwide-default-settings-for-libssl-users.patch
 TEST-Provide-a-default-openssl.cnf-for-tests.patch
-Configurations-PowerPC-is-big-endian.patch
-tests-Skip-test-recipes-81-test_cmp_cli.t.patch
+Configure-allow-to-enable-ktls-if-target-does-not-start-w.patch

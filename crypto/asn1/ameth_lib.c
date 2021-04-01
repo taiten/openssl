@@ -7,6 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use some engine deprecated APIs */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include "e_os.h"               /* for strncasecmp */
 #include "internal/cryptlib.h"
 #include <stdio.h>
@@ -153,7 +156,7 @@ int EVP_PKEY_asn1_add0(const EVP_PKEY_ASN1_METHOD *ameth)
            && (ameth->pkey_flags & ASN1_PKEY_ALIAS) != 0)
           || (ameth->pem_str != NULL
               && (ameth->pkey_flags & ASN1_PKEY_ALIAS) == 0))) {
-        EVPerr(EVP_F_EVP_PKEY_ASN1_ADD0, ERR_R_PASSED_INVALID_ARGUMENT);
+        ERR_raise(ERR_LIB_EVP, ERR_R_PASSED_INVALID_ARGUMENT);
         return 0;
     }
 
@@ -165,8 +168,8 @@ int EVP_PKEY_asn1_add0(const EVP_PKEY_ASN1_METHOD *ameth)
 
     tmp.pkey_id = ameth->pkey_id;
     if (sk_EVP_PKEY_ASN1_METHOD_find(app_methods, &tmp) >= 0) {
-        EVPerr(EVP_F_EVP_PKEY_ASN1_ADD0,
-               EVP_R_PKEY_APPLICATION_ASN1_METHOD_ALREADY_REGISTERED);
+        ERR_raise(ERR_LIB_EVP,
+                  EVP_R_PKEY_APPLICATION_ASN1_METHOD_ALREADY_REGISTERED);
         return 0;
     }
 
@@ -358,13 +361,13 @@ void EVP_PKEY_asn1_set_security_bits(EVP_PKEY_ASN1_METHOD *ameth,
 void EVP_PKEY_asn1_set_item(EVP_PKEY_ASN1_METHOD *ameth,
                             int (*item_verify) (EVP_MD_CTX *ctx,
                                                 const ASN1_ITEM *it,
-                                                void *asn,
-                                                X509_ALGOR *a,
-                                                ASN1_BIT_STRING *sig,
+                                                const void *data,
+                                                const X509_ALGOR *a,
+                                                const ASN1_BIT_STRING *sig,
                                                 EVP_PKEY *pkey),
                             int (*item_sign) (EVP_MD_CTX *ctx,
                                               const ASN1_ITEM *it,
-                                              void *asn,
+                                              const void *data,
                                               X509_ALGOR *alg1,
                                               X509_ALGOR *alg2,
                                               ASN1_BIT_STRING *sig))

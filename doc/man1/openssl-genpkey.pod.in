@@ -22,8 +22,8 @@ B<openssl> B<genpkey>
 [B<-pkeyopt> I<opt>:I<value>]
 [B<-genparam>]
 [B<-text>]
-{- $OpenSSL::safe::opt_engine_synopsis -}
-{- $OpenSSL::safe::opt_provider_synopsis -}
+{- $OpenSSL::safe::opt_engine_synopsis -}{- $OpenSSL::safe::opt_provider_synopsis -}
+{- $OpenSSL::safe::opt_config_synopsis -}
 
 =for openssl ifdef engine
 
@@ -46,13 +46,15 @@ standard output is used.
 
 =item B<-outform> B<DER>|B<PEM>
 
-The output format; the default is B<PEM>.
-See L<openssl(1)/Format Options> for details.
+The output format, except when B<-genparam> is given; the default is B<PEM>.
+See L<openssl-format-options(1)> for details.
+
+When B<-genparam> is given, B<-outform> is ignored.
 
 =item B<-pass> I<arg>
 
 The output file password source. For more information about the format of I<arg>
-see L<openssl(1)/Pass Phrase Options>.
+see L<openssl-passphrase-options(1)>.
 
 =item B<-I<cipher>>
 
@@ -106,6 +108,8 @@ parameters along with the PEM or DER structure.
 {- $OpenSSL::safe::opt_engine_item -}
 
 {- $OpenSSL::safe::opt_provider_item -}
+
+{- $OpenSSL::safe::opt_config_item -}
 
 =back
 
@@ -358,6 +362,8 @@ The ability to use NIST curve names, and to generate an EC key directly,
 were added in OpenSSL 1.0.2.
 The ability to generate X25519 keys was added in OpenSSL 1.1.0.
 The ability to generate X448, ED25519 and ED448 keys was added in OpenSSL 1.1.1.
+
+The B<-engine> option was deprecated in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 

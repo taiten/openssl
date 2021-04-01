@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2004-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -13,10 +13,6 @@
 #include <openssl/x509v3.h>
 
 #include "pcy_local.h"
-
-DEFINE_STACK_OF(ASN1_OBJECT)
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_POLICY_NODE)
 
 static void expected_print(BIO *channel,
                            X509_POLICY_LEVEL *lev, X509_POLICY_NODE *node,
@@ -163,7 +159,7 @@ static int tree_init(X509_POLICY_TREE **ptree, STACK_OF(X509) *certs,
 
     /* If we get this far initialize the tree */
     if ((tree = OPENSSL_zalloc(sizeof(*tree))) == NULL) {
-        X509V3err(X509V3_F_TREE_INIT, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return X509_PCY_TREE_INTERNAL;
     }
 
@@ -176,7 +172,7 @@ static int tree_init(X509_POLICY_TREE **ptree, STACK_OF(X509) *certs,
      */
     if ((tree->levels = OPENSSL_zalloc(sizeof(*tree->levels)*(n+1))) == NULL) {
         OPENSSL_free(tree);
-        X509V3err(X509V3_F_TREE_INIT, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return X509_PCY_TREE_INTERNAL;
     }
     tree->nlevel = n+1;
@@ -483,7 +479,7 @@ static int tree_calculate_authority_set(X509_POLICY_TREE *tree,
     curr = tree->levels;
     for (i = 1; i < tree->nlevel; i++) {
         /*
-         * If no anyPolicy node on this this level it can't appear on lower
+         * If no anyPolicy node on this level it can't appear on lower
          * levels so end search.
          */
         if ((anyptr = curr->anyPolicy) == NULL)

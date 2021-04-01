@@ -19,11 +19,6 @@
 #include <openssl/pem.h>
 #include <openssl/objects.h>
 
-DEFINE_STACK_OF(X509_CRL)
-DEFINE_STACK_OF(X509)
-DEFINE_STACK_OF(X509_INFO)
-DEFINE_STACK_OF_STRING()
-
 static int add_certs_from_file(STACK_OF(X509) *stack, char *certfile);
 
 typedef enum OPTION_choice {
@@ -107,6 +102,8 @@ int crl2pkcs7_main(int argc, char **argv)
             break;
         }
     }
+
+    /* No remaining args. */
     argc = opt_num_rest();
     if (argc != 0)
         goto opthelp;

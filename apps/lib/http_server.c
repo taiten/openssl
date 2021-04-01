@@ -24,13 +24,16 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
-int multi = 0; /* run multiple responder processes */
-
-#ifdef HTTP_DAEMON
-int acfd = (int) INVALID_SOCKET;
+#if defined(__TANDEM)
+# if defined(OPENSSL_TANDEM_FLOSS)
+#  include <floss.h(floss_fork)>
+# endif
 #endif
 
 #ifdef HTTP_DAEMON
+int multi = 0; /* run multiple responder processes */
+int acfd = (int) INVALID_SOCKET;
+
 static int print_syslog(const char *str, size_t len, void *levPtr)
 {
     int level = *(int *)levPtr;
@@ -55,9 +58,9 @@ void log_message(const char *prog, int level, const char *fmt, ...)
             syslog(level, "%s", buf);
         if (level >= LOG_ERR)
             ERR_print_errors_cb(print_syslog, &level);
-    }
+    } else
 #endif
-    if (!multi) {
+    {
         BIO_printf(bio_err, "%s: ", prog);
         BIO_vprintf(bio_err, fmt, ap);
         BIO_printf(bio_err, "\n");

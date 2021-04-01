@@ -14,8 +14,6 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
-DEFINE_STACK_OF(X509)
-
 typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
     OPT_TOSEQ, OPT_IN, OPT_OUT,
@@ -73,6 +71,8 @@ int nseq_main(int argc, char **argv)
             break;
         }
     }
+
+    /* No extra arguments. */
     argc = opt_num_rest();
     if (argc != 0)
         goto opthelp;

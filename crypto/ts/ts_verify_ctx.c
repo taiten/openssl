@@ -12,14 +12,12 @@
 #include <openssl/ts.h>
 #include "ts_local.h"
 
-DEFINE_STACK_OF(X509)
-
 TS_VERIFY_CTX *TS_VERIFY_CTX_new(void)
 {
     TS_VERIFY_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
 
     if (ctx == NULL)
-        TSerr(TS_F_TS_VERIFY_CTX_NEW, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_TS, ERR_R_MALLOC_FAILURE);
     return ctx;
 }
 

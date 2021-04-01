@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2017-2020 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2017-2021 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -11,12 +11,21 @@ use strict;
 use warnings;
 
 use File::Spec;
-use OpenSSL::Test qw/:DEFAULT srctop_file/;
+use OpenSSL::Test qw/:DEFAULT srctop_file srctop_dir bldtop_dir bldtop_file/;
 use OpenSSL::Test::Utils;
 
-setup("test_genrsa");
+BEGIN {
+    setup("test_genrsa");
+}
 
-plan tests => 12;
+use lib srctop_dir('Configurations');
+use lib bldtop_dir('.');
+
+my $no_fips = disabled('fips') || ($ENV{NO_FIPS} // 0);
+
+plan tests =>
+    ($no_fips ? 0 : 1)          # Extra FIPS related test
+    + 13;
 
 # We want to know that an absurdly small number of bits isn't support
 if (disabled("deprecated-3.0")) {
@@ -91,6 +100,9 @@ ok(!run(app([ 'openssl', 'genpkey', '-algorithm', 'RSA',
              '-pkeyopt', 'e:65538',
              '-out', 'genrsatest.pem' ])),
    "genpkey with a even public exponent should fail");
+ok(!run(app([ 'openssl', 'genpkey', '-propquery', 'unknown',
+             '-algorithm', 'RSA' ])),
+   "genpkey requesting unknown=yes property should fail");
 
 
  SKIP: {
@@ -104,4 +116,19 @@ ok(!run(app([ 'openssl', 'genpkey', '-algorithm', 'RSA',
        "genrsa -f4 $good");
     ok(run(app([ 'openssl', 'rsa', '-check', '-in', 'genrsatest.pem', '-noout' ])),
        "rsa -check");
+}
+
+unless ($no_fips) {
+    my $provconf = srctop_file("test", "fips-and-base.cnf");
+    my $provpath = bldtop_dir("providers");
+    my @prov = ( "-provider-path", $provpath,
+                 "-config", $provconf);
+
+    $ENV{OPENSSL_TEST_LIBCTX} = "1";
+    ok(run(app(['openssl', 'genpkey',
+                @prov,
+               '-algorithm', 'RSA',
+               '-pkeyopt', 'bits:2080',
+               '-out', 'genrsatest2080.pem'])),
+       "Generating RSA key with > 2048 bits and < 3072 bits");
 }

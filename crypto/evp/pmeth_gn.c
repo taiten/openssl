@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -20,17 +20,6 @@
 #include "crypto/evp.h"
 #include "evp_local.h"
 
-#if !defined(FIPS_MODULE) && !defined(OPENSSL_NO_EC)
-# define TMP_SM2_HACK
-#endif
-
-/* TODO(3.0) remove when provider SM2 key generation is implemented */
-#ifdef TMP_SM2_HACK
-# include <openssl/ec.h>
-# include <openssl/serializer.h>
-# include "internal/sizes.h"
-#endif
-
 static int gen_init(EVP_PKEY_CTX *ctx, int operation)
 {
     int ret = 0;
@@ -43,12 +32,6 @@ static int gen_init(EVP_PKEY_CTX *ctx, int operation)
 
     if (ctx->keymgmt == NULL || ctx->keymgmt->gen_init == NULL)
         goto legacy;
-
-/* TODO remove when provider SM2 key generation is implemented */
-#ifdef TMP_SM2_HACK
-    if (ctx->pmeth != NULL && ctx->pmeth->pkey_id == EVP_PKEY_SM2)
-        goto legacy;
-#endif
 
     switch (operation) {
     case EVP_PKEY_OP_PARAMGEN:
@@ -198,7 +181,7 @@ int EVP_PKEY_gen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
 
     /*
      * the returned value from evp_keymgmt_util_gen() is cached in *ppkey,
-     * so we so not need to save it, just check it.
+     * so we do not need to save it, just check it.
      */
     ret = ret
         && (evp_keymgmt_util_gen(*ppkey, ctx->keymgmt, ctx->op.keymgmt.genctx,
@@ -213,40 +196,29 @@ int EVP_PKEY_gen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
         evp_pkey_free_legacy(*ppkey);
 #endif
 
-/* TODO remove when SM2 key have been cleanly separated from EC keys */
-#ifdef TMP_SM2_HACK
     /*
-     * Legacy SM2 keys are implemented as EC_KEY with a twist.  The legacy
-     * key generation detects the SM2 curve and "magically" changes the pkey
-     * id accordingly.
-     * Since we don't have SM2 in the provider implementation, we need to
-     * downgrade the generated provider side key to a legacy one under the
-     * same conditions.
-     *
-     * THIS IS AN UGLY BUT TEMPORARY HACK
+     * Because we still have legacy keys
+     * TODO remove this #legacy internal keys are gone
      */
-    {
-        char curve_name[OSSL_MAX_NAME_SIZE] = "";
+    (*ppkey)->type = ctx->legacy_keytype;
 
-        if (!EVP_PKEY_get_utf8_string_param(*ppkey, OSSL_PKEY_PARAM_GROUP_NAME,
-                                            curve_name, sizeof(curve_name),
-                                            NULL)
-            || strcmp(curve_name, "SM2") != 0)
-            goto end;
-    }
-
-    if (!evp_pkey_downgrade(*ppkey)
-        || !EVP_PKEY_set_alias_type(*ppkey, EVP_PKEY_SM2))
-        ret = 0;
-#endif
     goto end;
 
  legacy:
 #ifdef FIPS_MODULE
     goto not_supported;
 #else
-    if (ctx->pkey && !evp_pkey_downgrade(ctx->pkey))
+    /*
+     * If we get here then we're using legacy paramgen/keygen. In that case
+     * the pkey in ctx (if there is one) had better not be provided (because the
+     * legacy methods may not know how to handle it). However we can only get
+     * here if ctx->op.keymgmt.genctx == NULL, but that should never be the case
+     * if ctx->pkey is provided because we don't allow this when we initialise
+     * the ctx.
+     */
+    if (ctx->pkey != NULL && !ossl_assert(!evp_pkey_is_provided(ctx->pkey)))
         goto not_accessible;
+
     switch (ctx->operation) {
     case EVP_PKEY_OP_PARAMGEN:
         ret = ctx->pmeth->paramgen(ctx, *ppkey);
@@ -272,7 +244,7 @@ int EVP_PKEY_gen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
     ret = -2;
     goto end;
  not_initialized:
-    ERR_raise(ERR_LIB_EVP, EVP_R_OPERATON_NOT_INITIALIZED);
+    ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_INITIALIZED);
     ret = -1;
     goto end;
 #ifndef FIPS_MODULE
@@ -286,7 +258,7 @@ int EVP_PKEY_gen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
 int EVP_PKEY_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
 {
     if (ctx->operation != EVP_PKEY_OP_PARAMGEN) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATON_NOT_INITIALIZED);
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_INITIALIZED);
         return -1;
     }
     return EVP_PKEY_gen(ctx, ppkey);
@@ -295,7 +267,7 @@ int EVP_PKEY_paramgen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
 int EVP_PKEY_keygen(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey)
 {
     if (ctx->operation != EVP_PKEY_OP_KEYGEN) {
-        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATON_NOT_INITIALIZED);
+        ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_INITIALIZED);
         return -1;
     }
     return EVP_PKEY_gen(ctx, ppkey);
@@ -376,27 +348,23 @@ static int fromdata_init(EVP_PKEY_CTX *ctx, int operation)
     return 1;
 
  not_supported:
-    ctx->operation = EVP_PKEY_OP_UNDEFINED;
+    if (ctx != NULL)
+        ctx->operation = EVP_PKEY_OP_UNDEFINED;
     ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
     return -2;
 }
 
-int EVP_PKEY_param_fromdata_init(EVP_PKEY_CTX *ctx)
+int EVP_PKEY_fromdata_init(EVP_PKEY_CTX *ctx)
 {
-    return fromdata_init(ctx, EVP_PKEY_OP_PARAMFROMDATA);
+    return fromdata_init(ctx, EVP_PKEY_OP_FROMDATA);
 }
 
-int EVP_PKEY_key_fromdata_init(EVP_PKEY_CTX *ctx)
-{
-    return fromdata_init(ctx, EVP_PKEY_OP_KEYFROMDATA);
-}
-
-int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey, OSSL_PARAM params[])
+int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey, int selection,
+                      OSSL_PARAM params[])
 {
     void *keydata = NULL;
-    int selection;
 
-    if (ctx == NULL || (ctx->operation & EVP_PKEY_OP_TYPE_FROMDATA) == 0) {
+    if (ctx == NULL || (ctx->operation & EVP_PKEY_OP_FROMDATA) == 0) {
         ERR_raise(ERR_LIB_EVP, EVP_R_OPERATION_NOT_SUPPORTED_FOR_THIS_KEYTYPE);
         return -2;
     }
@@ -412,40 +380,17 @@ int EVP_PKEY_fromdata(EVP_PKEY_CTX *ctx, EVP_PKEY **ppkey, OSSL_PARAM params[])
         return -1;
     }
 
-    if (ctx->operation == EVP_PKEY_OP_PARAMFROMDATA)
-        selection = OSSL_KEYMGMT_SELECT_ALL_PARAMETERS;
-    else
-        selection = OSSL_KEYMGMT_SELECT_ALL;
-    keydata = evp_keymgmt_util_fromdata(*ppkey, ctx->keymgmt, selection,
-                                        params);
-
+    keydata = evp_keymgmt_util_fromdata(*ppkey, ctx->keymgmt, selection, params);
     if (keydata == NULL)
         return 0;
     /* keydata is cached in *ppkey, so we need not bother with it further */
     return 1;
 }
 
-/*
- * TODO(3.0) Re-evaluate the names, it's possible that we find these to be
- * better:
- *
- * EVP_PKEY_param_settable()
- * EVP_PKEY_param_gettable()
- */
-const OSSL_PARAM *EVP_PKEY_param_fromdata_settable(EVP_PKEY_CTX *ctx)
+const OSSL_PARAM *EVP_PKEY_fromdata_settable(EVP_PKEY_CTX *ctx, int selection)
 {
     /* We call fromdata_init to get ctx->keymgmt populated */
-    if (fromdata_init(ctx, EVP_PKEY_OP_UNDEFINED))
-        return evp_keymgmt_import_types(ctx->keymgmt,
-                                        OSSL_KEYMGMT_SELECT_ALL_PARAMETERS);
-    return NULL;
-}
-
-const OSSL_PARAM *EVP_PKEY_key_fromdata_settable(EVP_PKEY_CTX *ctx)
-{
-    /* We call fromdata_init to get ctx->keymgmt populated */
-    if (fromdata_init(ctx, EVP_PKEY_OP_UNDEFINED))
-        return evp_keymgmt_import_types(ctx->keymgmt,
-                                        OSSL_KEYMGMT_SELECT_ALL);
+    if (fromdata_init(ctx, EVP_PKEY_OP_UNDEFINED) == 1)
+        return evp_keymgmt_import_types(ctx->keymgmt, selection);
     return NULL;
 }

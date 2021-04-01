@@ -15,8 +15,6 @@
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
-DEFINE_STACK_OF(X509_REVOKED)
-
 #ifndef OPENSSL_NO_STDIO
 int X509_CRL_print_fp(FILE *fp, X509_CRL *x)
 {
@@ -24,7 +22,7 @@ int X509_CRL_print_fp(FILE *fp, X509_CRL *x)
     int ret;
 
     if ((b = BIO_new(BIO_s_file())) == NULL) {
-        X509err(X509_F_X509_CRL_PRINT_FP, ERR_R_BUF_LIB);
+        ERR_raise(ERR_LIB_X509, ERR_R_BUF_LIB);
         return 0;
     }
     BIO_set_fp(b, fp, BIO_NOCLOSE);

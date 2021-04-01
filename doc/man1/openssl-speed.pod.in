@@ -24,8 +24,7 @@ B<openssl speed>
 [B<-bytes> I<num>]
 [B<-mr>]
 {- $OpenSSL::safe::opt_r_synopsis -}
-{- $OpenSSL::safe::opt_engine_synopsis -}
-{- $OpenSSL::safe::opt_provider_synopsis -}
+{- $OpenSSL::safe::opt_engine_synopsis -}{- $OpenSSL::safe::opt_provider_synopsis -}
 [I<algorithm> ...]
 
 =for openssl ifdef hmac cmac multi async_jobs engine
@@ -112,6 +111,10 @@ If any I<algorithm> is given, then those algorithms are tested, otherwise a
 pre-compiled grand selection is tested.
 
 =back
+
+=head1 HISTORY
+
+The B<-engine> option was deprecated in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 
