@@ -1,0 +1,24 @@
+From: Richard Levitte <levitte@openssl.org>
+Date: Wed, 7 Apr 2021 09:03:41 +0200
+Subject: fixup! test/recipes/02-test_errstr.t: Do not test negative system
+ error codes
+
+---
+ test/recipes/02-test_errstr.t | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/recipes/02-test_errstr.t b/test/recipes/02-test_errstr.t
+index e56cb1360349..3bbf530c282d 100644
+--- a/test/recipes/02-test_errstr.t
++++ b/test/recipes/02-test_errstr.t
+@@ -69,8 +69,8 @@ foreach my $errname (@Errno::EXPORT_OK) {
+       # is to skip this errcode.
+       skip "perl error strings and ssystem error strings for errcode 0 differ", 1
+           if $errcode == 0;
+-      # On some systems, there are negative error codes.  These are currently
+-      # unsupported in OpenSSL error reports.
++      # On some systems (for example Hurd), there are negative error codes.
++      # These are currently unsupported in OpenSSL error reports.
+       skip "negative error codes are not supported in OpenSSL", 1
+           if $errcode < 0;
+ 
