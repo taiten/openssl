@@ -1,0 +1,40 @@
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Fri, 2 Apr 2021 21:45:37 +0200
+Subject: Configurations: Add -latomic on Linux
+
+A build of alpha13 fails on armel (arm-linux-gnueabi, armv5te) POWER
+32bit, mipsel (32bit MIPS little endian) and m68k failed to link due to
+missing __atomic_fetch_or_8() in CRYPTO_atomic_or() among other calls.
+
+Some platforms require to link against libatomic in order to provide
+these functions while other can inline the needed bits.
+
+Add -latomic to every Linux port. On armhf (arm-linux-gnueabihf,
+armv7-a) resulted with no extra linking against libatomic with gcc-10.
+With gcc-8 it linked against libatomic but was not needed because the
+function was inlined.
+
+One alternative would be to add it to the platforms that need it (either
+in the generic template for mips and powerpc) or in our Debian rules.
+Another alternative would be to use a compile test at configure time for
+an autodetect.
+I'm not aware of any query interface for this.
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ Configurations/10-main.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
+index fa357dbbcb75..2328c94b556f 100644
+--- a/Configurations/10-main.conf
++++ b/Configurations/10-main.conf
+@@ -688,7 +688,7 @@ my %targets = (
+         cflags           => threads("-pthread"),
+         cxxflags         => combine("-std=c++11", threads("-pthread")),
+         lib_cppflags     => "-DOPENSSL_USE_NODELETE",
+-        ex_libs          => add("-ldl", threads("-pthread")),
++        ex_libs          => add("-ldl", threads("-pthread"), "-latomic"),
+         bn_ops           => "BN_LLONG RC4_CHAR",
+         thread_scheme    => "pthreads",
+         dso_scheme       => "dlfcn",

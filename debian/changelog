@@ -1,3 +1,11 @@
+openssl (3.0.0~~alpha13-2) experimental; urgency=medium
+
+  * Add a proposed patch from upstream to skip negativ errno number in the
+    testsuite to pass the testsute on hurd.
+  * Always link against libatomic.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 07 Apr 2021 21:36:02 +0200
+
 openssl (3.0.0~~alpha13-1) experimental; urgency=medium
 
   * Import 3.0.0-alpha13.
