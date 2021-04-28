@@ -78,6 +78,7 @@ struct evp_keymgmt_st {
     int id;                      /* libcrypto internal */
 
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -111,11 +112,12 @@ struct evp_keymgmt_st {
     OSSL_FUNC_keymgmt_import_types_fn *import_types;
     OSSL_FUNC_keymgmt_export_fn *export;
     OSSL_FUNC_keymgmt_export_types_fn *export_types;
-    OSSL_FUNC_keymgmt_copy_fn *copy;
+    OSSL_FUNC_keymgmt_dup_fn *dup;
 } /* EVP_KEYMGMT */ ;
 
 struct evp_keyexch_st {
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -134,6 +136,7 @@ struct evp_keyexch_st {
 
 struct evp_signature_st {
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -167,6 +170,7 @@ struct evp_signature_st {
 
 struct evp_asym_cipher_st {
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -186,6 +190,7 @@ struct evp_asym_cipher_st {
 
 struct evp_kem_st {
     int name_id;
+    const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *lock;
@@ -227,7 +232,7 @@ struct evp_Encode_Ctx_st {
 typedef struct evp_pbe_st EVP_PBE_CTL;
 DEFINE_STACK_OF(EVP_PBE_CTL)
 
-int is_partially_overlapping(const void *ptr1, const void *ptr2, int len);
+int ossl_is_partially_overlapping(const void *ptr1, const void *ptr2, int len);
 
 #include <openssl/types.h>
 #include <openssl/core.h>
@@ -235,14 +240,14 @@ int is_partially_overlapping(const void *ptr1, const void *ptr2, int len);
 void *evp_generic_fetch(OSSL_LIB_CTX *ctx, int operation_id,
                         const char *name, const char *properties,
                         void *(*new_method)(int name_id,
-                                            const OSSL_DISPATCH *fns,
+                                            const OSSL_ALGORITHM *algodef,
                                             OSSL_PROVIDER *prov),
                         int (*up_ref_method)(void *),
                         void (*free_method)(void *));
 void *evp_generic_fetch_by_number(OSSL_LIB_CTX *ctx, int operation_id,
                                   int name_id, const char *properties,
                                   void *(*new_method)(int name_id,
-                                                      const OSSL_DISPATCH *fns,
+                                                      const OSSL_ALGORITHM *algodef,
                                                       OSSL_PROVIDER *prov),
                                   int (*up_ref_method)(void *),
                                   void (*free_method)(void *));
@@ -250,7 +255,7 @@ void evp_generic_do_all(OSSL_LIB_CTX *libctx, int operation_id,
                         void (*user_fn)(void *method, void *arg),
                         void *user_arg,
                         void *(*new_method)(int name_id,
-                                            const OSSL_DISPATCH *fns,
+                                            const OSSL_ALGORITHM *algodef,
                                             OSSL_PROVIDER *prov),
                         void (*free_method)(void *));
 
@@ -312,6 +317,8 @@ OSSL_PARAM *evp_pkey_to_param(EVP_PKEY *pkey, size_t *sz);
     }
 
 void evp_pkey_ctx_free_old_ops(EVP_PKEY_CTX *ctx);
+void evp_cipher_free_int(EVP_CIPHER *md);
+void evp_md_free_int(EVP_MD *md);
 
 /* OSSL_PROVIDER * is only used to get the library context */
 const char *evp_first_name(const OSSL_PROVIDER *prov, int name_id);

@@ -32,10 +32,11 @@ static void *keymgmt_new(void)
     return keymgmt;
 }
 
-static void *keymgmt_from_dispatch(int name_id,
-                                   const OSSL_DISPATCH *fns,
-                                   OSSL_PROVIDER *prov)
+static void *keymgmt_from_algorithm(int name_id,
+                                    const OSSL_ALGORITHM *algodef,
+                                    OSSL_PROVIDER *prov)
 {
+    const OSSL_DISPATCH *fns = algodef->implementation;
     EVP_KEYMGMT *keymgmt = NULL;
     int setparamfncnt = 0, getparamfncnt = 0;
     int setgenparamfncnt = 0;
@@ -46,6 +47,7 @@ static void *keymgmt_from_dispatch(int name_id,
         return NULL;
     }
     keymgmt->name_id = name_id;
+    keymgmt->description = algodef->algorithm_description;
 
     for (; fns->function_id != 0; fns++) {
         switch (fns->function_id) {
@@ -127,9 +129,9 @@ static void *keymgmt_from_dispatch(int name_id,
             if (keymgmt->has == NULL)
                 keymgmt->has = OSSL_FUNC_keymgmt_has(fns);
             break;
-        case OSSL_FUNC_KEYMGMT_COPY:
-            if (keymgmt->copy == NULL)
-                keymgmt->copy = OSSL_FUNC_keymgmt_copy(fns);
+        case OSSL_FUNC_KEYMGMT_DUP:
+            if (keymgmt->dup == NULL)
+                keymgmt->dup = OSSL_FUNC_keymgmt_dup(fns);
             break;
         case OSSL_FUNC_KEYMGMT_VALIDATE:
             if (keymgmt->validate == NULL)
@@ -202,7 +204,7 @@ EVP_KEYMGMT *evp_keymgmt_fetch_by_number(OSSL_LIB_CTX *ctx, int name_id,
 {
     return evp_generic_fetch_by_number(ctx,
                                        OSSL_OP_KEYMGMT, name_id, properties,
-                                       keymgmt_from_dispatch,
+                                       keymgmt_from_algorithm,
                                        (int (*)(void *))EVP_KEYMGMT_up_ref,
                                        (void (*)(void *))EVP_KEYMGMT_free);
 }
@@ -211,7 +213,7 @@ EVP_KEYMGMT *EVP_KEYMGMT_fetch(OSSL_LIB_CTX *ctx, const char *algorithm,
                                const char *properties)
 {
     return evp_generic_fetch(ctx, OSSL_OP_KEYMGMT, algorithm, properties,
-                             keymgmt_from_dispatch,
+                             keymgmt_from_algorithm,
                              (int (*)(void *))EVP_KEYMGMT_up_ref,
                              (void (*)(void *))EVP_KEYMGMT_free);
 }
@@ -249,6 +251,11 @@ int EVP_KEYMGMT_number(const EVP_KEYMGMT *keymgmt)
     return keymgmt->name_id;
 }
 
+const char *EVP_KEYMGMT_description(const EVP_KEYMGMT *keymgmt)
+{
+    return keymgmt->description;
+}
+
 const char *EVP_KEYMGMT_get0_first_name(const EVP_KEYMGMT *keymgmt)
 {
     return evp_first_name(keymgmt->prov, keymgmt->name_id);
@@ -265,7 +272,7 @@ void EVP_KEYMGMT_do_all_provided(OSSL_LIB_CTX *libctx,
 {
     evp_generic_do_all(libctx, OSSL_OP_KEYMGMT,
                        (void (*)(void *, void *))fn, arg,
-                       keymgmt_from_dispatch,
+                       keymgmt_from_algorithm,
                        (void (*)(void *))EVP_KEYMGMT_free);
 }
 
@@ -287,9 +294,9 @@ void *evp_keymgmt_newdata(const EVP_KEYMGMT *keymgmt)
     void *provctx = ossl_provider_ctx(EVP_KEYMGMT_provider(keymgmt));
 
     /*
-     * TODO(3.0) 'new' is currently mandatory on its own, but when new
-     * constructors appear, it won't be quite as mandatory, so we have
-     * a check for future cases.
+     * 'new' is currently mandatory on its own, but when new
+     * constructors appear, it won't be quite as mandatory,
+     * so we have a check for future cases.
      */
     if (keymgmt->new == NULL)
         return NULL;
@@ -302,13 +309,14 @@ void evp_keymgmt_freedata(const EVP_KEYMGMT *keymgmt, void *keydata)
     keymgmt->free(keydata);
 }
 
-void *evp_keymgmt_gen_init(const EVP_KEYMGMT *keymgmt, int selection)
+void *evp_keymgmt_gen_init(const EVP_KEYMGMT *keymgmt, int selection,
+                           const OSSL_PARAM params[])
 {
     void *provctx = ossl_provider_ctx(EVP_KEYMGMT_provider(keymgmt));
 
     if (keymgmt->gen_init == NULL)
         return NULL;
-    return keymgmt->gen_init(provctx, selection);
+    return keymgmt->gen_init(provctx, selection, params);
 }
 
 int evp_keymgmt_gen_set_template(const EVP_KEYMGMT *keymgmt, void *genctx,
@@ -319,7 +327,6 @@ int evp_keymgmt_gen_set_template(const EVP_KEYMGMT *keymgmt, void *genctx,
      * it allows the caller to set a template key, which is then ignored.
      * However, this is how the legacy methods (EVP_PKEY_METHOD) operate,
      * so we do this in the interest of backward compatibility.
-     * TODO(3.0) Investigate if we should change this behaviour.
      */
     if (keymgmt->gen_set_template == NULL)
         return 1;
@@ -456,12 +463,11 @@ const OSSL_PARAM *evp_keymgmt_export_types(const EVP_KEYMGMT *keymgmt,
     return keymgmt->export_types(selection);
 }
 
-int evp_keymgmt_copy(const EVP_KEYMGMT *keymgmt,
-                     void *keydata_to, const void *keydata_from,
-                     int selection)
+void *evp_keymgmt_dup(const EVP_KEYMGMT *keymgmt, const void *keydata_from,
+                      int selection)
 {
-    /* We assume no copy if the implementation doesn't have a function */
-    if (keymgmt->copy == NULL)
-        return 0;
-    return keymgmt->copy(keydata_to, keydata_from, selection);
+    /* We assume no dup if the implementation doesn't have a function */
+    if (keymgmt->dup == NULL)
+        return NULL;
+    return keymgmt->dup(keydata_from, selection);
 }

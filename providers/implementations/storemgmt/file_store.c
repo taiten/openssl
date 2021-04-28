@@ -294,7 +294,7 @@ static void *file_open(void *provctx, const char *uri)
 void *file_attach(void *provctx, OSSL_CORE_BIO *cin)
 {
     struct file_ctx_st *ctx;
-    BIO *new_bio = bio_new_from_core_bio(provctx, cin);
+    BIO *new_bio = ossl_bio_new_from_core_bio(provctx, cin);
 
     if (new_bio == NULL)
         return NULL;
@@ -325,6 +325,9 @@ static int file_set_ctx_params(void *loaderctx, const OSSL_PARAM params[])
 {
     struct file_ctx_st *ctx = loaderctx;
     const OSSL_PARAM *p;
+
+    if (params == NULL)
+        return 1;
 
     p = OSSL_PARAM_locate_const(params, OSSL_STORE_PARAM_PROPERTIES);
     if (p != NULL) {
@@ -434,8 +437,8 @@ static int file_setup_decoders(struct file_ctx_st *ctx)
          * The decoder doesn't need any identification or to be attached to
          * any provider, since it's only used locally.
          */
-        to_obj = ossl_decoder_from_dispatch(0, &ossl_der_to_obj_algorithm,
-                                            NULL);
+        to_obj = ossl_decoder_from_algorithm(0, &ossl_der_to_obj_algorithm,
+                                             NULL);
         if (to_obj == NULL)
             goto err;
         to_obj_inst = ossl_decoder_instance_new(to_obj, ctx->provctx);

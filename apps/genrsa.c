@@ -82,7 +82,7 @@ int genrsa_main(int argc, char **argv)
     BIO *out = NULL;
     EVP_PKEY *pkey = NULL;
     EVP_PKEY_CTX *ctx = NULL;
-    const EVP_CIPHER *enc = NULL;
+    EVP_CIPHER *enc = NULL;
     int ret = 1, num = DEFBITS, private = 0, primes = DEFPRIMES;
     unsigned long f4 = RSA_F4;
     char *outfile = NULL, *passoutarg = NULL, *passout = NULL;
@@ -163,7 +163,9 @@ opthelp:
         goto opthelp;
     }
 
-    app_RAND_load();
+    if (!app_RAND_load())
+        goto end;
+
     private = 1;
     if (ciphername != NULL) {
         if (!opt_cipher(ciphername, &enc))
@@ -241,6 +243,7 @@ opthelp:
     BN_GENCB_free(cb);
     EVP_PKEY_CTX_free(ctx);
     EVP_PKEY_free(pkey);
+    EVP_CIPHER_free(enc);
     BIO_free_all(out);
     release_engine(eng);
     OPENSSL_free(passout);

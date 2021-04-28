@@ -1,0 +1,49 @@
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Date: Thu, 22 Apr 2021 22:02:02 +0200
+Subject: debian-targets: add latomic
+
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+---
+ Configurations/20-debian.conf | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/Configurations/20-debian.conf b/Configurations/20-debian.conf
+index 76f0fa8778ca..cea9cdb46266 100644
+--- a/Configurations/20-debian.conf
++++ b/Configurations/20-debian.conf
+@@ -45,6 +45,7 @@ my %targets = (
+ 	"debian-hppa" => {
+ 		inherit_from => [ "linux-generic32", "debian" ],
+ 		cflags => add("-DB_ENDIAN"),
++		ex_libs => add("-latomic"),
+ 	},
+ 	"debian-hurd-i386" => {
+ 		inherit_from => [ "hurd-x86", "debian" ],
+@@ -55,6 +56,7 @@ my %targets = (
+ 	"debian-m68k" => {
+ 		inherit_from => [ "linux-generic32", "debian" ],
+ 		cflags => add("-DB_ENDIAN"),
++		ex_libs => add("-latomic"),
+ 	},
+ 	"debian-mips" => {
+ 		inherit_from => [ "linux-mips32", "debian" ],
+@@ -187,9 +189,11 @@ my %targets = (
+ 	},
+ 	"debian-sh4" => {
+ 		inherit_from => [ "linux-generic32", "debian" ],
++		ex_libs => add("-latomic"),
+ 	},
+ 	"debian-sh4eb" => {
+ 		inherit_from => [ "linux-generic32", "debian" ],
++		ex_libs => add("-latomic"),
+ 	},
+ 	"debian-m32r" => {
+ 		inherit_from => [ "linux-generic32", "debian" ],
+@@ -204,6 +208,7 @@ my %targets = (
+ 		asm_arch         => 'sparcv9',
+ 	        cflags => add("-m64 -mcpu=ultrasparc -DB_ENDIAN"),
+ 		bn_ops => "BN_LLONG RC4_CHAR",
++		ex_libs => add("-latomic"),
+ 	},
+ 	"debian-tilegx" => {
+ 		inherit_from => [ "linux-generic64", "debian" ],

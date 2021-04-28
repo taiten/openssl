@@ -38,10 +38,11 @@ static EVP_SIGNATURE *evp_signature_new(OSSL_PROVIDER *prov)
     return signature;
 }
 
-static void *evp_signature_from_dispatch(int name_id,
-                                         const OSSL_DISPATCH *fns,
-                                         OSSL_PROVIDER *prov)
+static void *evp_signature_from_algorithm(int name_id,
+                                          const OSSL_ALGORITHM *algodef,
+                                          OSSL_PROVIDER *prov)
 {
+    const OSSL_DISPATCH *fns = algodef->implementation;
     EVP_SIGNATURE *signature = NULL;
     int ctxfncnt = 0, signfncnt = 0, verifyfncnt = 0, verifyrecfncnt = 0;
     int digsignfncnt = 0, digverifyfncnt = 0;
@@ -53,6 +54,7 @@ static void *evp_signature_from_dispatch(int name_id,
     }
 
     signature->name_id = name_id;
+    signature->description = algodef->algorithm_description;
 
     for (; fns->function_id != 0; fns++) {
         switch (fns->function_id) {
@@ -273,16 +275,16 @@ static void *evp_signature_from_dispatch(int name_id,
 
 void EVP_SIGNATURE_free(EVP_SIGNATURE *signature)
 {
-    if (signature != NULL) {
-        int i;
+    int i;
 
-        CRYPTO_DOWN_REF(&signature->refcnt, &i, signature->lock);
-        if (i > 0)
-            return;
-        ossl_provider_free(signature->prov);
-        CRYPTO_THREAD_lock_free(signature->lock);
-        OPENSSL_free(signature);
-    }
+    if (signature == NULL)
+        return;
+    CRYPTO_DOWN_REF(&signature->refcnt, &i, signature->lock);
+    if (i > 0)
+        return;
+    ossl_provider_free(signature->prov);
+    CRYPTO_THREAD_lock_free(signature->lock);
+    OPENSSL_free(signature);
 }
 
 int EVP_SIGNATURE_up_ref(EVP_SIGNATURE *signature)
@@ -302,7 +304,7 @@ EVP_SIGNATURE *EVP_SIGNATURE_fetch(OSSL_LIB_CTX *ctx, const char *algorithm,
                                    const char *properties)
 {
     return evp_generic_fetch(ctx, OSSL_OP_SIGNATURE, algorithm, properties,
-                             evp_signature_from_dispatch,
+                             evp_signature_from_algorithm,
                              (int (*)(void *))EVP_SIGNATURE_up_ref,
                              (void (*)(void *))EVP_SIGNATURE_free);
 }
@@ -317,6 +319,11 @@ int EVP_SIGNATURE_number(const EVP_SIGNATURE *signature)
     return signature->name_id;
 }
 
+const char *EVP_SIGNATURE_description(const EVP_SIGNATURE *signature)
+{
+    return signature->description;
+}
+
 void EVP_SIGNATURE_do_all_provided(OSSL_LIB_CTX *libctx,
                                    void (*fn)(EVP_SIGNATURE *signature,
                                               void *arg),
@@ -324,7 +331,7 @@ void EVP_SIGNATURE_do_all_provided(OSSL_LIB_CTX *libctx,
 {
     evp_generic_do_all(libctx, OSSL_OP_SIGNATURE,
                        (void (*)(void *, void *))fn, arg,
-                       evp_signature_from_dispatch,
+                       evp_signature_from_algorithm,
                        (void (*)(void *))EVP_SIGNATURE_free);
 }
 
@@ -361,7 +368,8 @@ const OSSL_PARAM *EVP_SIGNATURE_settable_ctx_params(const EVP_SIGNATURE *sig)
     return sig->settable_ctx_params(NULL, provctx);
 }
 
-static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation)
+static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation,
+                                   const OSSL_PARAM params[])
 {
     int ret = 0;
     void *provkey = NULL;
@@ -456,7 +464,7 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation)
             ret = -2;
             goto err;
         }
-        ret = signature->sign_init(ctx->op.sig.sigprovctx, provkey);
+        ret = signature->sign_init(ctx->op.sig.sigprovctx, provkey, params);
         break;
     case EVP_PKEY_OP_VERIFY:
         if (signature->verify_init == NULL) {
@@ -464,7 +472,7 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation)
             ret = -2;
             goto err;
         }
-        ret = signature->verify_init(ctx->op.sig.sigprovctx, provkey);
+        ret = signature->verify_init(ctx->op.sig.sigprovctx, provkey, params);
         break;
     case EVP_PKEY_OP_VERIFYRECOVER:
         if (signature->verify_recover_init == NULL) {
@@ -472,7 +480,8 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation)
             ret = -2;
             goto err;
         }
-        ret = signature->verify_recover_init(ctx->op.sig.sigprovctx, provkey);
+        ret = signature->verify_recover_init(ctx->op.sig.sigprovctx, provkey,
+                                             params);
         break;
     default:
         ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
@@ -540,7 +549,12 @@ static int evp_pkey_signature_init(EVP_PKEY_CTX *ctx, int operation)
 
 int EVP_PKEY_sign_init(EVP_PKEY_CTX *ctx)
 {
-    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_SIGN);
+    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_SIGN, NULL);
+}
+
+int EVP_PKEY_sign_init_ex(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[])
+{
+    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_SIGN, params);
 }
 
 int EVP_PKEY_sign(EVP_PKEY_CTX *ctx,
@@ -579,7 +593,12 @@ int EVP_PKEY_sign(EVP_PKEY_CTX *ctx,
 
 int EVP_PKEY_verify_init(EVP_PKEY_CTX *ctx)
 {
-    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_VERIFY);
+    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_VERIFY, NULL);
+}
+
+int EVP_PKEY_verify_init_ex(EVP_PKEY_CTX *ctx, const OSSL_PARAM params[])
+{
+    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_VERIFY, params);
 }
 
 int EVP_PKEY_verify(EVP_PKEY_CTX *ctx,
@@ -616,7 +635,13 @@ int EVP_PKEY_verify(EVP_PKEY_CTX *ctx,
 
 int EVP_PKEY_verify_recover_init(EVP_PKEY_CTX *ctx)
 {
-    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_VERIFYRECOVER);
+    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_VERIFYRECOVER, NULL);
+}
+
+int EVP_PKEY_verify_recover_init_ex(EVP_PKEY_CTX *ctx,
+                                    const OSSL_PARAM params[])
+{
+    return evp_pkey_signature_init(ctx, EVP_PKEY_OP_VERIFYRECOVER, params);
 }
 
 int EVP_PKEY_verify_recover(EVP_PKEY_CTX *ctx,

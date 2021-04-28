@@ -36,7 +36,7 @@
 
 /*
  * newctx and freectx are not strictly necessary.  However, the method creator,
- * ossl_decoder_from_dispatch(), demands that they exist, so we make sure to
+ * ossl_decoder_from_algorithm(), demands that they exist, so we make sure to
  * oblige.
  */
 
@@ -85,7 +85,7 @@ static int der2obj_decode(void *provctx, OSSL_CORE_BIO *cin, int selection,
      * We're called from file_store.c, so we know that OSSL_CORE_BIO is a
      * BIO in this case.
      */
-    BIO *in = bio_new_from_core_bio(provctx, cin);
+    BIO *in = ossl_bio_new_from_core_bio(provctx, cin);
     BUF_MEM *mem = NULL;
     int err, ok;
 
@@ -98,14 +98,22 @@ static int der2obj_decode(void *provctx, OSSL_CORE_BIO *cin, int selection,
      * Prune low-level ASN.1 parse errors from error queue, assuming that
      * this is called by decoder_process() in a loop trying several formats.
      */
-    err = ERR_peek_last_error();
-    if (ERR_GET_LIB(err) == ERR_LIB_ASN1
+    if (!ok) {
+        err = ERR_peek_last_error();
+        if (ERR_GET_LIB(err) == ERR_LIB_ASN1
             && (ERR_GET_REASON(err) == ASN1_R_HEADER_TOO_LONG
-                || ERR_GET_REASON(err) == ERR_R_NESTED_ASN1_ERROR))
-        ERR_pop_to_mark();
-    else
-        ERR_clear_last_mark();
-    if (ok) {
+                || ERR_GET_REASON(err) == ASN1_R_UNSUPPORTED_TYPE
+                || ERR_GET_REASON(err) == ERR_R_NESTED_ASN1_ERROR
+                || ERR_GET_REASON(err) == ASN1_R_NOT_ENOUGH_DATA)) {
+            ERR_pop_to_mark();
+        } else {
+            ERR_clear_last_mark();
+            goto end;
+        }
+    }
+
+    ok = 1;
+    if (mem != NULL) {
         OSSL_PARAM params[3];
         int object_type = OSSL_OBJECT_UNKNOWN;
 
@@ -120,6 +128,7 @@ static int der2obj_decode(void *provctx, OSSL_CORE_BIO *cin, int selection,
         OPENSSL_free(mem->data);
         OPENSSL_free(mem);
     }
+ end:
     BIO_free(in);
     return ok;
 }
