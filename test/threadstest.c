@@ -93,14 +93,14 @@ static int wait_for_thread(thread_t thread)
 static int test_lock(void)
 {
     CRYPTO_RWLOCK *lock = CRYPTO_THREAD_lock_new();
+    int res;
 
-    if (!TEST_true(CRYPTO_THREAD_read_lock(lock))
-        || !TEST_true(CRYPTO_THREAD_unlock(lock)))
-        return 0;
+    res = TEST_true(CRYPTO_THREAD_read_lock(lock))
+          && TEST_true(CRYPTO_THREAD_unlock(lock));
 
     CRYPTO_THREAD_lock_free(lock);
 
-    return 1;
+    return res;
 }
 
 static CRYPTO_ONCE once_run = CRYPTO_ONCE_STATIC_INIT;
@@ -348,7 +348,7 @@ static void thread_general_worker(void)
 
 static void thread_multi_simple_fetch(void)
 {
-    EVP_MD *md = EVP_MD_fetch(NULL, "SHA2-256", NULL);
+    EVP_MD *md = EVP_MD_fetch(multi_libctx, "SHA2-256", NULL);
 
     if (md != NULL)
         EVP_MD_free(md);
@@ -501,6 +501,7 @@ static int test_multi(int idx)
     OSSL_LIB_CTX_free(multi_libctx);
     EVP_PKEY_free(shared_evp_pkey);
     shared_evp_pkey = NULL;
+    multi_libctx = NULL;
     return testresult;
 }
 
@@ -514,8 +515,8 @@ static void test_multi_load_worker(void)
 {
     OSSL_PROVIDER *prov;
 
-    TEST_ptr(prov = OSSL_PROVIDER_load(NULL, "default"));
-    TEST_true(OSSL_PROVIDER_unload(prov));
+    (void)TEST_ptr(prov = OSSL_PROVIDER_load(NULL, "default"));
+    (void)TEST_true(OSSL_PROVIDER_unload(prov));
 }
 
 static int test_multi_load(void)
@@ -524,12 +525,42 @@ static int test_multi_load(void)
     int i;
 
     for (i = 0; i < MULTI_LOAD_THREADS; i++)
-        TEST_true(run_thread(&threads[i], test_multi_load_worker));
+        (void)TEST_true(run_thread(&threads[i], test_multi_load_worker));
 
     for (i = 0; i < MULTI_LOAD_THREADS; i++)
-        TEST_true(wait_for_thread(threads[i]));
+        (void)TEST_true(wait_for_thread(threads[i]));
 
     return 1;
+}
+
+static int test_multi_default(void)
+{
+    thread_t thread1, thread2;
+    int testresult = 0;
+    OSSL_PROVIDER *prov = NULL;
+
+    multi_success = 1;
+    multi_libctx = NULL;
+    prov = OSSL_PROVIDER_load(multi_libctx, "default");
+    if (!TEST_ptr(prov))
+        goto err;
+
+    if (!TEST_true(run_thread(&thread1, thread_multi_simple_fetch))
+            || !TEST_true(run_thread(&thread2, thread_multi_simple_fetch)))
+        goto err;
+
+    thread_multi_simple_fetch();
+
+    if (!TEST_true(wait_for_thread(thread1))
+            || !TEST_true(wait_for_thread(thread2))
+            || !TEST_true(multi_success))
+        goto err;
+
+    testresult = 1;
+
+ err:
+    OSSL_PROVIDER_unload(prov);
+    return testresult;
 }
 
 typedef enum OPTION_choice {
@@ -572,6 +603,9 @@ int setup_tests(void)
     privkey = test_mk_file_path(datadir, "rsakey.pem");
     if (!TEST_ptr(privkey))
         return 0;
+
+    /* Keep first to validate auto creation of default library context */
+    ADD_TEST(test_multi_default);
 
     ADD_TEST(test_lock);
     ADD_TEST(test_once);

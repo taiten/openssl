@@ -14,6 +14,7 @@
 # include <openssl/core.h>
 # include <openssl/params.h>
 # include <openssl/dh.h>
+# include <openssl/x509.h>
 # include "internal/ffc.h"
 
 DH *ossl_dh_new_by_nid_ex(OSSL_LIB_CTX *libctx, int nid);
@@ -35,6 +36,9 @@ int ossl_dh_params_fromdata(DH *dh, const OSSL_PARAM params[]);
 int ossl_dh_key_fromdata(DH *dh, const OSSL_PARAM params[]);
 int ossl_dh_params_todata(DH *dh, OSSL_PARAM_BLD *bld, OSSL_PARAM params[]);
 int ossl_dh_key_todata(DH *dh, OSSL_PARAM_BLD *bld, OSSL_PARAM params[]);
+DH *ossl_dh_key_from_pkcs8(const PKCS8_PRIV_KEY_INFO *p8inf,
+                           OSSL_LIB_CTX *libctx, const char *propq);
+int ossl_dh_compute_key(unsigned char *key, const BIGNUM *pub_key, DH *dh);
 
 int ossl_dh_check_pub_key_partial(const DH *dh, const BIGNUM *pub_key, int *ret);
 int ossl_dh_check_priv_key(const DH *dh, const BIGNUM *priv_key, int *ret);
@@ -52,5 +56,7 @@ int ossl_dh_kdf_X9_42_asn1(unsigned char *out, size_t outlen,
                            const unsigned char *ukm, size_t ukmlen,
                            const EVP_MD *md,
                            OSSL_LIB_CTX *libctx, const char *propq);
+int ossl_dh_is_foreign(const DH *dh);
+DH *ossl_dh_dup(const DH *dh, int selection);
 
 #endif  /* OSSL_CRYPTO_DH_H */

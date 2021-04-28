@@ -258,7 +258,7 @@
 
 # define OPT_R_OPTIONS \
     OPT_SECTION("Random state"), \
-    {"rand", OPT_R_RAND, 's', "Load the file(s) into the random number generator"}, \
+    {"rand", OPT_R_RAND, 's', "Load the given file(s) into the random number generator"}, \
     {"writerand", OPT_R_WRITERAND, '>', "Write random data to the specified file"}
 
 # define OPT_R_CASES \
@@ -366,8 +366,8 @@ int opt_umax(const char *arg, uintmax_t *result);
 #endif
 int opt_pair(const char *arg, const OPT_PAIR * pairs, int *result);
 int opt_string(const char *name, const char **options);
-int opt_cipher(const char *name, const EVP_CIPHER **cipherp);
-int opt_md(const char *name, const EVP_MD **mdp);
+int opt_cipher(const char *name, EVP_CIPHER **cipherp);
+int opt_md(const char *name, EVP_MD **mdp);
 char *opt_arg(void);
 char *opt_flag(void);
 char *opt_unknown(void);

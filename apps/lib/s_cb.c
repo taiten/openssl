@@ -1032,7 +1032,7 @@ int load_excert(SSL_EXCERT **pexc)
         if (exc->key == NULL)
             return 0;
         if (exc->chainfile != NULL) {
-            if (!load_certs(exc->chainfile, &exc->chain, NULL, "server chain"))
+            if (!load_certs(exc->chainfile, 0, &exc->chain, NULL, "server chain"))
                 return 0;
         }
     }
@@ -1276,12 +1276,14 @@ int config_ctx(SSL_CONF_CTX *cctx, STACK_OF(OPENSSL_STRING) *str,
 static int add_crls_store(X509_STORE *st, STACK_OF(X509_CRL) *crls)
 {
     X509_CRL *crl;
-    int i;
+    int i, ret = 1;
+
     for (i = 0; i < sk_X509_CRL_num(crls); i++) {
         crl = sk_X509_CRL_value(crls, i);
-        X509_STORE_add_crl(st, crl);
+        if (!X509_STORE_add_crl(st, crl))
+            ret = 0;
     }
-    return 1;
+    return ret;
 }
 
 int ssl_ctx_add_crls(SSL_CTX *ctx, STACK_OF(X509_CRL) *crls, int crl_download)

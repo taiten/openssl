@@ -1,3 +1,9 @@
+openssl (3.0.0~~alpha15-1) experimental; urgency=medium
+
+  * Import 3.0.0-alpha15.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 28 Apr 2021 23:26:47 +0200
+
 openssl (3.0.0~~alpha13-2) experimental; urgency=medium
 
   * Add a proposed patch from upstream to skip negativ errno number in the

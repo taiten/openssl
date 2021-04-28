@@ -80,6 +80,8 @@ EVP_PKEY *evp_keymgmt_util_make_pkey(EVP_KEYMGMT *keymgmt, void *keydata)
 int evp_keymgmt_util_export(const EVP_PKEY *pk, int selection,
                             OSSL_CALLBACK *export_cb, void *export_cbarg)
 {
+    if (pk == NULL || export_cb == NULL)
+        return 0;
     return evp_keymgmt_export(pk->keymgmt, pk->keydata, selection,
                               export_cb, export_cbarg);
 }
@@ -101,7 +103,8 @@ void *evp_keymgmt_util_export_to_provider(EVP_PKEY *pk, EVP_KEYMGMT *keymgmt)
     if (pk->keymgmt == keymgmt)
         return pk->keydata;
 
-    CRYPTO_THREAD_read_lock(pk->lock);
+    if (!CRYPTO_THREAD_read_lock(pk->lock))
+        return NULL;
     /*
      * If the provider native "origin" hasn't changed since last time, we
      * try to find our keymgmt in the operation cache.  If it has changed
@@ -120,10 +123,6 @@ void *evp_keymgmt_util_export_to_provider(EVP_PKEY *pk, EVP_KEYMGMT *keymgmt)
     CRYPTO_THREAD_unlock(pk->lock);
 
     /* If the "origin" |keymgmt| doesn't support exporting, give up */
-    /*
-     * TODO(3.0) consider an evp_keymgmt_export() return value that indicates
-     * that the method is unsupported.
-     */
     if (pk->keymgmt->export == NULL)
         return NULL;
 
@@ -156,7 +155,10 @@ void *evp_keymgmt_util_export_to_provider(EVP_PKEY *pk, EVP_KEYMGMT *keymgmt)
         return NULL;
     }
 
-    CRYPTO_THREAD_write_lock(pk->lock);
+    if (!CRYPTO_THREAD_write_lock(pk->lock)) {
+        evp_keymgmt_freedata(keymgmt, import_data.keydata);
+        return NULL;
+    }
     /* Check to make sure some other thread didn't get there first */
     op = evp_keymgmt_util_find_operation_cache(pk, keymgmt);
     if (op != NULL && op->keydata != NULL) {
@@ -437,21 +439,12 @@ int evp_keymgmt_util_copy(EVP_PKEY *to, EVP_PKEY *from, int selection)
     if (to_keymgmt == NULL)
         to_keymgmt = from->keymgmt;
 
-    if (to_keymgmt == from->keymgmt && to_keymgmt->copy != NULL) {
-        /* Make sure there's somewhere to copy to */
-        if (to_keydata == NULL
-            && ((to_keydata = alloc_keydata = evp_keymgmt_newdata(to_keymgmt))
-                == NULL)) {
-            ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
-            return 0;
-        }
-
-        /*
-         * |to| and |from| have the same keymgmt, and the copy function is
-         * implemented, so just copy and be done
-         */
-        if (!evp_keymgmt_copy(to_keymgmt, to_keydata, from->keydata,
-                              selection))
+    if (to_keymgmt == from->keymgmt && to_keymgmt->dup != NULL
+        && to_keydata == NULL) {
+        to_keydata = alloc_keydata = evp_keymgmt_dup(to_keymgmt,
+                                                     from->keydata,
+                                                     selection);
+        if (to_keydata == NULL)
             return 0;
     } else if (match_type(to_keymgmt, from->keymgmt)) {
         struct evp_keymgmt_util_try_import_data_st import_data;
@@ -462,10 +455,8 @@ int evp_keymgmt_util_copy(EVP_PKEY *to, EVP_PKEY *from, int selection)
 
         if (!evp_keymgmt_util_export(from, selection,
                                      &evp_keymgmt_util_try_import,
-                                     &import_data)) {
-            evp_keymgmt_freedata(to_keymgmt, alloc_keydata);
+                                     &import_data))
             return 0;
-        }
 
         /*
          * In case to_keydata was previously unallocated,

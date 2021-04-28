@@ -23,7 +23,7 @@ Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
-index ef892b555aed..fa357dbbcb75 100644
+index f5e5754b3a6c..b27a60cf3923 100644
 --- a/Configurations/10-main.conf
 +++ b/Configurations/10-main.conf
 @@ -695,7 +695,7 @@ my %targets = (
@@ -36,10 +36,10 @@ index ef892b555aed..fa357dbbcb75 100644
      "linux-generic64" => {
          inherit_from     => [ "linux-generic32" ],
 diff --git a/Configure b/Configure
-index 5f2be9cf3c9e..7a3e25c026a4 100755
+index 613b48e7d9bf..70afd617f8e1 100755
 --- a/Configure
 +++ b/Configure
-@@ -1685,7 +1685,7 @@ unless ($disabled{devcryptoeng}) {
+@@ -1687,7 +1687,7 @@ unless ($disabled{devcryptoeng}) {
  
  unless ($disabled{ktls}) {
      $config{ktls}="";

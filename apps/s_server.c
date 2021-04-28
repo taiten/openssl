@@ -1610,7 +1610,9 @@ int s_server_main(int argc, char *argv[])
     if (argc != 0)
         goto opthelp;
 
-    app_RAND_load();
+    if (!app_RAND_load())
+        goto end;
+
 #ifndef OPENSSL_NO_NEXTPROTONEG
     if (min_version == TLS1_3_VERSION && next_proto_neg_in != NULL) {
         BIO_printf(bio_err, "Cannot supply -nextprotoneg with TLSv1.3\n");
@@ -1690,7 +1692,7 @@ int s_server_main(int argc, char *argv[])
         if (s_cert == NULL)
             goto end;
         if (s_chain_file != NULL) {
-            if (!load_certs(s_chain_file, &s_chain, NULL,
+            if (!load_certs(s_chain_file, 0, &s_chain, NULL,
                             "server certificate chain"))
                 goto end;
         }
@@ -1754,7 +1756,7 @@ int s_server_main(int argc, char *argv[])
             goto end;
         }
         if (s_dchain_file != NULL) {
-            if (!load_certs(s_dchain_file, &s_dchain, NULL,
+            if (!load_certs(s_dchain_file, 0, &s_dchain, NULL,
                             "second server certificate chain"))
                 goto end;
         }

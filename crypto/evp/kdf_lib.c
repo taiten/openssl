@@ -47,12 +47,12 @@ EVP_KDF_CTX *EVP_KDF_CTX_new(EVP_KDF *kdf)
 
 void EVP_KDF_CTX_free(EVP_KDF_CTX *ctx)
 {
-    if (ctx != NULL) {
-        ctx->meth->freectx(ctx->data);
-        ctx->data = NULL;
-        EVP_KDF_free(ctx->meth);
-        OPENSSL_free(ctx);
-    }
+    if (ctx == NULL)
+        return;
+    ctx->meth->freectx(ctx->data);
+    ctx->data = NULL;
+    EVP_KDF_free(ctx->meth);
+    OPENSSL_free(ctx);
 }
 
 EVP_KDF_CTX *EVP_KDF_CTX_dup(const EVP_KDF_CTX *src)
@@ -93,6 +93,11 @@ const char *EVP_KDF_name(const EVP_KDF *kdf)
     if (kdf->prov != NULL)
         return evp_first_name(kdf->prov, kdf->name_id);
     return NULL;
+}
+
+const char *EVP_KDF_description(const EVP_KDF *kdf)
+{
+    return kdf->description;
 }
 
 int EVP_KDF_is_a(const EVP_KDF *kdf, const char *name)

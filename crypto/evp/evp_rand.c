@@ -28,6 +28,7 @@
 struct evp_rand_st {
     OSSL_PROVIDER *prov;
     int name_id;
+    const char *description;
     CRYPTO_REF_COUNT refcnt;
     CRYPTO_RWLOCK *refcnt_lock;
 
@@ -61,18 +62,19 @@ static int evp_rand_up_ref(void *vrand)
     return 1;
 }
 
-static void evp_rand_free(void *vrand){
+static void evp_rand_free(void *vrand)
+{
     EVP_RAND *rand = (EVP_RAND *)vrand;
     int ref = 0;
 
-    if (rand != NULL) {
-        CRYPTO_DOWN_REF(&rand->refcnt, &ref, rand->refcnt_lock);
-        if (ref <= 0) {
-            ossl_provider_free(rand->prov);
-            CRYPTO_THREAD_lock_free(rand->refcnt_lock);
-            OPENSSL_free(rand);
-        }
-    }
+    if (rand == NULL)
+        return;
+    CRYPTO_DOWN_REF(&rand->refcnt, &ref, rand->refcnt_lock);
+    if (ref > 0)
+        return;
+    ossl_provider_free(rand->prov);
+    CRYPTO_THREAD_lock_free(rand->refcnt_lock);
+    OPENSSL_free(rand);
 }
 
 static void *evp_rand_new(void)
@@ -112,10 +114,11 @@ static void evp_rand_unlock(EVP_RAND_CTX *rand)
         rand->meth->unlock(rand->data);
 }
 
-static void *evp_rand_from_dispatch(int name_id,
-                                    const OSSL_DISPATCH *fns,
-                                    OSSL_PROVIDER *prov)
+static void *evp_rand_from_algorithm(int name_id,
+                                     const OSSL_ALGORITHM *algodef,
+                                     OSSL_PROVIDER *prov)
 {
+    const OSSL_DISPATCH *fns = algodef->implementation;
     EVP_RAND *rand = NULL;
     int fnrandcnt = 0, fnctxcnt = 0, fnlockcnt = 0, fnenablelockcnt = 0;
 #ifdef FIPS_MODULE
@@ -127,6 +130,7 @@ static void *evp_rand_from_dispatch(int name_id,
         return NULL;
     }
     rand->name_id = name_id;
+    rand->description = algodef->algorithm_description;
     rand->dispatch = fns;
     for (; fns->function_id != 0; fns++) {
         switch (fns->function_id) {
@@ -268,7 +272,7 @@ EVP_RAND *EVP_RAND_fetch(OSSL_LIB_CTX *libctx, const char *algorithm,
                          const char *properties)
 {
     return evp_generic_fetch(libctx, OSSL_OP_RAND, algorithm, properties,
-                             evp_rand_from_dispatch, evp_rand_up_ref,
+                             evp_rand_from_algorithm, evp_rand_up_ref,
                              evp_rand_free);
 }
 
@@ -290,6 +294,11 @@ int EVP_RAND_number(const EVP_RAND *rand)
 const char *EVP_RAND_name(const EVP_RAND *rand)
 {
     return evp_first_name(rand->prov, rand->name_id);
+}
+
+const char *EVP_RAND_description(const EVP_RAND *rand)
+{
+    return rand->description;
 }
 
 int EVP_RAND_is_a(const EVP_RAND *rand, const char *name)
@@ -361,21 +370,22 @@ EVP_RAND_CTX *EVP_RAND_CTX_new(EVP_RAND *rand, EVP_RAND_CTX *parent)
 
 void EVP_RAND_CTX_free(EVP_RAND_CTX *ctx)
 {
-    if (ctx != NULL) {
-        int ref = 0;
+    int ref = 0;
+    EVP_RAND_CTX *parent;
 
-        CRYPTO_DOWN_REF(&ctx->refcnt, &ref, ctx->refcnt_lock);
-        if (ref <= 0) {
-            EVP_RAND_CTX *parent = ctx->parent;
+    if (ctx == NULL)
+        return;
 
-            ctx->meth->freectx(ctx->data);
-            ctx->data = NULL;
-            EVP_RAND_free(ctx->meth);
-            CRYPTO_THREAD_lock_free(ctx->refcnt_lock);
-            OPENSSL_free(ctx);
-            EVP_RAND_CTX_free(parent);
-        }
-    }
+    CRYPTO_DOWN_REF(&ctx->refcnt, &ref, ctx->refcnt_lock);
+    if (ref > 0)
+        return;
+    parent = ctx->parent;
+    ctx->meth->freectx(ctx->data);
+    ctx->data = NULL;
+    EVP_RAND_free(ctx->meth);
+    CRYPTO_THREAD_lock_free(ctx->refcnt_lock);
+    OPENSSL_free(ctx);
+    EVP_RAND_CTX_free(parent);
 }
 
 EVP_RAND *EVP_RAND_CTX_rand(EVP_RAND_CTX *ctx)
@@ -389,7 +399,7 @@ static int evp_rand_get_ctx_params_locked(EVP_RAND_CTX *ctx,
     return ctx->meth->get_ctx_params(ctx->data, params);
 }
 
-int EVP_RAND_get_ctx_params(EVP_RAND_CTX *ctx, OSSL_PARAM params[])
+int EVP_RAND_CTX_get_params(EVP_RAND_CTX *ctx, OSSL_PARAM params[])
 {
     int res;
 
@@ -408,7 +418,7 @@ static int evp_rand_set_ctx_params_locked(EVP_RAND_CTX *ctx,
     return 1;
 }
 
-int EVP_RAND_set_ctx_params(EVP_RAND_CTX *ctx, const OSSL_PARAM params[])
+int EVP_RAND_CTX_set_params(EVP_RAND_CTX *ctx, const OSSL_PARAM params[])
 {
     int res;
 
@@ -472,7 +482,7 @@ void EVP_RAND_do_all_provided(OSSL_LIB_CTX *libctx,
 {
     evp_generic_do_all(libctx, OSSL_OP_RAND,
                        (void (*)(void *, void *))fn, arg,
-                       evp_rand_from_dispatch, evp_rand_free);
+                       evp_rand_from_algorithm, evp_rand_free);
 }
 
 int EVP_RAND_names_do_all(const EVP_RAND *rand,
@@ -645,7 +655,7 @@ int EVP_RAND_state(EVP_RAND_CTX *ctx)
     int state;
 
     params[0] = OSSL_PARAM_construct_int(OSSL_RAND_PARAM_STATE, &state);
-    if (!EVP_RAND_get_ctx_params(ctx, params))
+    if (!EVP_RAND_CTX_get_params(ctx, params))
         state = EVP_RAND_STATE_ERROR;
     return state;
 }

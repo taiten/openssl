@@ -22,19 +22,50 @@ I'm not aware of any query interface for this.
 
 Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 ---
- Configurations/10-main.conf | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Configurations/10-main.conf | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
-index fa357dbbcb75..2328c94b556f 100644
+index b27a60cf3923..343b0f51eeb4 100644
 --- a/Configurations/10-main.conf
 +++ b/Configurations/10-main.conf
-@@ -688,7 +688,7 @@ my %targets = (
-         cflags           => threads("-pthread"),
-         cxxflags         => combine("-std=c++11", threads("-pthread")),
-         lib_cppflags     => "-DOPENSSL_USE_NODELETE",
--        ex_libs          => add("-ldl", threads("-pthread")),
-+        ex_libs          => add("-ldl", threads("-pthread"), "-latomic"),
+@@ -706,6 +706,7 @@ my %targets = (
+         inherit_from     => [ "linux-generic32" ],
+         asm_arch         => 'ppc32',
+         perlasm_scheme   => "linux32",
++        ex_libs          => add("-latomic"),
+         lib_cppflags     => add("-DB_ENDIAN"),
+     },
+     "linux-ppc64" => {
+@@ -784,6 +785,7 @@ my %targets = (
+         cxxflags         => add("-mabi=32"),
+         asm_arch         => 'mips32',
+         perlasm_scheme   => "o32",
++        ex_libs          => add("-latomic"),
+     },
+     # mips32 and mips64 below refer to contemporary MIPS Architecture
+     # specifications, MIPS32 and MIPS64, rather than to kernel bitness.
+@@ -926,6 +928,7 @@ my %targets = (
+         cflags           => add("-mcpu=v8"),
+         cxxflags         => add("-mcpu=v8"),
+         lib_cppflags     => add("-DB_ENDIAN -DBN_DIV2W"),
++        ex_libs          => add("-latomic"),
+         asm_arch         => 'sparcv8',
+         perlasm_scheme   => 'void',
+     },
+@@ -935,6 +938,7 @@ my %targets = (
+         inherit_from     => [ "linux-generic32" ],
+         cflags           => add("-m32 -mcpu=ultrasparc -Wa,-Av8plus"),
+         cxxflags         => add("-m32 -mcpu=ultrasparc -Wa,-Av8plus"),
++        ex_libs          => add("-latomic"),
+         lib_cppflags     => add("-DB_ENDIAN -DBN_DIV2W"),
+         asm_arch         => 'sparcv9',
+         perlasm_scheme   => 'void',
+@@ -945,6 +949,7 @@ my %targets = (
+         cflags           => add("-m64 -mcpu=ultrasparc"),
+         cxxflags         => add("-m64 -mcpu=ultrasparc"),
+         lib_cppflags     => add("-DB_ENDIAN"),
++        ex_libs          => add("-latomic"),
          bn_ops           => "BN_LLONG RC4_CHAR",
-         thread_scheme    => "pthreads",
-         dso_scheme       => "dlfcn",
+         asm_arch         => 'sparcv9',
+         perlasm_scheme   => 'void',
