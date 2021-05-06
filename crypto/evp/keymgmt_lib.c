@@ -22,8 +22,7 @@
  */
 static int match_type(const EVP_KEYMGMT *keymgmt1, const EVP_KEYMGMT *keymgmt2)
 {
-    const OSSL_PROVIDER *prov2 = EVP_KEYMGMT_provider(keymgmt2);
-    const char *name2 = evp_first_name(prov2, EVP_KEYMGMT_number(keymgmt2));
+    const char *name2 = EVP_KEYMGMT_name(keymgmt2);
 
     return EVP_KEYMGMT_is_a(keymgmt1, name2);
 }
@@ -31,12 +30,15 @@ static int match_type(const EVP_KEYMGMT *keymgmt1, const EVP_KEYMGMT *keymgmt2)
 int evp_keymgmt_util_try_import(const OSSL_PARAM params[], void *arg)
 {
     struct evp_keymgmt_util_try_import_data_st *data = arg;
+    int delete_on_error = 0;
 
     /* Just in time creation of keydata */
-    if (data->keydata == NULL
-        && (data->keydata = evp_keymgmt_newdata(data->keymgmt)) == NULL) {
-        ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
-        return 0;
+    if (data->keydata == NULL) {
+        if ((data->keydata = evp_keymgmt_newdata(data->keymgmt)) == NULL) {
+            ERR_raise(ERR_LIB_EVP, ERR_R_MALLOC_FAILURE);
+            return 0;
+        }
+        delete_on_error = 1;
     }
 
     /*
@@ -46,8 +48,14 @@ int evp_keymgmt_util_try_import(const OSSL_PARAM params[], void *arg)
     if (params[0].key == NULL)
         return 1;
 
-    return evp_keymgmt_import(data->keymgmt, data->keydata, data->selection,
-                              params);
+    if (evp_keymgmt_import(data->keymgmt, data->keydata, data->selection,
+                           params))
+        return 1;
+    if (delete_on_error) {
+        evp_keymgmt_freedata(data->keymgmt, data->keydata);
+        data->keydata = NULL;
+    }
+    return 0;
 }
 
 int evp_keymgmt_util_assign_pkey(EVP_PKEY *pkey, EVP_KEYMGMT *keymgmt,
@@ -149,11 +157,9 @@ void *evp_keymgmt_util_export_to_provider(EVP_PKEY *pk, EVP_KEYMGMT *keymgmt)
      * which does the import for us.  If successful, we're done.
      */
     if (!evp_keymgmt_util_export(pk, OSSL_KEYMGMT_SELECT_ALL,
-                                 &evp_keymgmt_util_try_import, &import_data)) {
+                                 &evp_keymgmt_util_try_import, &import_data))
         /* If there was an error, bail out */
-        evp_keymgmt_freedata(keymgmt, import_data.keydata);
         return NULL;
-    }
 
     if (!CRYPTO_THREAD_write_lock(pk->lock)) {
         evp_keymgmt_freedata(keymgmt, import_data.keydata);

@@ -23,7 +23,7 @@ Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
-index f5e5754b3a6c..b27a60cf3923 100644
+index 8427a561e368..d58e45fcdba6 100644
 --- a/Configurations/10-main.conf
 +++ b/Configurations/10-main.conf
 @@ -695,7 +695,7 @@ my %targets = (
@@ -33,13 +33,13 @@ index f5e5754b3a6c..b27a60cf3923 100644
 -        enable           => [ "afalgeng" ],
 +        enable           => [ "afalgeng", "ktls" ],
      },
-     "linux-generic64" => {
-         inherit_from     => [ "linux-generic32" ],
+     "linux-generic32" => {
+         inherit_from     => [ "linux-generic" ],
 diff --git a/Configure b/Configure
-index 613b48e7d9bf..70afd617f8e1 100755
+index dc0b1924b76d..ded18087c60a 100755
 --- a/Configure
 +++ b/Configure
-@@ -1687,7 +1687,7 @@ unless ($disabled{devcryptoeng}) {
+@@ -1699,7 +1699,7 @@ unless ($disabled{devcryptoeng}) {
  
  unless ($disabled{ktls}) {
      $config{ktls}="";

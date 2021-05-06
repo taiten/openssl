@@ -32,7 +32,7 @@ static int verbose = 0;
 static int genrsa_cb(EVP_PKEY_CTX *ctx);
 
 typedef enum OPTION_choice {
-    OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
+    OPT_COMMON,
 #ifndef OPENSSL_NO_DEPRECATED_3_0
     OPT_3,
 #endif
@@ -134,8 +134,7 @@ opthelp:
             ciphername = opt_unknown();
             break;
         case OPT_PRIMES:
-            if (!opt_int(opt_arg(), &primes))
-                goto end;
+            primes = opt_int_arg();
             break;
         case OPT_VERBOSE:
             verbose = 1;

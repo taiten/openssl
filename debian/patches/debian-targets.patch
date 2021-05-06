@@ -3,16 +3,16 @@ Date: Sun, 5 Nov 2017 15:09:09 +0100
 Subject: debian-targets
 
 ---
- Configurations/20-debian.conf | 214 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 214 insertions(+)
+ Configurations/20-debian.conf | 215 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 215 insertions(+)
  create mode 100644 Configurations/20-debian.conf
 
 diff --git a/Configurations/20-debian.conf b/Configurations/20-debian.conf
 new file mode 100644
-index 000000000000..76f0fa8778ca
+index 000000000000..a060666a0f6a
 --- /dev/null
 +++ b/Configurations/20-debian.conf
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,215 @@
 +my %targets = (
 +	"debian" => {
 +		cflags => add("-Wa,--noexecstack -Wall"),
@@ -219,6 +219,7 @@ index 000000000000..76f0fa8778ca
 +		asm_arch         => 'sparcv9',
 +	        cflags => add("-m64 -mcpu=ultrasparc -DB_ENDIAN"),
 +		bn_ops => "BN_LLONG RC4_CHAR",
++		ex_libs => add("-latomic"),
 +	},
 +	"debian-tilegx" => {
 +		inherit_from => [ "linux-generic64", "debian" ],
