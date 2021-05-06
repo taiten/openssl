@@ -1,3 +1,10 @@
+openssl (3.0.0~~alpha16-1) experimental; urgency=medium
+
+  * Import 3.0.0-alpha16.
+  * Use VERBOSE_FAILURE to log only failures in the build log.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Thu, 06 May 2021 21:54:38 +0200
+
 openssl (3.0.0~~alpha15-1) experimental; urgency=medium
 
   * Import 3.0.0-alpha15.

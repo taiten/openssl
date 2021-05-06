@@ -1,5 +1,4 @@
 debian-targets.patch
-debian-targets-add-latomic.patch
 man-section.patch
 no-symbolic.patch
 pic.patch
@@ -7,4 +6,3 @@ c_rehash-compat.patch
 Set-systemwide-default-settings-for-libssl-users.patch
 TEST-Provide-a-default-openssl.cnf-for-tests.patch
 Configure-allow-to-enable-ktls-if-target-does-not-start-w.patch
-Configurations-Add-latomic-on-Linux.patch

@@ -43,7 +43,7 @@ static const char fmt_http_get_cmd[] = "GET %s HTTP/1.0\r\n\r\n";
 static const size_t fmt_http_get_cmd_size = sizeof(fmt_http_get_cmd) - 2;
 
 typedef enum OPTION_choice {
-    OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
+    OPT_COMMON,
     OPT_CONNECT, OPT_CIPHER, OPT_CIPHERSUITES, OPT_CERT, OPT_NAMEOPT, OPT_KEY,
     OPT_CAPATH, OPT_CAFILE, OPT_CASTORE,
     OPT_NOCAPATH, OPT_NOCAFILE, OPT_NOCASTORE,
@@ -154,8 +154,7 @@ int s_time_main(int argc, char **argv)
             perform = 1;
             break;
         case OPT_VERIFY:
-            if (!opt_int(opt_arg(), &verify_args.depth))
-                goto opthelp;
+            verify_args.depth = opt_int_arg();
             BIO_printf(bio_err, "%s: verify depth is %d\n",
                        prog, verify_args.depth);
             break;
@@ -197,8 +196,7 @@ int s_time_main(int argc, char **argv)
             st_bugs = 1;
             break;
         case OPT_TIME:
-            if (!opt_int(opt_arg(), &maxtime))
-                goto opthelp;
+            maxtime = opt_int_arg();
             break;
         case OPT_WWW:
             www_path = opt_arg();

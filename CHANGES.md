@@ -21,7 +21,63 @@ OpenSSL Releases
 OpenSSL 3.0
 -----------
 
-### Changes between 1.1.1 and 3.0 alpha 15 [22 Apr 2021]
+### Changes between 1.1.1 and 3.0 alpha 16 [6 May 2021]
+
+ * Add "abspath" and "includedir" pragma's to config files, to prevent,
+   or modify relative pathname inclusion.
+
+   * Rich Salz *
+
+ * OpenSSL includes a cryptographic module that is intended to be FIPS 140-2
+   validated. The module is implemented as an OpenSSL provider, the so-called
+   FIPS provider. A list of all changes related to the FIPS provider would go
+   beyond the scope of this CHANGES file, please consult the README-FIPS and
+   README-PROVIDERS files, as well as the migration guide.
+
+   The FIPS provider is disabled by default and needs to be enabled explicitly
+   at configuration time using the `enable-fips` option. If it is enabled,
+   the FIPS provider gets built and installed in addition to the default and
+   the legacy provider. No separate installation procedure is necessary.
+   There is however a dedicated `install_fips` make target, which serves the
+   special purpose of installing only the FIPS provider into an existing
+   OpenSSL installation.
+
+   *OpenSSL team members and many third party contributors*
+
+ * For the key types DH and DHX the allowed settable parameters are now different.
+   Previously (in 1.1.1) these conflicting parameters were allowed, but will now
+   result in errors. See EVP_PKEY-DH(7) for further details. This affects the
+   behaviour of openssl-genpkey(1) for DH parameter generation.
+
+   *Shane Lontis*
+
+ * The openssl commands that read keys, certificates, and CRLs now
+   automatically detect the PEM or DER format of the input files so it is not
+   necessary to explicitly specify the input format anymore. However if the
+   input format option is used the specified format will be required.
+
+   *David von Oheimb, Richard Levitte, and Tomáš Mráz*
+
+ * Added enhanced PKCS#12 APIs which accept a library context `OSSL_LIB_CTX`
+   and (where relevant) a property query. Other APIs which handle PKCS#7 and
+   PKCS#8 objects have also been enhanced where required. This includes:
+
+   PKCS12_add_key_ex(), PKCS12_add_safe_ex(), PKCS12_add_safes_ex(),
+   PKCS12_create_ex(), PKCS12_decrypt_skey_ex(), PKCS12_init_ex(),
+   PKCS12_item_decrypt_d2i_ex(), PKCS12_item_i2d_encrypt_ex(),
+   PKCS12_key_gen_asc_ex(), PKCS12_key_gen_uni_ex(), PKCS12_key_gen_utf8_ex(),
+   PKCS12_pack_p7encdata_ex(), PKCS12_pbe_crypt_ex(), PKCS12_PBE_keyivgen_ex(),
+   PKCS12_SAFEBAG_create_pkcs8_encrypt_ex(), PKCS5_pbe2_set_iv_ex(),
+   PKCS5_pbe_set0_algor_ex(), PKCS5_pbe_set_ex(), PKCS5_pbkdf2_set_ex(),
+   PKCS5_v2_PBE_keyivgen_ex(), PKCS5_v2_scrypt_keyivgen_ex(),
+   PKCS8_decrypt_ex(), PKCS8_encrypt_ex(), PKCS8_set0_pbe_ex().
+
+   As part of this change the EVP_PBE_xxx APIs can also accept a library
+   context and property query and will call an extended version of the key/IV
+   derivation function which supports these parameters. This includes
+   EVP_PBE_CipherInit_ex(), EVP_PBE_find_ex() and EVP_PBE_scrypt_ex().
+
+   *Jon Spillett*
 
  * The default manual page suffix ($MANSUFFIX) has been changed to "ossl"
 
@@ -32,6 +88,23 @@ OpenSSL 3.0
    also be enabled at run time using the SSL_OP_ENABLE_KTLS option.
 
    *Boris Pismenny, John Baldwin and Andrew Gallatin*
+
+ * Support for RFC 5746 secure renegotiation is now required by default for
+   SSL or TLS connections to succeed.  Applications that require the ability
+   to connect to legacy peers will need to explicitly set
+   SSL_OP_LEGACY_SERVER_CONNECT.  Accordingly, SSL_OP_LEGACY_SERVER_CONNECT
+   is no longer set as part of SSL_OP_ALL.
+
+   *Benjamin Kaduk*
+
+ * The signature of the `copy` functional parameter of the
+   EVP_PKEY_meth_set_copy() function has changed so its `src` argument is
+   now `const EVP_PKEY_CTX *` instead of `EVP_PKEY_CTX *`. Similarly
+   the signature of the `pub_decode` functional parameter of the
+   EVP_PKEY_asn1_set_public() function has changed so its `pub` argument is
+   now `const X509_PUBKEY *` instead of `X509_PUBKEY *`.
+
+   *David von Oheimb*
 
  * The error return values from some control calls (ctrl) have changed.
    One significant change is that controls which used to return -2 for
@@ -275,18 +348,24 @@ OpenSSL 3.0
 
  * Deprecated the type OCSP_REQ_CTX and the functions OCSP_REQ_CTX_new(),
    OCSP_REQ_CTX_free(), OCSP_REQ_CTX_http(), OCSP_REQ_CTX_add1_header(),
-   OCSP_REQ_CTX_i2d(), OCSP_REQ_CTX_nbio(), OCSP_REQ_CTX_nbio_d2i(),
+   OCSP_REQ_CTX_i2d() and its special form OCSP_REQ_CTX_set1_req(),
+   OCSP_REQ_CTX_nbio(), OCSP_REQ_CTX_nbio_d2i(),
    OCSP_REQ_CTX_get0_mem_bio() and OCSP_set_max_response_length().  These
    were used to collect all necessary data to form a HTTP request, and to
    perform the HTTP transfer with that request.  With OpenSSL 3.0, the
    type is OSSL_HTTP_REQ_CTX, and the deprecated functions are replaced
    with OSSL_HTTP_REQ_CTX_new(), OSSL_HTTP_REQ_CTX_free(),
    OSSL_HTTP_REQ_CTX_set_request_line(), OSSL_HTTP_REQ_CTX_add1_header(),
-   OSSL_HTTP_REQ_CTX_set1_req(), OSSL_HTTP_REQ_CTX_nbio(),
+   OSSL_HTTP_REQ_CTX_i2d(), OSSL_HTTP_REQ_CTX_nbio(),
    OSSL_HTTP_REQ_CTX_sendreq_d2i(), OSSL_HTTP_REQ_CTX_get0_mem_bio() and
    OSSL_HTTP_REQ_CTX_set_max_response_length().
 
    *Rich Salz and Richard Levitte*
+
+ * Deprecated `X509_http_nbio()` and `X509_CRL_http_nbio()`,
+   which are superseded by `X509_load_http()` and `X509_CRL_load_http()`.
+
+   *David von Oheimb*
 
  * Deprecated `OCSP_parse_url()`, which is replaced with `OSSL_HTTP_parse_url`.
 
@@ -560,14 +639,13 @@ OpenSSL 3.0
 
    *Richard Levitte*
 
- * Renamed `EVP_PKEY_cmp()` to `EVP_PKEY_eq()` and
-   `EVP_PKEY_cmp_parameters()` to `EVP_PKEY_parameters_eq()`.
-   While the old function names have been retained for backward compatibility
-   they should not be used in new developments
-   because their return values are confusing: Unlike other `_cmp()` functions
-   they do not return 0 in case their arguments are equal.
+ * Deprecated `EVP_PKEY_cmp()` and `EVP_PKEY_cmp_parameters()` since their
+   return values were confusing: Unlike other `_cmp()` functions
+   they do not return 0 when their arguments are equal.
+   The new replacement functions `EVP_PKEY_eq()` and `EVP_PKEY_parameters_eq()`
+   should be used.
 
-   *David von Oheimb*
+   *David von Oheimb and Shane Lontis*
 
  * Deprecated `EC_METHOD_get_field_type()`. Applications should switch to
    `EC_GROUP_get_field_type()`.
@@ -1717,6 +1795,10 @@ OpenSSL 3.0
    - OPENSSL_fork_child()
 
    *Randall S. Becker*
+
+ * Added support for FFDHE key exchange in TLS 1.3.
+
+   *Raja Ashok*
 
 OpenSSL 1.1.1
 -------------
