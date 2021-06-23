@@ -96,6 +96,7 @@ static void fips_prov_ossl_ctx_free(void *fgbl)
 }
 
 static const OSSL_LIB_CTX_METHOD fips_prov_ossl_ctx_method = {
+    OSSL_LIB_CTX_METHOD_DEFAULT_PRIORITY,
     fips_prov_ossl_ctx_new,
     fips_prov_ossl_ctx_free,
 };
@@ -517,10 +518,26 @@ static const OSSL_DISPATCH intern_dispatch_table[] = {
     { 0, NULL }
 };
 
-int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
-                       const OSSL_DISPATCH *in,
-                       const OSSL_DISPATCH **out,
-                       void **provctx)
+/*
+ * On VMS, the provider init function name is expected to be uppercase,
+ * see the pragmas in <openssl/core.h>.  Let's do the same with this
+ * internal name.  This is how symbol names are treated by default
+ * by the compiler if nothing else is said, but since this is part
+ * of libfips, and we build our libraries with mixed case symbol names,
+ * we must switch back to this default explicitly here.
+ */
+#ifdef __VMS
+# pragma names save
+# pragma names uppercase,truncated
+#endif
+OSSL_provider_init_fn OSSL_provider_init_int;
+#ifdef __VMS
+# pragma names restore
+#endif
+int OSSL_provider_init_int(const OSSL_CORE_HANDLE *handle,
+                           const OSSL_DISPATCH *in,
+                           const OSSL_DISPATCH **out,
+                           void **provctx)
 {
     FIPS_GLOBAL *fgbl;
     OSSL_LIB_CTX *libctx = NULL;
@@ -646,8 +663,6 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
         OSSL_LIB_CTX_free(libctx);
         goto err;
     }
-    ossl_prov_ctx_set0_libctx(*provctx, libctx);
-    ossl_prov_ctx_set0_handle(*provctx, handle);
 
     if ((fgbl = ossl_lib_ctx_get_data(libctx, OSSL_LIB_CTX_FIPS_PROV_INDEX,
                                       &fips_prov_ossl_ctx_method)) == NULL)
@@ -668,17 +683,17 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
 
     if (!fips_get_params_from_core(fgbl)) {
         /* Error already raised */
-        return 0;
+        goto err;
     }
     /*
-     * Disable the conditional error check if is disabled in the fips config
-     * file
+     * Disable the conditional error check if it's disabled in the fips config
+     * file.
      */
     if (fgbl->selftest_params.conditional_error_check != NULL
         && strcmp(fgbl->selftest_params.conditional_error_check, "0") == 0)
         SELF_TEST_disable_conditional_error_state();
 
-    /* Disable the security check if is disabled in the fips config file */
+    /* Disable the security check if it's disabled in the fips config file. */
     if (fgbl->fips_security_check_option != NULL
         && strcmp(fgbl->fips_security_check_option, "0") == 0)
         fgbl->fips_security_checks = 0;
@@ -689,6 +704,9 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
         ERR_raise(ERR_LIB_PROV, PROV_R_SELF_TEST_POST_FAILURE);
         goto err;
     }
+
+    ossl_prov_ctx_set0_libctx(*provctx, libctx);
+    ossl_prov_ctx_set0_handle(*provctx, handle);
 
     *out = fips_dispatch_table;
     return 1;

@@ -26,6 +26,7 @@
 #include "internal/cryptlib.h"
 #include "internal/o_dir.h"
 #include "crypto/decoder.h"
+#include "crypto/ctype.h"        /* ossl_isdigit() */
 #include "prov/implementations.h"
 #include "prov/bio.h"
 #include "file_store_local.h"
@@ -517,6 +518,7 @@ static int file_load_file(struct file_ctx_st *ctx,
                           OSSL_PASSPHRASE_CALLBACK *pw_cb, void *pw_cbarg)
 {
     struct file_load_data_st data;
+    int ret, err;
 
     /* Setup the decoders (one time shot per session */
 
@@ -532,7 +534,16 @@ static int file_load_file(struct file_ctx_st *ctx,
 
     /* Launch */
 
-    return OSSL_DECODER_from_bio(ctx->_.file.decoderctx, ctx->_.file.file);
+    ERR_set_mark();
+    ret = OSSL_DECODER_from_bio(ctx->_.file.decoderctx, ctx->_.file.file);
+    if (BIO_eof(ctx->_.file.file)
+        && ((err = ERR_peek_last_error()) != 0)
+        && ERR_GET_LIB(err) == ERR_LIB_OSSL_DECODER
+        && ERR_GET_REASON(err) == ERR_R_UNSUPPORTED)
+        ERR_pop_to_mark();
+    else
+        ERR_clear_last_mark();
+    return ret;
 }
 
 /*-

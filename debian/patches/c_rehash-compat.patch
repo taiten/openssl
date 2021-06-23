@@ -7,7 +7,7 @@ Subject: [PATCH] also create old hash for compatibility
  1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/tools/c_rehash.in b/tools/c_rehash.in
-index 1566d141d3b0..7ef840ab9f31 100644
+index 54cad6138b7b..440b59b5d7c3 100644
 --- a/tools/c_rehash.in
 +++ b/tools/c_rehash.in
 @@ -17,8 +17,6 @@ my $prefix = {- quotify1($config{prefix}) -};
