@@ -1,3 +1,11 @@
+openssl (3.0.0~~beta1-1) experimental; urgency=medium
+
+  * Import 3.0.0-beta1.
+  * Use HARNESS_VERBOSE again (otherwise the test suite might killed since no
+    progress is visible).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 23 Jun 2021 19:32:27 +0200
+
 openssl (3.0.0~~alpha16-1) experimental; urgency=medium
 
   * Import 3.0.0-alpha16.

@@ -11,8 +11,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "e_os.h" /* strcasecmp and struct stat */
 #ifdef __TANDEM
-# include <strings.h> /* strcasecmp */
 # include <sys/types.h> /* needed for stat.h */
 # include <sys/stat.h> /* struct stat */
 #endif
@@ -21,6 +21,7 @@
 #include <openssl/lhash.h>
 #include <openssl/conf.h>
 #include <openssl/conf_api.h>
+#include "conf_local.h"
 #include "conf_def.h"
 #include <openssl/buffer.h>
 #include <openssl/err.h>
@@ -28,7 +29,6 @@
 # include <sys/stat.h>
 # ifdef _WIN32
 #  define stat    _stat
-#  define strcasecmp _stricmp
 # endif
 #endif
 

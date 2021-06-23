@@ -23,23 +23,23 @@ Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
-index 8427a561e368..d58e45fcdba6 100644
+index 468698a366d3..8943df1d536b 100644
 --- a/Configurations/10-main.conf
 +++ b/Configurations/10-main.conf
-@@ -695,7 +695,7 @@ my %targets = (
+@@ -697,7 +697,7 @@ my %targets = (
          shared_target    => "linux-shared",
          shared_cflag     => "-fPIC",
          shared_ldflag    => sub { $disabled{pinshared} ? () : "-Wl,-znodelete" },
 -        enable           => [ "afalgeng" ],
 +        enable           => [ "afalgeng", "ktls" ],
      },
-     "linux-generic32" => {
-         inherit_from     => [ "linux-generic" ],
+     "linux-latomic" => {
+         inherit_from     => [ "linux-generic32" ],
 diff --git a/Configure b/Configure
-index dc0b1924b76d..ded18087c60a 100755
+index 2181d34a211e..f8a4f41ee1dd 100755
 --- a/Configure
 +++ b/Configure
-@@ -1699,7 +1699,7 @@ unless ($disabled{devcryptoeng}) {
+@@ -1714,7 +1714,7 @@ unless ($disabled{devcryptoeng}) {
  
  unless ($disabled{ktls}) {
      $config{ktls}="";

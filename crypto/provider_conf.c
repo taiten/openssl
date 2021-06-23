@@ -45,6 +45,8 @@ static void prov_conf_ossl_ctx_free(void *vpcgbl)
 }
 
 static const OSSL_LIB_CTX_METHOD provider_conf_ossl_ctx_method = {
+    /* Must be freed before the provider store is freed */
+    OSSL_LIB_CTX_METHOD_PRIORITY_2,
     prov_conf_ossl_ctx_new,
     prov_conf_ossl_ctx_free,
 };
@@ -162,7 +164,7 @@ static int provider_conf_load(OSSL_LIB_CTX *libctx, const char *name,
     ok = provider_conf_params(prov, NULL, value, cnf);
 
     if (ok && activate) {
-        if (!ossl_provider_activate(prov, 0)) {
+        if (!ossl_provider_activate(prov, 0, 1)) {
             ok = 0;
         } else {
             if (pcgbl->activated_providers == NULL)
@@ -197,7 +199,8 @@ static int provider_conf_init(CONF_IMODULE *md, const CONF *cnf)
 
     for (i = 0; i < sk_CONF_VALUE_num(elist); i++) {
         cval = sk_CONF_VALUE_value(elist, i);
-        if (!provider_conf_load(cnf->libctx, cval->name, cval->value, cnf))
+        if (!provider_conf_load(NCONF_get0_libctx((CONF *)cnf),
+                    cval->name, cval->value, cnf))
             return 0;
     }
 
