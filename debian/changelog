@@ -1,3 +1,9 @@
+openssl (3.0.0~~beta2-1) experimental; urgency=medium
+
+  * Import 3.0.0-beta2.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Fri, 30 Jul 2021 07:51:18 +0200
+
 openssl (3.0.0~~beta1-1) experimental; urgency=medium
 
   * Import 3.0.0-beta1.
