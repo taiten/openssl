@@ -28,7 +28,13 @@ breaking changes, and mappings for the large list of deprecated functions.
 
 [Migration guide]: https://github.com/openssl/openssl/tree/master/doc/man7/migration_guide.pod
 
-### Changes between 1.1.1 and 3.0 beta 1 [17 Jun 2021]
+### Changes between 1.1.1 and 3.0 beta 2 [29 Jul 2021]
+
+ * The ERR_GET_FUNC() function was removed.  With the loss of meaningful
+   function codes, this function can only cause problems for calling
+   applications.
+
+   *Paul Dale*
 
  * Add a configurable flag to output date formats as ISO 8601. Does not
    change the default date format.
@@ -285,6 +291,15 @@ breaking changes, and mappings for the large list of deprecated functions.
    *Rich Salz*
 
  * Deprecated the obsolete X9.31 RSA key generation related functions.
+
+ * While a callback function set via `SSL_CTX_set_cert_verify_callback()`
+   is not allowed to return a value > 1, this is no more taken as failure.
+
+   *Viktor Dukhovni and David von Oheimb*
+
+ * Deprecated the obsolete X9.31 RSA key generation related functions
+   BN_X931_generate_Xpq(), BN_X931_derive_prime_ex(), and
+   BN_X931_generate_prime_ex().
 
    *Tomáš Mráz*
 
@@ -1060,6 +1075,8 @@ breaking changes, and mappings for the large list of deprecated functions.
 
  * Removed the function names from error messages and deprecated the
    xxx_F_xxx define's.
+
+   *Richard Levitte*
 
  * Removed NextStep support and the macro OPENSSL_UNISTD
 
