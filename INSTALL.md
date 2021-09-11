@@ -296,7 +296,7 @@ API Level
 Build the OpenSSL libraries to support the API for the specified version.
 If [no-deprecated](#no-deprecated) is also given, don't build with support
 for deprecated APIs in or below the specified version number.  For example,
-addding
+adding
 
     --api=1.1.0 no-deprecated
 
@@ -350,9 +350,13 @@ Directories
 
 The name of the directory under the top of the installation directory tree
 (see the `--prefix` option) where libraries will be installed.  By default
-this is `lib/`. Note that on Windows only static libraries (`*.lib`) will
+this is `lib`. Note that on Windows only static libraries (`*.lib`) will
 be stored in this location. Shared libraries (`*.dll`) will always be
-installed to the `bin/` directory.
+installed to the `bin` directory.
+
+Some build targets have a multilib postfix set in the build configuration.
+For these targets the default libdir is `lib<multilib-postfix>`. Please use
+`--libdir=lib` to override the libdir if adding the postfix is undesirable.
 
 ### openssldir
 
@@ -582,6 +586,13 @@ alternative, you can use the language specific variables, `CFLAGS` and `CXXFLAGS
 
 Use the specified text instead of the default banner at the end of
 configuration.
+
+### --w
+
+On platforms where the choice of 32-bit or 64-bit architecture
+is not explicitly specified, `Configure` will print a warning
+message and wait for a few seconds to let you interrupt the
+configuration. Using this flag skips the wait.
 
 ### no-bulk
 
@@ -1138,11 +1149,9 @@ Configure OpenSSL
 
 ### Automatic Configuration
 
-On some platform a `config` script is available which attempts to guess
-your operating system (and compiler, if necessary) and calls the `Configure`
-Perl script with appropriate target based on its guess.  Further options can
-be supplied to the `config` script, which will be passed on to the `Configure`
-script.
+In previous version, the `config` script determined the platform type and
+compiler and then called `Configure`. Starting with this release, they are
+the same.
 
 #### Unix / Linux / macOS
 
@@ -1407,6 +1416,18 @@ over the build process.  Typically these should be defined prior to running
                    "--cross-compile-prefix" Configure flag described above. If both
                    are set then the Configure flag takes precedence.
 
+    HASHBANGPERL
+                   The command string for the Perl executable to insert in the
+                   #! line of perl scripts that will be publicly installed.
+                   Default: /usr/bin/env perl
+                   Note: the value of this variable is added to the same scripts
+                   on all platforms, but it's only relevant on Unix-like platforms.
+
+    KERNEL_BITS
+                   This can be the value `32` or `64` to specify the architecture
+                   when it is not "obvious" to the configuration. It should generally
+                   not be necessary to specify this environment variable.
+
     NM
                    The name of the nm executable to use.
 
@@ -1431,12 +1452,8 @@ over the build process.  Typically these should be defined prior to running
                    Only needed if builing should use a different Perl executable
                    than what is used to run the Configure script.
 
-    HASHBANGPERL
-                   The command string for the Perl executable to insert in the
-                   #! line of perl scripts that will be publicly installed.
-                   Default: /usr/bin/env perl
-                   Note: the value of this variable is added to the same scripts
-                   on all platforms, but it's only relevant on Unix-like platforms.
+    RANLIB
+                   The name of the ranlib executable to use.
 
     RC
                    The name of the rc executable to use. The default will be as
@@ -1444,9 +1461,6 @@ over the build process.  Typically these should be defined prior to running
                    defined then "windres" will be used. The WINDRES environment
                    variable is synonymous to this. If both are defined then RC
                    takes precedence.
-
-    RANLIB
-                   The name of the ranlib executable to use.
 
     WINDRES
                    See RC.

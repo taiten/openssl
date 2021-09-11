@@ -251,6 +251,9 @@ static const OSSL_ALGORITHM_CAPABLE deflt_ciphers[] = {
     ALG(PROV_NAMES_CAMELLIA_256_CBC, ossl_camellia256cbc_functions),
     ALG(PROV_NAMES_CAMELLIA_192_CBC, ossl_camellia192cbc_functions),
     ALG(PROV_NAMES_CAMELLIA_128_CBC, ossl_camellia128cbc_functions),
+    ALG(PROV_NAMES_CAMELLIA_128_CBC_CTS, ossl_camellia128cbc_cts_functions),
+    ALG(PROV_NAMES_CAMELLIA_192_CBC_CTS, ossl_camellia192cbc_cts_functions),
+    ALG(PROV_NAMES_CAMELLIA_256_CBC_CTS, ossl_camellia256cbc_cts_functions),
     ALG(PROV_NAMES_CAMELLIA_256_OFB, ossl_camellia256ofb_functions),
     ALG(PROV_NAMES_CAMELLIA_192_OFB, ossl_camellia192ofb_functions),
     ALG(PROV_NAMES_CAMELLIA_128_OFB, ossl_camellia128ofb_functions),
@@ -320,6 +323,8 @@ static const OSSL_ALGORITHM deflt_macs[] = {
 
 static const OSSL_ALGORITHM deflt_kdfs[] = {
     { PROV_NAMES_HKDF, "provider=default", ossl_kdf_hkdf_functions },
+    { PROV_NAMES_TLS1_3_KDF, "provider=default",
+      ossl_kdf_tls1_3_kdf_functions },
     { PROV_NAMES_SSKDF, "provider=default", ossl_kdf_sskdf_functions },
     { PROV_NAMES_PBKDF2, "provider=default", ossl_kdf_pbkdf2_functions },
     { PROV_NAMES_PKCS12KDF, "provider=default", ossl_kdf_pkcs12_functions },

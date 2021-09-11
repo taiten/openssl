@@ -3,16 +3,16 @@ Date: Sun, 5 Nov 2017 15:09:09 +0100
 Subject: debian-targets
 
 ---
- Configurations/20-debian.conf | 215 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 215 insertions(+)
+ Configurations/20-debian.conf | 218 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 218 insertions(+)
  create mode 100644 Configurations/20-debian.conf
 
 diff --git a/Configurations/20-debian.conf b/Configurations/20-debian.conf
 new file mode 100644
-index 000000000000..947ab025ac49
+index 000000000000..f776cf7f5af1
 --- /dev/null
 +++ b/Configurations/20-debian.conf
-@@ -0,0 +1,215 @@
+@@ -0,0 +1,218 @@
 +my %targets = (
 +	"debian" => {
 +		cflags => add("-Wa,--noexecstack -Wall"),
@@ -27,6 +27,9 @@ index 000000000000..947ab025ac49
 +	"debian-alpha-ev5" => {
 +		inherit_from => [ "debian-alpha" ],
 +		cflags => add("-mcpu=ev5"),
++	},
++	"debian-arc" => {
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-arm64" => {
 +		inherit_from => [ "linux-aarch64", "debian" ],

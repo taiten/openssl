@@ -14,6 +14,7 @@
 #include <openssl/provider.h>
 #include <openssl/param_build.h>
 #include <openssl/core_names.h>
+#include <openssl/sha.h>
 #include "crypto/ecx.h"
 #include "crypto/evp.h"          /* For the internal API */
 #include "crypto/bn_dh.h"        /* _bignum_ffdhe2048_p */
@@ -524,6 +525,37 @@ static int test_fromdata_dh_named_group(void)
     if (!TEST_true(EVP_PKEY_fromdata_init(ctx))
         || !TEST_true(EVP_PKEY_fromdata(ctx, &pk, EVP_PKEY_KEYPAIR,
                                         fromdata_params)))
+        goto err;
+
+    /*
+     * A few extra checks of EVP_PKEY_get_utf8_string_param() to see that
+     * it behaves as expected with regards to string length and terminating
+     * NUL byte.
+     */
+    if (!TEST_true(EVP_PKEY_get_utf8_string_param(pk,
+                                                  OSSL_PKEY_PARAM_GROUP_NAME,
+                                                  NULL, sizeof(name_out),
+                                                  &len))
+        || !TEST_size_t_eq(len, sizeof(group_name) - 1)
+        /* Just enough space to hold the group name and a terminating NUL */
+        || !TEST_true(EVP_PKEY_get_utf8_string_param(pk,
+                                                     OSSL_PKEY_PARAM_GROUP_NAME,
+                                                     name_out,
+                                                     sizeof(group_name),
+                                                     &len))
+        || !TEST_size_t_eq(len, sizeof(group_name) - 1)
+        /* Too small buffer to hold the terminating NUL byte */
+        || !TEST_false(EVP_PKEY_get_utf8_string_param(pk,
+                                                      OSSL_PKEY_PARAM_GROUP_NAME,
+                                                      name_out,
+                                                      sizeof(group_name) - 1,
+                                                      &len))
+        /* Too small buffer to hold the whole group name, even! */
+        || !TEST_false(EVP_PKEY_get_utf8_string_param(pk,
+                                                      OSSL_PKEY_PARAM_GROUP_NAME,
+                                                      name_out,
+                                                      sizeof(group_name) - 2,
+                                                      &len)))
         goto err;
 
     while (dup_pk == NULL) {
@@ -1591,6 +1623,52 @@ static int test_check_dsa(void)
 #endif /* OPENSSL_NO_DSA */
 
 
+static OSSL_PARAM *do_construct_hkdf_params(char *digest, char *key,
+                                            size_t keylen, char *salt)
+{
+    OSSL_PARAM *params = OPENSSL_malloc(sizeof(OSSL_PARAM) * 5);
+    OSSL_PARAM *p = params;
+
+    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, digest, 0);
+    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT,
+                                             salt, strlen(salt));
+    *p++ = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_KEY,
+                                             (unsigned char *)key, keylen);
+    *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE,
+                                            "EXTRACT_ONLY", 0);
+    *p = OSSL_PARAM_construct_end();
+
+    return params;
+}
+
+/* Test that EVP_PKEY_CTX_dup() fails gracefully for a KDF */
+static int test_evp_pkey_ctx_dup_kdf_fail(void)
+{
+    int ret = 0;
+    size_t len = 0;
+    EVP_PKEY_CTX *pctx = NULL, *dctx = NULL;
+    OSSL_PARAM *params = NULL;
+
+    if (!TEST_ptr(params = do_construct_hkdf_params("sha256", "secret", 6,
+                                                    "salt")))
+        goto err;
+    if (!TEST_ptr(pctx = EVP_PKEY_CTX_new_from_name(NULL, "HKDF", NULL)))
+        goto err;
+    if (!TEST_int_eq(EVP_PKEY_derive_init_ex(pctx, params), 1))
+        goto err;
+    if (!TEST_int_eq(EVP_PKEY_derive(pctx, NULL, &len), 1)
+        || !TEST_size_t_eq(len, SHA256_DIGEST_LENGTH))
+        goto err;
+    if (!TEST_ptr_null(dctx = EVP_PKEY_CTX_dup(pctx)))
+        goto err;
+    ret = 1;
+err:
+    OPENSSL_free(params);
+    EVP_PKEY_CTX_free(dctx);
+    EVP_PKEY_CTX_free(pctx);
+    return ret;
+}
+
 int setup_tests(void)
 {
     if (!test_skip_common_options()) {
@@ -1601,6 +1679,7 @@ int setup_tests(void)
     if (!TEST_ptr(datadir = test_get_argument(0)))
         return 0;
 
+    ADD_TEST(test_evp_pkey_ctx_dup_kdf_fail);
     ADD_TEST(test_evp_pkey_get_bn_param_large);
     ADD_TEST(test_fromdata_rsa);
 #ifndef OPENSSL_NO_DH
