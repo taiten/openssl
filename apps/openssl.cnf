@@ -23,6 +23,9 @@ config_diagnostics = 1
 # oid_file       = $ENV::HOME/.oid
 oid_section = new_oids
 
+# System default
+openssl_conf = default_conf
+
 # To use this configuration file with the "-extfile" option of the
 # "openssl x509" utility, name here the section containing the
 # X.509v3 extensions to use:
@@ -388,3 +391,13 @@ oldcert = $insta::certout # insta.cert.pem
 # Certificate revocation
 cmd = rr
 oldcert = $insta::certout # insta.cert.pem
+
+[default_conf]
+ssl_conf = ssl_sect
+
+[ssl_sect]
+system_default = system_default_sect
+
+[system_default_sect]
+MinProtocol = TLSv1.2
+CipherString = DEFAULT@SECLEVEL=2
