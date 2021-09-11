@@ -36,10 +36,10 @@ index 468698a366d3..8943df1d536b 100644
      "linux-latomic" => {
          inherit_from     => [ "linux-generic32" ],
 diff --git a/Configure b/Configure
-index 2264e090c5e9..f655d0ef39ae 100755
+index b00b91ac63f5..702493a26deb 100755
 --- a/Configure
 +++ b/Configure
-@@ -1714,7 +1714,7 @@ unless ($disabled{devcryptoeng}) {
+@@ -1716,7 +1716,7 @@ unless ($disabled{devcryptoeng}) {
  
  unless ($disabled{ktls}) {
      $config{ktls}="";

@@ -1,3 +1,10 @@
+openssl (3.0.0-1) experimental; urgency=medium
+
+  * Import 3.0.0.
+  * Add avr32, patch by Vineet Gupta (Closes: #989442).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sat, 11 Sep 2021 10:41:54 +0200
+
 openssl (3.0.0~~beta2-1) experimental; urgency=medium
 
   * Import 3.0.0-beta2.
