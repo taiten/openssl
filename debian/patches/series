@@ -1,8 +1,16 @@
+# Debian patches
 debian-targets.patch
 man-section.patch
 no-symbolic.patch
 pic.patch
 c_rehash-compat.patch
-Set-systemwide-default-settings-for-libssl-users.patch
+# Remove Set-systemwide-default-settings-for-libssl-users.patch, this is done differently
 TEST-Provide-a-default-openssl.cnf-for-tests.patch
 Configure-allow-to-enable-ktls-if-target-does-not-start-w.patch
+# Ubuntu patches
+tests-use-seclevel-1.patch
+tls1.2-min-seclevel2.patch
+
+#Upstream backports
+Don-t-create-an-ECX-key-with-short-keys.patch
+Add-null-digest-implementation-to-the-default-provid.patch

@@ -3,16 +3,13 @@ Date: Sun, 5 Nov 2017 15:09:09 +0100
 Subject: debian-targets
 
 ---
- Configurations/20-debian.conf | 218 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 218 insertions(+)
+ Configurations/20-debian.conf | 215 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 215 insertions(+)
  create mode 100644 Configurations/20-debian.conf
 
-diff --git a/Configurations/20-debian.conf b/Configurations/20-debian.conf
-new file mode 100644
-index 000000000000..f776cf7f5af1
 --- /dev/null
 +++ b/Configurations/20-debian.conf
-@@ -0,0 +1,218 @@
+@@ -0,0 +1,215 @@
 +my %targets = (
 +	"debian" => {
 +		cflags => add("-Wa,--noexecstack -Wall"),
@@ -27,9 +24,6 @@ index 000000000000..f776cf7f5af1
 +	"debian-alpha-ev5" => {
 +		inherit_from => [ "debian-alpha" ],
 +		cflags => add("-mcpu=ev5"),
-+	},
-+	"debian-arc" => {
-+		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-arm64" => {
 +		inherit_from => [ "linux-aarch64", "debian" ],
@@ -71,7 +65,7 @@ index 000000000000..f776cf7f5af1
 +		inherit_from => [ "linux-ia64", "debian" ],
 +	},
 +	"debian-m68k" => {
-+		inherit_from => [ "linux-latomic", "debian" ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +		cflags => add("-DB_ENDIAN"),
 +	},
 +	"debian-mips" => {
@@ -181,9 +175,9 @@ index 000000000000..f776cf7f5af1
 +	},
 +	"debian-ppc64" => {
 +		inherit_from => [ "linux-generic64", "debian", ],
-+		asm_arch         => 'ppc64',
++ 		asm_arch         => 'ppc64',
 +		cflags => add("-DB_ENDIAN"),
-+		perlasm_scheme => "linux64",
++ 		perlasm_scheme => "linux64",
 +	},
 +	"debian-ppc64el" => {
 +		inherit_from => [ "linux-ppc64le", "debian" ],
@@ -198,19 +192,19 @@ index 000000000000..f776cf7f5af1
 +		inherit_from => [ "linux64-s390x", "debian" ],
 +	},
 +	"debian-sh3" => {
-+		inherit_from => [ "linux-latomic", "debian" ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-sh3eb" => {
-+		inherit_from => [ "linux-latomic", "debian" ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-sh4" => {
-+		inherit_from => [ "linux-latomic", "debian" ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-sh4eb" => {
-+		inherit_from => [ "linux-latomic", "debian" ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-m32r" => {
-+		inherit_from => [ "linux-latomic", "debian" ],
++		inherit_from => [ "linux-generic32", "debian" ],
 +	},
 +	"debian-sparc" => {
 +		inherit_from => [ "linux-generic32", "debian", ],

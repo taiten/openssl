@@ -12,6 +12,7 @@ include /usr/share/dpkg/architecture.mk
 include /usr/share/dpkg/pkg-info.mk
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all future=+lfs
+export DEB_CFLAGS_MAINT_APPEND = -DOPENSSL_TLS_SECURITY_LEVEL=2
 
 SHELL=/bin/bash
 
@@ -111,6 +112,8 @@ override_dh_auto_install-indep:
 	fi
 
 override_dh_auto_install-arch:
+	# We need the -udeb directories now!
+	dh_installdirs
 	$(MAKE) -C build_shared install DESTDIR=`pwd`/debian/tmp
 	# pic static libraries, nobody should need them
 	cp -pf build_static/libcrypto.a debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypto.a
@@ -118,10 +121,12 @@ override_dh_auto_install-arch:
 	mkdir -p debian/tmp/etc/ssl
 	mv debian/tmp/usr/lib/ssl/{certs,openssl.cnf,private} debian/tmp/etc/ssl/
 	ln -s /etc/ssl/{certs,openssl.cnf,private} debian/tmp/usr/lib/ssl/
+ifeq (,$(filter noudeb,$(DEB_BUILD_PROFILES)))
 	cp -pf debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypto.so.* debian/libcrypto3-udeb/usr/lib/
 	cp -pf debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/ossl-modules/*.so debian/libcrypto3-udeb/usr/lib/ossl-modules
 	cp -pf debian/tmp/etc/ssl/openssl.cnf debian/libcrypto3-udeb/usr/lib/ssl/openssl.cnf
 	cp -pf debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/libssl.so.* debian/libssl3-udeb/usr/lib/
+endif
 	cp -auv build_shared/lib*.so* debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/
 	for opt in $(OPTS); \
 		do set -xe; \
@@ -140,6 +145,15 @@ override_dh_fixperms:
 		chmod 700 debian/openssl/etc/ssl/private ; \
 	fi
 	dh_fixperms -a -X etc/ssl/private
+
+override_dh_compress:
+	dh_compress
+	# symlink doc files
+	for p in openssl libssl-dev; do \
+	  for f in changelog.Debian.gz changelog.gz copyright; do \
+	    ln -sf ../libssl3/$$f debian/$$p/usr/share/doc/$$p/$$f; \
+	  done; \
+	done
 
 override_dh_perl:
 	dh_perl -d

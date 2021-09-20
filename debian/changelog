@@ -1,3 +1,39 @@
+openssl (3.0.0-1ubuntu1) jammy; urgency=medium
+
+  * Manual merge of version 3.0.0-1 from Debian experimental, remaining
+    changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers, unless needrestart is available.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+      + Skip services restart & reboot notification if needrestart is in-use.
+      + Bump version check to to 1.1.1.
+      + Import libraries/restart-without-asking template as used by above.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Reword the NEWS entry, as applicable on Ubuntu.
+    - Set OPENSSL_TLS_SECURITY_LEVEL=2 as compiled-in minimum security
+      level. Change meaning of SECURITY_LEVEL=2 to prohibit TLS versions
+      below 1.2 and update documentation. Previous default of 1, can be set
+      by calling SSL_CTX_set_security_level(), SSL_set_security_level() or
+      using ':@SECLEVEL=1' CipherString value in openssl.cfg.
+    - Add support for building with noudeb build profile.
+  * d/p/Don-t-create-an-ECX-key-with-short-keys.patch:
+    Backported from upstream to fix a regression with short keys (LP: #1946213)
+  * d/p/Add-null-digest-implementation-to-the-default-provid.patch:
+    Backported from upstream to fix a compatibility issue with 1.1.1l
+  * Manually call dh_installdirs to fix build failure
+  * Drop some Ubuntu patches merged upstream
+    + The s390x series (00xx) has been applied upstream
+    + The lp-1927161 Intel CET series has been applied upstream
+    + CVE-2021-3449 has been fixed upstream
+    + CVE-2021-3450 doesn't apply to 3.0 branch
+  * Refresh and adapt the remaining patches
+
+ -- Simon Chopin <simon.chopin@canonical.com>  Mon, 20 Sep 2021 18:09:50 +0200
+
 openssl (3.0.0-1) experimental; urgency=medium
 
   * Import 3.0.0.
@@ -72,12 +108,239 @@ openssl (3.0.0~~alpha1-1) experimental; urgency=medium
 
  -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sat, 25 Apr 2020 23:08:44 +0200
 
+openssl (1.1.1j-1ubuntu4) impish; urgency=medium
+
+  * Split d/p/pr12272.patch into multiple patchfiles to fix dpkg-source
+    error when attempting to build a source package, due to pr12272.patch
+    patching files multiple times within the same patch. (LP: #1927161)
+    - d/p/lp-1927161-1-x86-Add-endbranch-to-indirect-branch-targets-fo.patch
+    - d/p/lp-1927161-2-Use-swapcontext-for-Intel-CET.patch
+    - d/p/lp-1927161-3-x86-Always-generate-note-gnu-property-section-f.patch
+    - d/p/lp-1927161-4-x86_64-Always-generate-note-gnu-property-sectio.patch
+    - d/p/lp-1927161-5-x86_64-Add-endbranch-at-function-entries-for-In.patch 
+
+ -- Matthew Ruffell <matthew.ruffell@canonical.com>  Wed, 05 May 2021 11:49:27 +1200
+
+openssl (1.1.1j-1ubuntu3) hirsute; urgency=medium
+
+  * SECURITY UPDATE: NULL pointer deref in signature_algorithms processing
+    - debian/patches/CVE-2021-3449-1.patch: fix NULL pointer dereference in
+      ssl/statem/extensions.c.
+    - debian/patches/CVE-2021-3449-2.patch: teach TLSProxy how to encrypt
+      <= TLSv1.2 ETM records in util/perl/TLSProxy/Message.pm.
+    - debian/patches/CVE-2021-3449-3.patch: add a test to
+      test/recipes/70-test_renegotiation.t.
+    - debian/patches/CVE-2021-3449-4.patch: ensure buffer/length pairs are
+      always in sync in ssl/s3_lib.c, ssl/ssl_lib.c,
+      ssl/statem/extensions.c, ssl/statem/extensions_clnt.c,
+      ssl/statem/statem_clnt.c, ssl/statem/statem_srvr.c.
+    - CVE-2021-3449
+  * SECURITY UPDATE: CA cert check bypass with X509_V_FLAG_X509_STRICT
+    - debian/patches/CVE-2021-3450-1.patch: do not override error return
+      value by check_curve in crypto/x509/x509_vfy.c,
+      test/verify_extra_test.c.
+    - debian/patches/CVE-2021-3450-2.patch: fix return code check in
+      crypto/x509/x509_vfy.c.
+    - CVE-2021-3450
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 25 Mar 2021 11:44:30 -0400
+
+openssl (1.1.1j-1ubuntu2) hirsute; urgency=medium
+
+  * No-change upload to pick up lto.
+
+ -- Matthias Klose <doko@ubuntu.com>  Tue, 23 Mar 2021 15:24:20 +0100
+
+openssl (1.1.1j-1ubuntu1) hirsute; urgency=medium
+
+  * Merge from Debian unstable.  Remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers, unless needrestart is available.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+      + Skip services restart & reboot notification if needrestart is in-use.
+      + Bump version check to to 1.1.1.
+      + Import libraries/restart-without-asking template as used by above.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Reword the NEWS entry, as applicable on Ubuntu.
+    - Cherrypick s390x SIMD acceleration patches for poly1305 and chacha20
+      and ECC from master.
+    - Use perl:native in the autopkgtest for installability on i386.
+    - Set OPENSSL_TLS_SECURITY_LEVEL=2 as compiled-in minimum security
+      level. Change meaning of SECURITY_LEVEL=2 to prohibit TLS versions
+      below 1.2 and update documentation. Previous default of 1, can be set
+      by calling SSL_CTX_set_security_level(), SSL_set_security_level() or
+      using ':@SECLEVEL=1' CipherString value in openssl.cfg.
+    - Import https://github.com/openssl/openssl/pull/12272.patch to enable
+      CET.
+  * Add support for building with noudeb build profile.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 23 Feb 2021 22:01:12 +0000
+
+openssl (1.1.1j-1) unstable; urgency=medium
+
+  * New upstream version.
+   - CVE-2021-23841 (NULL pointer deref in X509_issuer_and_serial_hash()).
+   - CVE-2021-23840 (Possible overflow of the output length argument in
+     EVP_CipherUpdate(), EVP_EncryptUpdate() and EVP_DecryptUpdate()).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 16 Feb 2021 20:50:01 +0100
+
+openssl (1.1.1i-3ubuntu2) hirsute; urgency=medium
+
+  * No-change rebuild to drop the udeb package.
+
+ -- Matthias Klose <doko@ubuntu.com>  Mon, 22 Feb 2021 10:35:47 +0100
+
+openssl (1.1.1i-3ubuntu1) hirsute; urgency=medium
+
+  * Merge from Debian unstable.  Remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers, unless needrestart is available.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+      + Skip services restart & reboot notification if needrestart is in-use.
+      + Bump version check to to 1.1.1.
+      + Import libraries/restart-without-asking template as used by above.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Reword the NEWS entry, as applicable on Ubuntu.
+    - Cherrypick s390x SIMD acceleration patches for poly1305 and chacha20
+      and ECC from master.
+    - Use perl:native in the autopkgtest for installability on i386.
+    - Set OPENSSL_TLS_SECURITY_LEVEL=2 as compiled-in minimum security
+      level. Change meaning of SECURITY_LEVEL=2 to prohibit TLS versions
+      below 1.2 and update documentation. Previous default of 1, can be set
+      by calling SSL_CTX_set_security_level(), SSL_set_security_level() or
+      using ':@SECLEVEL=1' CipherString value in openssl.cfg.
+    - Import https://github.com/openssl/openssl/pull/12272.patch to enable
+      CET.
+
+  * Drop many patches included upstream.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 08 Feb 2021 11:08:21 +0000
+
+openssl (1.1.1i-3) unstable; urgency=medium
+
+  * Cherry-pick a patch from upstream to address #13931.
+  * Enable LFS. Thanks to Dan Nicholson for debugging (Closes: #923479).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sat, 30 Jan 2021 14:06:46 +0100
+
+openssl (1.1.1i-2) unstable; urgency=medium
+
+  * Apply two patches from upstream to address x509 related regressions.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sun, 17 Jan 2021 20:08:26 +0100
+
+openssl (1.1.1i-1) unstable; urgency=medium
+
+  * New upstream version.
+    - CVE-2020-1971 (EDIPARTYNAME NULL pointer de-reference).
+    - Restore rejection of expired trusted (root) certificate
+      (Closes: #976465).
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 08 Dec 2020 20:32:32 +0100
+
+openssl (1.1.1h-1) unstable; urgency=medium
+
+  * New upstream version
+  * Disable CAPI engine, it is designed for Windows.
+
+ -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sun, 11 Oct 2020 00:00:47 +0200
+
 openssl (1.1.1g-1) unstable; urgency=medium
 
   * New upstream version
     - CVE-2020-1967 (Segmentation fault in SSL_check_chain).
 
  -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Tue, 21 Apr 2020 21:45:21 +0200
+
+openssl (1.1.1f-1ubuntu5) hirsute; urgency=medium
+
+  * SECURITY UPDATE: EDIPARTYNAME NULL pointer de-ref
+    - debian/patches/CVE-2020-1971-1.patch: use explicit tagging for
+      DirectoryString in crypto/x509v3/v3_genn.c.
+    - debian/patches/CVE-2020-1971-2.patch: correctly compare EdiPartyName
+      in crypto/x509v3/v3_genn.c.
+    - debian/patches/CVE-2020-1971-3.patch: check that multi-strings/CHOICE
+      types don't use implicit tagging in crypto/asn1/asn1_err.c,
+      crypto/asn1/tasn_dec.c, crypto/err/openssl.txt,
+      include/openssl/asn1err.h.
+    - debian/patches/CVE-2020-1971-4.patch: complain if we are attempting
+      to encode with an invalid ASN.1 template in crypto/asn1/asn1_err.c,
+      crypto/asn1/tasn_enc.c, crypto/err/openssl.txt,
+      include/openssl/asn1err.h.
+    - debian/patches/CVE-2020-1971-5.patch: add a test for GENERAL_NAME_cmp
+      in test/v3nametest.c.
+    - debian/patches/CVE-2020-1971-6.patch: add a test for
+      encoding/decoding using an invalid ASN.1 Template in
+      test/asn1_decode_test.c, test/asn1_encode_test.c.
+    - CVE-2020-1971
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Tue, 08 Dec 2020 12:33:52 -0500
+
+openssl (1.1.1f-1ubuntu4) groovy; urgency=medium
+
+  * Cherrypick upstream fix for non-interactive detection on Linux. LP:
+    #1879826
+  * Cherrypick AES CTR-DRGB: performance improvement LP: #1799928
+  * Skip services restart & reboot notification if needrestart is in-use
+    LP: #1895708
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 15 Sep 2020 18:04:36 +0100
+
+openssl (1.1.1f-1ubuntu3) groovy; urgency=medium
+
+  * Import https://github.com/openssl/openssl/pull/12272.patch to enable
+    CET.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Thu, 25 Jun 2020 14:18:43 +0100
+
+openssl (1.1.1f-1ubuntu2) focal; urgency=medium
+
+  * SECURITY UPDATE: Segmentation fault in SSL_check_chain
+    - debian/patches/CVE-2020-1967-1.patch: add test for CVE-2020-1967 in
+      test/recipes/70-test_sslsigalgs.t.
+    - debian/patches/CVE-2020-1967-2.patch: fix NULL dereference in
+      SSL_check_chain() for TLS 1.3 in ssl/t1_lib.c.
+    - debian/patches/CVE-2020-1967-3.patch: fix test in
+      test/recipes/70-test_sslsigalgs.t.
+    - debian/patches/CVE-2020-1967-4.patch: fix test in
+      test/recipes/70-test_sslsigalgs.t.
+    - CVE-2020-1967
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Mon, 20 Apr 2020 07:53:50 -0400
+
+openssl (1.1.1f-1ubuntu1) focal; urgency=low
+
+  * Merge from Debian unstable.  Remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+      + Bump version check to to 1.1.1.
+      + Import libraries/restart-without-asking template as used by above.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Reword the NEWS entry, as applicable on Ubuntu.
+    - Cherrypick s390x SIMD acceleration patches for poly1305 and chacha20
+      and ECC from master.
+    - Use perl:native in the autopkgtest for installability on i386.
+    - Set OPENSSL_TLS_SECURITY_LEVEL=2 as compiled-in minimum security
+      level. Change meaning of SECURITY_LEVEL=2 to prohibit TLS versions
+      below 1.2 and update documentation. Previous default of 1, can be set
+      by calling SSL_CTX_set_security_level(), SSL_set_security_level() or
+      using ':@SECLEVEL=1' CipherString value in openssl.cfg.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Fri, 03 Apr 2020 18:31:00 +0100
 
 openssl (1.1.1f-1) unstable; urgency=medium
 
@@ -99,6 +362,50 @@ openssl (1.1.1e-1) unstable; urgency=medium
 
  -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Wed, 18 Mar 2020 20:59:39 +0100
 
+openssl (1.1.1d-2ubuntu6) focal; urgency=medium
+
+  * Revert version number change to 1.1.1e-dev.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Fri, 06 Mar 2020 04:08:51 +0000
+
+openssl (1.1.1d-2ubuntu4) focal; urgency=medium
+
+  * Apply 1_1_1-stable branch patches
+  * Apply s390x ECC assembly pack improvements
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 26 Feb 2020 21:54:47 +0000
+
+openssl (1.1.1d-2ubuntu3) focal; urgency=medium
+
+  * Use perl:native in the autopkgtest for installability on i386.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Thu, 16 Jan 2020 14:15:26 +0000
+
+openssl (1.1.1d-2ubuntu2) focal; urgency=low
+
+  * Merge from Debian unstable.  Remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+      + Bump version check to to 1.1.1.
+      + Import libraries/restart-without-asking template as used by above.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Reword the NEWS entry, as applicable on Ubuntu.
+    - Cherrypick s390x SIMD acceleration patches for poly1305 and chacha20
+      from master.
+
+  * Set OPENSSL_TLS_SECURITY_LEVEL=2 as compiled-in minimum security
+    level. Change meaning of SECURITY_LEVEL=2 to prohibit TLS versions
+    below 1.2 and update documentation. Previous default of 1, can be set
+    by calling SSL_CTX_set_security_level(), SSL_set_security_level() or
+    using ':@SECLEVEL=1' CipherString value in openssl.cfg.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 08 Jan 2020 17:17:41 +0000
+
 openssl (1.1.1d-2) unstable; urgency=medium
 
   * Reenable AES-CBC-HMAC-SHA ciphers (Closes: #941987).
@@ -117,6 +424,47 @@ openssl (1.1.1d-1) unstable; urgency=medium
 
  -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sat, 14 Sep 2019 00:38:12 +0200
 
+openssl (1.1.1c-1ubuntu4) eoan; urgency=medium
+
+  * Cherrypick s390x SIMD acceleration patches for poly1305 and chacha20
+    from master. LP: #1736705 LP: #1736704
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 20 Aug 2019 12:46:33 +0100
+
+openssl (1.1.1c-1ubuntu3) eoan; urgency=medium
+
+  * Import libraries/restart-without-asking as used in postinst, to
+    prevent failure to configure the package without debconf database. LP:
+    #1832919
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Thu, 20 Jun 2019 17:59:55 +0100
+
+openssl (1.1.1c-1ubuntu2) eoan; urgency=medium
+
+  * Bump major version of OpenSSL in postinst to trigger services restart
+    upon upgrade. Many services listed there must be restarted when
+    upgrading 1.1.0 to 1.1.1. LP: #1832522
+  * Fix path to Xorg for reboot notifications on desktop. LP: #1832421
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Thu, 13 Jun 2019 15:29:07 +0100
+
+openssl (1.1.1c-1ubuntu1) eoan; urgency=low
+
+  * Merge from Debian unstable.  Remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Drop the NEWS entry, not applicable on Ubuntu.
+  * Cherrypick upstream patch to fix ca -spkac output to be text again
+    LP: #1828215
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 10 Jun 2019 18:11:35 +0100
+
 openssl (1.1.1c-1) unstable; urgency=medium
 
   * New upstream version
@@ -125,6 +473,21 @@ openssl (1.1.1c-1) unstable; urgency=medium
 
  -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Thu, 30 May 2019 17:27:48 +0200
 
+openssl (1.1.1b-2ubuntu1) devel; urgency=medium
+
+  * Merge from Debian unstable, remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Drop the NEWS entry, not applicable on Ubuntu.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 17 Apr 2019 17:26:42 +0100
+
 openssl (1.1.1b-2) unstable; urgency=medium
 
   * Fix BUF_MEM regression (Closes: #923516)
@@ -132,6 +495,33 @@ openssl (1.1.1b-2) unstable; urgency=medium
   * Ship an openssl.cnf in libssl1.1-udeb.dirs
 
  -- Kurt Roeckx <kurt@roeckx.be>  Tue, 16 Apr 2019 21:31:11 +0200
+
+openssl (1.1.1b-1ubuntu2) disco; urgency=medium
+
+  * debian/rules: Ship openssl.cnf in libssl1.1-udeb, as required to use
+    OpenSSL by other udebs, e.g. wget-udeb. LP: #1822898
+
+  * Drop debian/patches/UBUNTU-lower-tls-security-level-for-compat.patch
+    to revert TLS_SECURITY_LEVEL back to 1. LP: #1822984
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 03 Apr 2019 11:50:23 +0100
+
+openssl (1.1.1b-1ubuntu1) disco; urgency=medium
+
+  * Merge from Debian unstable, remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Further decrease security level from 1 to 0, for compatibility with
+      openssl 1.0.2.
+    - Drop the NEWS entry, not applicable on Ubuntu.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 27 Feb 2019 18:13:17 -0500
 
 openssl (1.1.1b-1) unstable; urgency=medium
 
@@ -143,6 +533,28 @@ openssl (1.1.1b-1) unstable; urgency=medium
   * Update symbol list
 
  -- Kurt Roeckx <kurt@roeckx.be>  Tue, 26 Feb 2019 19:52:12 +0100
+
+openssl (1.1.1a-1ubuntu2) disco; urgency=medium
+
+  * Drop the NEWS entry, not applicable on Ubuntu.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 28 Nov 2018 14:24:28 +0000
+
+openssl (1.1.1a-1ubuntu1) disco; urgency=medium
+
+  * Merge from Debian unstable, remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Further decrease security level from 1 to 0, for compatibility with
+      openssl 1.0.2.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Wed, 28 Nov 2018 14:06:04 +0000
 
 openssl (1.1.1a-1) unstable; urgency=medium
 
@@ -166,6 +578,28 @@ openssl (1.1.1-2) unstable; urgency=medium
     (Closes: #875423, #907631, #911389, #912067).
 
  -- Sebastian Andrzej Siewior <sebastian@breakpoint.cc>  Sun, 28 Oct 2018 23:52:24 +0100
+
+openssl (1.1.1-1ubuntu2) cosmic; urgency=medium
+
+  * Fixup typpos in the autopkgtest binary name.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Tue, 25 Sep 2018 15:41:07 +0100
+
+openssl (1.1.1-1ubuntu1) cosmic; urgency=medium
+
+  * Merge from Debian unstable, remaining changes:
+    - Replace duplicate files in the doc directory with symlinks.
+    - debian/libssl1.1.postinst:
+      + Display a system restart required notification on libssl1.1
+        upgrade on servers.
+      + Use a different priority for libssl1.1/restart-services depending
+        on whether a desktop, or server dist-upgrade is being performed.
+    - Revert "Enable system default config to enforce TLS1.2 as a
+      minimum" & "Increase default security level from 1 to 2".
+    - Further decrease security level from 1 to 0, for compatibility with
+      openssl 1.0.2.
+
+ -- Dimitri John Ledkov <xnox@ubuntu.com>  Mon, 17 Sep 2018 13:24:38 +0100
 
 openssl (1.1.1-1) unstable; urgency=medium
 
@@ -2469,3 +2903,4 @@ ssleay (0.6.4-1) unstable; urgency=low
   * Initial Release.
 
  -- Christoph Martin <martin@uni-mainz.de>  Fri, 22 Nov 1996 21:29:51 +0100
+

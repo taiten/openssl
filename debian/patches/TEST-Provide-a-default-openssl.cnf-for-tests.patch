@@ -12,9 +12,6 @@ Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
  2 files changed, 354 insertions(+), 1 deletion(-)
  create mode 100644 test/openssl.cnf
 
-diff --git a/test/openssl.cnf b/test/openssl.cnf
-new file mode 100644
-index 000000000000..4fd5286d2e25
 --- /dev/null
 +++ b/test/openssl.cnf
 @@ -0,0 +1,353 @@
@@ -371,11 +368,9 @@ index 000000000000..4fd5286d2e25
 +# Certificate revocation
 +cmd = rr
 +oldcert = $insta::certout # insta.cert.pem
-diff --git a/test/run_tests.pl b/test/run_tests.pl
-index 4899356a6ee8..311a1fe97e11 100644
 --- a/test/run_tests.pl
 +++ b/test/run_tests.pl
-@@ -33,7 +33,7 @@ my $recipesdir = catdir($srctop, "test", "recipes");
+@@ -33,7 +33,7 @@
  my $libdir = rel2abs(catdir($srctop, "util", "perl"));
  my $jobs = $ENV{HARNESS_JOBS} // 1;
  

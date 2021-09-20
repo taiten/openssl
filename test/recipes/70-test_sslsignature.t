@@ -103,8 +103,8 @@ SKIP: {
         $proxy->clear();
         $testtype = CORRUPT_TLS1_2_SERVER_KEY_EXCHANGE;
         $proxy->clientflags("-no_tls1_3");
-        $proxy->cipherc('DHE-RSA-AES128-SHA');
-        $proxy->ciphers('DHE-RSA-AES128-SHA');
+        $proxy->cipherc('DHE-RSA-AES128-SHA:\@SECLEVEL=1');
+        $proxy->ciphers('DHE-RSA-AES128-SHA:\@SECLEVEL=1');
         $proxy->start();
         ok(TLSProxy::Message->fail, "Corrupt <=TLSv1.2 ServerKeyExchange");
     }

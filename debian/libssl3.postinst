@@ -56,8 +56,10 @@ filerc() {
 
 if [ "$1" = "configure" ]
 then
-    if [ ! -z "$2" ]; then
-	if dpkg --compare-versions "$2" lt 1.0.1g-2; then
+    if [ ! -z "$2" ] && [ ! -x /usr/lib/needrestart/apt-pinvoke ] ; then
+	# This triggers services restarting, so limit this to major upgrades
+	# only. Security updates should not restart services automatically.
+	if dpkg --compare-versions "$2" lt 1.1.1-1ubuntu2.1~18.04.2; then
             echo -n "Checking for services that may need to be restarted..."
             check="amanda-server anon-proxy apache2 apache-ssl"
             check="$check apf-firewall asterisk bacula-director-common"
@@ -102,7 +104,7 @@ then
               ")
             echo "done."
 	fi
-	if dpkg --compare-versions "$2" lt 1.0.1g-3; then
+	if dpkg --compare-versions "$2" lt 1.1.1-1ubuntu2.1~18.04.2; then
             echo -n "Checking for services that may need to be restarted..."
             check2="chef chef-expander chef-server-api"
             check2="$check2 chef-solr pound postgresql-common"
@@ -153,6 +155,11 @@ then
 			db_reset libssl3/restart-services
 			db_set libssl3/restart-services "$services"
 			db_input critical libssl3/restart-services || true
+			if [ "$RELEASE_UPGRADE_MODE" = desktop ]; then
+			    db_input medium libssl3/restart-services || true
+			else
+			    db_input critical libssl3/restart-services || true
+			fi
 			db_go || true
 			db_get libssl3/restart-services
 
@@ -201,6 +208,18 @@ then
 	    # restarted services keep a connection open to it
 	    db_stop
 	fi # end upgrading and $2 lt 0.9.8c-2
+
+	# Here we issue the reboot notification for upgrades and
+	# security updates. We do want services to be restarted when we
+	# update for a security issue, but planned by the sysadmin, not
+	# automatically.
+
+	# Only issue the reboot notification for servers; we proxy this by
+	# testing that the X server is not running (LP: #244250)
+	if ! pidof /usr/lib/xorg/Xorg > /dev/null && [ -x /usr/share/update-notifier/notify-reboot-required ]; then
+		/usr/share/update-notifier/notify-reboot-required
+	fi
+
     fi # Upgrading
 fi
 

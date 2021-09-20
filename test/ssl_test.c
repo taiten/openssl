@@ -409,6 +409,7 @@ static int test_handshake(int idx)
 #ifndef OPENSSL_NO_DTLS
     if (test_ctx->method == SSL_TEST_METHOD_DTLS) {
         server_ctx = SSL_CTX_new_ex(libctx, NULL, DTLS_server_method());
+        SSL_CTX_set_security_level(server_ctx, 1);
         if (!TEST_true(SSL_CTX_set_options(server_ctx,
                         SSL_OP_ALLOW_CLIENT_RENEGOTIATION))
                 || !TEST_true(SSL_CTX_set_max_proto_version(server_ctx, 0)))
@@ -420,19 +421,23 @@ static int test_handshake(int idx)
                     || !TEST_true(SSL_CTX_set_options(server2_ctx,
                             SSL_OP_ALLOW_CLIENT_RENEGOTIATION)))
                 goto err;
+            SSL_CTX_set_security_level(server2_ctx, 1);
         }
         client_ctx = SSL_CTX_new_ex(libctx, NULL, DTLS_client_method());
+        SSL_CTX_set_security_level(client_ctx, 1);
         if (!TEST_true(SSL_CTX_set_max_proto_version(client_ctx, 0)))
             goto err;
         if (test_ctx->handshake_mode == SSL_TEST_HANDSHAKE_RESUME) {
             resume_server_ctx = SSL_CTX_new_ex(libctx, NULL,
                                                DTLS_server_method());
+            SSL_CTX_set_security_level(resume_server_ctx, 1);
             if (!TEST_true(SSL_CTX_set_max_proto_version(resume_server_ctx, 0))
                     || !TEST_true(SSL_CTX_set_options(resume_server_ctx,
                             SSL_OP_ALLOW_CLIENT_RENEGOTIATION)))
                 goto err;
             resume_client_ctx = SSL_CTX_new_ex(libctx, NULL,
                                                DTLS_client_method());
+            SSL_CTX_set_security_level(resume_client_ctx, 1);
             if (!TEST_true(SSL_CTX_set_max_proto_version(resume_client_ctx, 0)))
                 goto err;
             if (!TEST_ptr(resume_server_ctx)
@@ -452,6 +457,7 @@ static int test_handshake(int idx)
 #endif
 
         server_ctx = SSL_CTX_new_ex(libctx, NULL, TLS_server_method());
+        SSL_CTX_set_security_level(server_ctx, 1);
         if (!TEST_true(SSL_CTX_set_max_proto_version(server_ctx, maxversion))
                 || !TEST_true(SSL_CTX_set_options(server_ctx,
                             SSL_OP_ALLOW_CLIENT_RENEGOTIATION)))
@@ -464,17 +470,20 @@ static int test_handshake(int idx)
                     || !TEST_true(SSL_CTX_set_options(server2_ctx,
                             SSL_OP_ALLOW_CLIENT_RENEGOTIATION)))
                 goto err;
+            SSL_CTX_set_security_level(server2_ctx, 1);
             if (!TEST_true(SSL_CTX_set_max_proto_version(server2_ctx,
                                                          maxversion)))
                 goto err;
         }
         client_ctx = SSL_CTX_new_ex(libctx, NULL, TLS_client_method());
+        SSL_CTX_set_security_level(client_ctx, 1);
         if (!TEST_true(SSL_CTX_set_max_proto_version(client_ctx, maxversion)))
             goto err;
 
         if (test_ctx->handshake_mode == SSL_TEST_HANDSHAKE_RESUME) {
             resume_server_ctx = SSL_CTX_new_ex(libctx, NULL,
                                                TLS_server_method());
+            SSL_CTX_set_security_level(resume_server_ctx, 1);
             if (!TEST_true(SSL_CTX_set_max_proto_version(resume_server_ctx,
                                                          maxversion))
                     || !TEST_true(SSL_CTX_set_options(resume_server_ctx,
@@ -482,6 +491,7 @@ static int test_handshake(int idx)
                 goto err;
             resume_client_ctx = SSL_CTX_new_ex(libctx, NULL,
                                                TLS_client_method());
+            SSL_CTX_set_security_level(resume_client_ctx, 1);
             if (!TEST_true(SSL_CTX_set_max_proto_version(resume_client_ctx,
                                                          maxversion)))
                 goto err;
