@@ -6,11 +6,9 @@ Subject: [PATCH] also create old hash for compatibility
  tools/c_rehash.in | 20 ++++++++++++++------
  1 file changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/tools/c_rehash.in b/tools/c_rehash.in
-index 54cad6138b7b..440b59b5d7c3 100644
 --- a/tools/c_rehash.in
 +++ b/tools/c_rehash.in
-@@ -17,8 +17,6 @@ my $prefix = {- quotify1($config{prefix}) -};
+@@ -17,8 +17,6 @@
  my $errorcount = 0;
  my $openssl = $ENV{OPENSSL} || "openssl";
  my $pwd;
@@ -19,7 +17,7 @@ index 54cad6138b7b..440b59b5d7c3 100644
  my $verbose = 0;
  my $symlink_exists=eval {symlink("",""); 1};
  my $removelinks = 1;
-@@ -27,10 +25,7 @@ my $removelinks = 1;
+@@ -27,10 +25,7 @@
  while ( $ARGV[0] =~ /^-/ ) {
      my $flag = shift @ARGV;
      last if ( $flag eq '--');
@@ -31,7 +29,7 @@ index 54cad6138b7b..440b59b5d7c3 100644
  	    help();
      } elsif ( $flag eq '-n' ) {
  	    $removelinks = 0;
-@@ -128,7 +123,9 @@ sub hash_dir {
+@@ -128,7 +123,9 @@
  			next;
  		}
  		link_hash_cert($fname) if ($cert);
@@ -41,7 +39,7 @@ index 54cad6138b7b..440b59b5d7c3 100644
  	}
  }
  
-@@ -161,6 +158,7 @@ sub check_file {
+@@ -161,6 +158,7 @@
  
  sub link_hash_cert {
  		my $fname = $_[0];
@@ -49,7 +47,7 @@ index 54cad6138b7b..440b59b5d7c3 100644
  		$fname =~ s/\"/\\\"/g;
  		my ($hash, $fprint) = `"$openssl" x509 $x509hash -fingerprint -noout -in "$fname"`;
  		chomp $hash;
-@@ -198,10 +196,20 @@ sub link_hash_cert {
+@@ -198,10 +196,20 @@
  		$hashlist{$hash} = $fprint;
  }
  

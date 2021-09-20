@@ -1,0 +1,65 @@
+From 8c97fcbdf7c7b274a855e54466c38c8522f23a22 Mon Sep 17 00:00:00 2001
+From: Matt Caswell <matt@openssl.org>
+Date: Mon, 15 Nov 2021 12:14:03 +0000
+Subject: [PATCH 1/2] Don't create an ECX key with short keys
+Origin: https://github.com/openssl/openssl/pull/17041
+Bug: https://github.com/openssl/openssl/issues/17017
+
+If an ECX key is created and the private key is too short, a fromdata
+call would create the key, and then later detect the error and report it
+after freeing the key. However freeing the key was calling
+OPENSSL_secure_clear_free() and assuming that the private key was of the
+correct length. If it was actually too short this will write over memory
+that it shouldn't.
+
+Fixes #17017
+---
+ crypto/ec/ecx_backend.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/crypto/ec/ecx_backend.c b/crypto/ec/ecx_backend.c
+index a0144d5a86..2ab7611be9 100644
+--- a/crypto/ec/ecx_backend.c
++++ b/crypto/ec/ecx_backend.c
+@@ -70,11 +70,23 @@ int ossl_ecx_key_fromdata(ECX_KEY *ecx, const OSSL_PARAM params[],
+     if (param_pub_key == NULL && param_priv_key == NULL)
+         return 0;
+ 
+-    if (param_priv_key != NULL
+-        && !OSSL_PARAM_get_octet_string(param_priv_key,
+-                                        (void **)&ecx->privkey, ecx->keylen,
+-                                        &privkeylen))
+-        return 0;
++    if (param_priv_key != NULL) {
++        if (!OSSL_PARAM_get_octet_string(param_priv_key,
++                                         (void **)&ecx->privkey, ecx->keylen,
++                                         &privkeylen))
++            return 0;
++        if (privkeylen != ecx->keylen) {
++            /*
++             * Invalid key length. We will clear what we've received now. We
++             * can't leave it to ossl_ecx_key_free() because that will call
++             * OPENSSL_secure_clear_free() and assume the correct key length
++             */
++            OPENSSL_secure_clear_free(ecx->privkey, privkeylen);
++            ecx->privkey = NULL;
++            return 0;
++        }
++    }
++
+ 
+     pubkey = ecx->pubkey;
+     if (param_pub_key != NULL
+@@ -83,8 +95,7 @@ int ossl_ecx_key_fromdata(ECX_KEY *ecx, const OSSL_PARAM params[],
+                                          sizeof(ecx->pubkey), &pubkeylen))
+         return 0;
+ 
+-    if ((param_pub_key != NULL && pubkeylen != ecx->keylen)
+-        || (param_priv_key != NULL && privkeylen != ecx->keylen))
++    if ((param_pub_key != NULL && pubkeylen != ecx->keylen))
+         return 0;
+ 
+     if (param_pub_key == NULL && !ossl_ecx_public_from_private(ecx))
+-- 
+2.32.0
+

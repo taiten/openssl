@@ -14,10 +14,10 @@ Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
  1 file changed, 13 insertions(+)
 
 diff --git a/apps/openssl.cnf b/apps/openssl.cnf
-index 03330e0120a2..f3bea3e61546 100644
+index 97567a67be6d..38ff63d1d49b 100644
 --- a/apps/openssl.cnf
 +++ b/apps/openssl.cnf
-@@ -23,6 +23,9 @@ config_diagnostics = 1
+@@ -24,6 +24,9 @@ config_diagnostics = 1
  # oid_file       = $ENV::HOME/.oid
  oid_section = new_oids
  
@@ -27,7 +27,7 @@ index 03330e0120a2..f3bea3e61546 100644
  # To use this configuration file with the "-extfile" option of the
  # "openssl x509" utility, name here the section containing the
  # X.509v3 extensions to use:
-@@ -388,3 +391,13 @@ oldcert = $insta::certout # insta.cert.pem
+@@ -381,3 +384,13 @@ oldcert = $insta::certout # insta.cert.pem
  # Certificate revocation
  cmd = rr
  oldcert = $insta::certout # insta.cert.pem
