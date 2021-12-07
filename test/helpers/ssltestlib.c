@@ -719,6 +719,11 @@ int create_ssl_ctx_pair(OSSL_LIB_CTX *libctx, const SSL_METHOD *sm,
         max_proto_version = TLS1_2_VERSION;
 #endif
 
+    if (serverctx != NULL && SSL_CTX_get_security_level(serverctx) == 2)
+            SSL_CTX_set_security_level(serverctx, 1);
+    if (clientctx != NULL && SSL_CTX_get_security_level(clientctx) == 2)
+            SSL_CTX_set_security_level(clientctx, 1);
+
     if (serverctx != NULL
             && ((min_proto_version > 0
                  && !TEST_true(SSL_CTX_set_min_proto_version(serverctx,
@@ -886,6 +891,11 @@ int create_ssl_objects(SSL_CTX *serverctx, SSL_CTX *clientctx, SSL **sssl,
         clientssl = *cssl;
     else if (!TEST_ptr(clientssl = SSL_new(clientctx)))
         goto error;
+
+    if (SSL_get_security_level(serverssl) == 2)
+            SSL_set_security_level(serverssl, 1);
+    if (SSL_get_security_level(clientssl) == 2)
+            SSL_set_security_level(clientssl, 1);
 
     if (SSL_is_dtls(clientssl)) {
         if (!TEST_ptr(s_to_c_bio = BIO_new(bio_s_mempacket_test()))
