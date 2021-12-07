@@ -1,3 +1,9 @@
+openssl (3.0.0-1ubuntu2) jammy; urgency=medium
+
+  * Cherry-pick upstream fixes to prevent double engine loading (LP: #1951943)
+
+ -- Julian Andres Klode <juliank@ubuntu.com>  Tue, 07 Dec 2021 17:15:51 +0100
+
 openssl (3.0.0-1ubuntu1) jammy; urgency=medium
 
   * Manual merge of version 3.0.0-1 from Debian experimental, remaining

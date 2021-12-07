@@ -14,3 +14,5 @@ tls1.2-min-seclevel2.patch
 #Upstream backports
 Don-t-create-an-ECX-key-with-short-keys.patch
 Add-null-digest-implementation-to-the-default-provid.patch
+double-engine-load.patch
+double-engine-load-test.patch
