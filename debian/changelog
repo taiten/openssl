@@ -1,3 +1,15 @@
+openssl (3.0.1-0ubuntu1) jammy; urgency=medium
+
+  * New upstream release (LP: #1955026).
+    + Dropped patches, merged upstream:
+      - d/p/double-engine-load*
+      - d/p/Add-null-digest-implementation-to-the-default-provid.patch
+      - d/p/Don-t-create-an-ECX-key-with-short-keys.patch
+    + Refreshed patches:
+      - d/p/c_rehash-compat.patch
+
+ -- Simon Chopin <simon.chopin@canonical.com>  Thu, 16 Dec 2021 09:10:48 +0100
+
 openssl (3.0.0-1ubuntu2) jammy; urgency=medium
 
   * Cherry-pick upstream fixes to prevent double engine loading (LP: #1951943)
