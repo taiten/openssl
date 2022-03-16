@@ -1,3 +1,11 @@
+openssl (3.0.2-0ubuntu1) jammy; urgency=medium
+
+  * New upstream bugfix release (LP: #1965141)
+  * d/p/skip_tls1.1_seclevel3_tests.patch: new Ubuntu-specific patch for the
+    testsuite
+
+ -- Simon Chopin <simon.chopin@canonical.com>  Wed, 16 Mar 2022 09:35:51 +0100
+
 openssl (3.0.1-0ubuntu1) jammy; urgency=medium
 
   * New upstream release (LP: #1955026).
