@@ -1,3 +1,29 @@
+openssl (3.0.2-0ubuntu1.1) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: c_rehash script allows command injection
+    - debian/patches/CVE-2022-1292.patch: do not use shell to invoke
+      openssl in tools/c_rehash.in.
+    - CVE-2022-1292
+  * SECURITY UPDATE: OCSP_basic_verify may incorrectly verify the response
+    signing certificate
+    - debian/patches/CVE-2022-1343-1.patch: fix OCSP_basic_verify signer
+      certificate validation in crypto/ocsp/ocsp_vfy.c.
+    - debian/patches/CVE-2022-1343-2.patch: test ocsp with invalid
+      responses in test/recipes/80-test_ocsp.t.
+    - CVE-2022-1343
+  * SECURITY UPDATE: incorrect MAC key used in the RC4-MD5 ciphersuite
+    - debian/patches/CVE-2022-1434.patch: fix the RC4-MD5 cipher in
+      providers/implementations/ciphers/cipher_rc4_hmac_md5.c,
+      test/recipes/30-test_evp_data/evpciph_aes_stitched.txt,
+      test/recipes/30-test_evp_data/evpciph_rc4_stitched.txt.
+    - CVE-2022-1434
+  * SECURITY UPDATE: resource leakage when decoding certificates and keys
+    - debian/patches/CVE-2022-1473.patch: fix bug in OPENSSL_LH_flush in
+      crypto/lhash/lhash.c.
+    - CVE-2022-1473
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Tue, 03 May 2022 12:01:34 -0400
+
 openssl (3.0.2-0ubuntu1) jammy; urgency=medium
 
   * New upstream bugfix release (LP: #1965141)

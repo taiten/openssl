@@ -11,3 +11,8 @@ Configure-allow-to-enable-ktls-if-target-does-not-start-w.patch
 tests-use-seclevel-1.patch
 tls1.2-min-seclevel2.patch
 skip_tls1.1_seclevel3_tests.patch
+CVE-2022-1292.patch
+CVE-2022-1343-1.patch
+CVE-2022-1343-2.patch
+CVE-2022-1434.patch
+CVE-2022-1473.patch
