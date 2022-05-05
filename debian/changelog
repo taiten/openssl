@@ -1,3 +1,10 @@
+openssl (3.0.2-0ubuntu1.2) jammy; urgency=medium
+
+  * d/p/lp1968997/*: cherry-pick a patchset to fix issues with the Turkish
+    locale (LP: #1968997)
+
+ -- Simon Chopin <simon.chopin@canonical.com>  Thu, 05 May 2022 10:04:52 +0200
+
 openssl (3.0.2-0ubuntu1.1) jammy-security; urgency=medium
 
   * SECURITY UPDATE: c_rehash script allows command injection
