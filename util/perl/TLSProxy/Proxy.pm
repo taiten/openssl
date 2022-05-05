@@ -97,9 +97,9 @@ sub new
         execute => $execute,
         cert => $cert,
         debug => $debug,
-        cipherc => "",
+        cipherc => "DEFAULT:\@SECLEVEL=1",
         ciphersuitesc => "",
-        ciphers => "AES128-SHA",
+        ciphers => "AES128-SHA:\@SECLEVEL=1",
         ciphersuitess => "TLS_AES_128_GCM_SHA256",
         flight => -1,
         direction => -1,
@@ -145,7 +145,7 @@ sub clearClient
 {
     my $self = shift;
 
-    $self->{cipherc} = "";
+    $self->{cipherc} = "DEFAULT:\@SECLEVEL=1";
     $self->{ciphersuitec} = "";
     $self->{flight} = -1;
     $self->{direction} = -1;
@@ -167,7 +167,7 @@ sub clear
     my $self = shift;
 
     $self->clearClient;
-    $self->{ciphers} = "AES128-SHA";
+    $self->{ciphers} = "AES128-SHA:\@SECLEVEL=1";
     $self->{ciphersuitess} = "TLS_AES_128_GCM_SHA256";
     $self->{serverflags} = "";
     $self->{serverconnects} = 1;
