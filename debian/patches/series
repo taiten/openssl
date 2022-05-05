@@ -11,6 +11,11 @@ Configure-allow-to-enable-ktls-if-target-does-not-start-w.patch
 tests-use-seclevel-1.patch
 tls1.2-min-seclevel2.patch
 skip_tls1.1_seclevel3_tests.patch
+lp1968997/0001-Public-API-functions-OPENSSL_str-n-casecmp.patch
+lp1968997/0002-FIPS-provider-modifications.patch
+lp1968997/0003-Minimal-test-checking-we-can-get-public-key-in-Turki.patch
+lp1968997/0004-str-n-casecmp-OPENSSL_strncasecmp.patch
+lp1968997/0005-Ensure-we-initialized-the-locale-before-evp_pkey_nam.patch
 CVE-2022-1292.patch
 CVE-2022-1343-1.patch
 CVE-2022-1343-2.patch
