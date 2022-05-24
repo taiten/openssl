@@ -129,7 +129,7 @@ SKIP: {
     #        should succeed
     $proxy->clear();
     $proxy->serverflags("-no_tls1_3");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->filter(undef);
     $proxy->start();
     ok(TLSProxy::Message->success, "TLSv1.3 client TLSv1.2 server");
@@ -173,7 +173,7 @@ SKIP: {
     $proxy->clear();
     $testtype = EMPTY_SIG_ALGS_EXT;
     $proxy->clientflags("-no_tls1_3");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->start();
     ok(TLSProxy::Message->fail, "Empty TLSv1.2 sigalgs");
 
@@ -181,7 +181,7 @@ SKIP: {
     $proxy->clear();
     $testtype = NO_KNOWN_SIG_ALGS;
     $proxy->clientflags("-no_tls1_3");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->start();
     ok(TLSProxy::Message->fail, "No known TLSv1.3 sigalgs");
 
@@ -190,7 +190,7 @@ SKIP: {
     $proxy->clear();
     $testtype = NO_PSS_SIG_ALGS;
     $proxy->clientflags("-no_tls1_3");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->start();
     ok(TLSProxy::Message->success, "No PSS TLSv1.2 sigalgs");
 
@@ -198,7 +198,7 @@ SKIP: {
     $proxy->clear();
     $testtype = PSS_ONLY_SIG_ALGS;
     $proxy->serverflags("-no_tls1_3");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->start();
     ok(TLSProxy::Message->success, "PSS only sigalgs in TLSv1.2");
 
@@ -209,7 +209,7 @@ SKIP: {
     $proxy->clear();
     $testtype = PSS_ONLY_SIG_ALGS;
     $proxy->clientflags("-no_tls1_3 -sigalgs RSA+SHA256");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->start();
     ok(TLSProxy::Message->fail, "Sigalg we did not send in TLSv1.2");
 
@@ -217,7 +217,7 @@ SKIP: {
     #         matches the certificate should fail in TLSv1.2
     $proxy->clear();
     $proxy->clientflags("-no_tls1_3 -sigalgs ECDSA+SHA256");
-    $proxy->ciphers("ECDHE-RSA-AES128-SHA");
+    $proxy->ciphers("ECDHE-RSA-AES128-SHA:\@SECLEVEL=1");
     $proxy->filter(undef);
     $proxy->start();
     ok(TLSProxy::Message->fail, "No matching TLSv1.2 sigalgs");
