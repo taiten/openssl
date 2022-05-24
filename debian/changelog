@@ -1,3 +1,14 @@
+openssl (3.0.2-0ubuntu1.3) jammy; urgency=medium
+
+  * d/p/lp1974037/*: cherry-pick another patchset to fix regressions with the
+    previous lp1974037 one (LP: #1974037)
+  * d/p/Set-systemwide-default-settings-for-libssl-users: partially apply it on
+    Ubuntu to make it easier for user to change security level (LP: #1972056)
+  * d/p/lp1947588.patch: Cherry-picked as our patches make it very easy to
+    trigger the underlying bug (LP: #1947588)
+
+ -- Simon Chopin <schopin@ubuntu.com>  Tue, 24 May 2022 10:55:08 +0200
+
 openssl (3.0.2-0ubuntu1.2) jammy; urgency=medium
 
   * d/p/lp1968997/*: cherry-pick a patchset to fix issues with the Turkish
