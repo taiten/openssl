@@ -1,3 +1,9 @@
+openssl (3.0.2-0ubuntu1.4) jammy; urgency=medium
+
+  * d/p/lp1978093/*: renew some expiring test certificates (LP: #1978093)
+
+ -- Simon Chopin <schopin@ubuntu.com>  Thu, 09 Jun 2022 13:20:55 +0200
+
 openssl (3.0.2-0ubuntu1.3) jammy; urgency=medium
 
   * d/p/lp1974037/*: cherry-pick another patchset to fix regressions with the

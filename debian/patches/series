@@ -38,3 +38,6 @@ CVE-2022-1434.patch
 CVE-2022-1473.patch
 
 lp1947588.patch
+
+lp1978093/0001-Update-expired-SCT-issuer-certificate.patch
+lp1978093/0002-Update-further-expiring-certificates-that-affect-tes.patch
