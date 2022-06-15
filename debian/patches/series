@@ -3,7 +3,6 @@ debian-targets.patch
 man-section.patch
 no-symbolic.patch
 pic.patch
-c_rehash-compat.patch
 # Set-systemwide-default-settings-for-libssl-users is only partially applied in Ubuntu
 Set-systemwide-default-settings-for-libssl-users.patch
 TEST-Provide-a-default-openssl.cnf-for-tests.patch
@@ -31,7 +30,6 @@ lp1974037/0009-tolower-refine-the-tolower-code-to-avoid-a-memory-ac.patch
 lp1974037/0010-strcasecmp-implement-strcasecmp-and-strncasecmp.patch
 lp1974037/0011-Drop-the-last-ossl_init_casecmp-call.patch
 
-CVE-2022-1292.patch
 CVE-2022-1343-1.patch
 CVE-2022-1343-2.patch
 CVE-2022-1434.patch
@@ -41,3 +39,8 @@ lp1947588.patch
 
 lp1978093/0001-Update-expired-SCT-issuer-certificate.patch
 lp1978093/0002-Update-further-expiring-certificates-that-affect-tes.patch
+
+CVE-2022-1292.patch
+CVE-2022-2068-1.patch
+CVE-2022-2068-2.patch
+c_rehash-compat.patch

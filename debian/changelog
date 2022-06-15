@@ -1,3 +1,18 @@
+openssl (3.0.2-0ubuntu1.5) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: c_rehash script allows command injection
+    - debian/patches/CVE-2022-1292.patch: switch to upstream patch, and
+      apply it before c_rehash-compat.patch.
+    - debian/patches/CVE-2022-2068-1.patch: fix file operations in
+      tools/c_rehash.in.
+    - debian/patches/CVE-2022-2068-2.patch: drop the issuer_name_hash=
+      prefix from the CRL hash in tools/c_rehash.in.
+    - debian/patches/c_rehash-compat.patch: updated patch to apply after
+      the security updates.
+    - CVE-2022-2068
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 15 Jun 2022 10:26:20 -0400
+
 openssl (3.0.2-0ubuntu1.4) jammy; urgency=medium
 
   * d/p/lp1978093/*: renew some expiring test certificates (LP: #1978093)
