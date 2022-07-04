@@ -44,3 +44,5 @@ CVE-2022-1292.patch
 CVE-2022-2068-1.patch
 CVE-2022-2068-2.patch
 c_rehash-compat.patch
+CVE-2022-2097-1.patch
+CVE-2022-2097-2.patch
