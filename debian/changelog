@@ -1,3 +1,14 @@
+openssl (3.0.2-0ubuntu1.6) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: AES OCB fails to encrypt some bytes
+    - debian/patches/CVE-2022-2097-1.patch: fix AES OCB encrypt/decrypt for
+      x86 AES-NI in crypto/aes/asm/aesni-x86.pl.
+    - debian/patches/CVE-2022-2097-2.patch: add AES OCB test vectors in
+      test/recipes/30-test_evp_data/evpciph_aes_ocb.txt.
+    - CVE-2022-2097
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Mon, 04 Jul 2022 07:20:23 -0400
+
 openssl (3.0.2-0ubuntu1.5) jammy-security; urgency=medium
 
   * SECURITY UPDATE: c_rehash script allows command injection
