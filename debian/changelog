@@ -1,3 +1,63 @@
+openssl (3.0.2-0ubuntu1.8) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: X.509 Name Constraints Read Buffer Overflow
+    - debian/patches/CVE-2022-4203-1.patch: fix type confusion in
+      nc_match_single() in crypto/x509/v3_ncons.c.
+    - debian/patches/CVE-2022-4203-2.patch: add testcase for
+      nc_match_single type confusion in test/*.
+    - CVE-2022-4203
+  * SECURITY UPDATE: Timing Oracle in RSA Decryption
+    - debian/patches/CVE-2022-4304.patch: fix timing oracle in
+      crypto/bn/bn_blind.c, crypto/bn/bn_local.h, crypto/bn/build.info,
+      crypto/bn/rsa_sup_mul.c, crypto/rsa/rsa_ossl.c, include/crypto/bn.h.
+    - CVE-2022-4304
+  * SECURITY UPDATE: Double free after calling PEM_read_bio_ex
+    - debian/patches/CVE-2022-4450-1.patch: avoid dangling ptrs in header
+      and data params for PEM_read_bio_ex in crypto/pem/pem_lib.c.
+    - debian/patches/CVE-2022-4450-2.patch: add a test in test/pemtest.c.
+    - CVE-2022-4450
+  * SECURITY UPDATE: Use-after-free following BIO_new_NDEF
+    - debian/patches/CVE-2023-0215-1.patch: fix a UAF resulting from a bug
+      in BIO_new_NDEF in crypto/asn1/bio_ndef.c.
+    - debian/patches/CVE-2023-0215-2.patch: check CMS failure during BIO
+      setup with -stream is handled correctly in
+      test/recipes/80-test_cms.t, test/smime-certs/badrsa.pem.
+    - CVE-2023-0215
+  * SECURITY UPDATE: Invalid pointer dereference in d2i_PKCS7 functions
+    - debian/patches/CVE-2023-0216-1.patch: do not dereference PKCS7 object
+      data if not set in crypto/pkcs7/pk7_lib.c.
+    - debian/patches/CVE-2023-0216-2.patch: add test for d2i_PKCS7 NULL
+      dereference in test/recipes/25-test_pkcs7.t,
+      test/recipes/25-test_pkcs7_data/malformed.pkcs7.
+    - CVE-2023-0216
+  * SECURITY UPDATE: NULL dereference validating DSA public key
+    - debian/patches/CVE-2023-0217-1.patch: fix NULL deference when
+      validating FFC public key in crypto/ffc/ffc_key_validate.c,
+      include/internal/ffc.h, test/ffc_internal_test.c.
+    - debian/patches/CVE-2023-0217-2.patch: prevent creating DSA and DH
+      keys without parameters through import in
+      providers/implementations/keymgmt/dh_kmgmt.c,
+      providers/implementations/keymgmt/dsa_kmgmt.c.
+    - debian/patches/CVE-2023-0217-3.patch: do not create DSA keys without
+      parameters by decoder in crypto/x509/x_pubkey.c,
+      include/crypto/x509.h,
+      providers/implementations/encode_decode/decode_der2key.c.
+    - CVE-2023-0217
+  * SECURITY UPDATE: X.400 address type confusion in X.509 GeneralName
+    - debian/patches/CVE-2023-0286.patch: fix GENERAL_NAME_cmp for
+      x400Address in crypto/x509/v3_genn.c, include/openssl/x509v3.h.in,
+      test/v3nametest.c.
+    - CVE-2023-0286
+  * SECURITY UPDATE: NULL dereference during PKCS7 data verification
+    - debian/patches/CVE-2023-0401-1.patch: check return of BIO_set_md()
+      calls in crypto/pkcs7/pk7_doit.c.
+    - debian/patches/CVE-2023-0401-2.patch: add testcase for missing return
+      check of BIO_set_md() calls in test/recipes/80-test_cms.t,
+      test/recipes/80-test_cms_data/pkcs7-md4.pem.
+    - CVE-2023-0401
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Mon, 06 Feb 2023 12:57:17 -0500
+
 openssl (3.0.2-0ubuntu1.7) jammy-security; urgency=medium
 
   * SECURITY UPDATE: X.509 Email Address Buffer Overflow
