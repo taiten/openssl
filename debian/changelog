@@ -1,3 +1,35 @@
+openssl (3.0.2-0ubuntu1.9) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: double locking when processing X.509 certificate policy
+    constraints
+    - debian/patches/CVE-2022-3996-1.patch: revert commit 9aa4be69 and remove
+      redundant flag setting.
+    - debian/patches/CVE-2022-3996-2.patch: add test case for reported
+      deadlock.
+    - CVE-2022-3996
+  * SECURITY UPDATE: excessive resource use when verifying policy constraints
+    - debian/patches/CVE-2023-0464-1.patch: limit the number of nodes created
+      in a policy tree (the default limit is set to 1000 nodes).
+    - debian/patches/CVE-2023-0464-2.patch: add test cases for the policy
+      resource overuse.
+    - debian/patches/CVE-2023-0464-3.patch: disable the policy tree
+      exponential growth test conditionally.
+    - CVE-2023-0464
+  * SECURITY UPDATE: invalid certificate policies ignored in leaf certificates
+    - debian/patches/CVE-2023-0465-1.patch: ensure that EXFLAG_INVALID_POLICY
+      is checked even in leaf certs. 
+    - debian/patches/CVE-2023-0465-2.patch: generate some certificates with
+      the certificatePolicies extension.
+    - debian/patches/CVE-2023-0465-3.patch: add a certificate policies test.
+    - CVE-2023-0466
+  * SECURITY UPDATE: certificate policy check in X509_VERIFY_PARAM_add0_policy
+    not enabled as documented
+    - debian/patches/CVE-2023-0466.patch: fix documentation of
+      X509_VERIFY_PARAM_add0_policy().
+    - CVE-2023-0466
+
+ -- Camila Camargo de Matos <camila.camargodematos@canonical.com>  Mon, 17 Apr 2023 15:12:58 -0300
+
 openssl (3.0.2-0ubuntu1.8) jammy-security; urgency=medium
 
   * SECURITY UPDATE: X.509 Name Constraints Read Buffer Overflow
