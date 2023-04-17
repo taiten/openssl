@@ -583,32 +583,32 @@ sub testssl {
                 if $no_tls1_1;
 
         SKIP: {
-            skip "skipping auto DHE PSK test at SECLEVEL 3", 1
-                if ($no_dh || $no_psk);
+            skip "skipping auto DHE PSK test at SECLEVEL 3", 1;
+                # if ($no_dh || $no_psk);
 
             ok(run(test(['ssl_old_test', '-tls1_1', '-dhe4096', '-psk', '0102030405', '-cipher', '@SECLEVEL=3:DHE-PSK-AES256-CBC-SHA384'])),
                'test auto DHE PSK meets security strength');
           }
 
         SKIP: {
-            skip "skipping auto ECDHE PSK test at SECLEVEL 3", 1
-                if ($no_ec || $no_psk);
+            skip "skipping auto ECDHE PSK test at SECLEVEL 3", 1;
+                # if ($no_ec || $no_psk);
 
             ok(run(test(['ssl_old_test', '-tls1_1', '-no_dhe', '-psk', '0102030405', '-cipher', '@SECLEVEL=3:ECDHE-PSK-AES256-CBC-SHA384'])),
                'test auto ECDHE PSK meets security strength');
           }
 
         SKIP: {
-            skip "skipping no RSA PSK at SECLEVEL 3 test", 1
-                if ($no_rsa || $no_psk);
+            skip "skipping no RSA PSK at SECLEVEL 3 test", 1;
+                # if ($no_rsa || $no_psk);
 
             ok(!run(test(['ssl_old_test', '-tls1_1', '-no_dhe', '-psk', '0102030405', '-cipher', '@SECLEVEL=3:RSA-PSK-AES256-CBC-SHA384'])),
                'test auto RSA PSK does not meet security level 3 requirements (PFS)');
           }
 
         SKIP: {
-            skip "skipping no PSK at SECLEVEL 3 test", 1
-                if ($no_psk);
+            skip "skipping no PSK at SECLEVEL 3 test", 1;
+                # if ($no_psk);
 
             ok(!run(test(['ssl_old_test', '-tls1_1', '-no_dhe', '-psk', '0102030405', '-cipher', '@SECLEVEL=3:PSK-AES256-CBC-SHA384'])),
                'test auto PSK does not meet security level 3 requirements (PFS)');
