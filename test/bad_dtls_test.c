@@ -491,6 +491,8 @@ static int test_bad_dtls(void)
         goto end;
 
     ctx = SSL_CTX_new(DTLS_client_method());
+    if (TEST_ptr(ctx))
+        SSL_CTX_set_security_level(ctx, 1);
     if (!TEST_ptr(ctx)
             || !TEST_true(SSL_CTX_set_min_proto_version(ctx, DTLS1_BAD_VER))
             || !TEST_true(SSL_CTX_set_max_proto_version(ctx, DTLS1_BAD_VER))
