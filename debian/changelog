@@ -1,3 +1,21 @@
+openssl (3.0.2-0ubuntu1.10) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: DoS in AES-XTS cipher decryption
+    - debian/patches/CVE-2023-1255.patch: avoid buffer overrread in
+      crypto/aes/asm/aesv8-armx.pl.
+    - CVE-2023-1255
+  * SECURITY UPDATE: Possible DoS translating ASN.1 object identifiers
+    - debian/patches/CVE-2023-2650.patch: restrict the size of OBJECT
+      IDENTIFIERs that OBJ_obj2txt will translate in
+      crypto/objects/obj_dat.c.
+    - CVE-2023-2650
+  * Replace CVE-2022-4304 fix with improved version
+    - debian/patches/CVE-2022-4304.patch: use alternative fix in
+      crypto/bn/bn_asm.c, crypto/bn/bn_blind.c, crypto/bn/bn_lib.c,
+      crypto/bn/bn_local.h, crypto/rsa/rsa_ossl.c.
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 24 May 2023 13:12:55 -0400
+
 openssl (3.0.2-0ubuntu1.9) jammy-security; urgency=medium
 
   * SECURITY UPDATE: double locking when processing X.509 certificate policy
