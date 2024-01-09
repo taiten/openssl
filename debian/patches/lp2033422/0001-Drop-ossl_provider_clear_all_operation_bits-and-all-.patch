@@ -1,0 +1,158 @@
+From 749691374ccf87418ca0e6664a9b9c831dcfe108 Mon Sep 17 00:00:00 2001
+From: Richard Levitte <levitte@openssl.org>
+Date: Wed, 20 Apr 2022 16:43:13 +0200
+Subject: [PATCH 1/7] Drop ossl_provider_clear_all_operation_bits() and all
+ uses of it
+
+This is a misused function, as it was called during query cache flush,
+when the provider operation bits were meant to record if methods for a
+certain operation has already been added to the method store.
+
+Fixes #18150
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18151)
+
+(cherry picked from commit 20b6d85ab2b9cfa4cd29d2422d69c3e3f4db0a41)
+Origin: https://github.com/openssl/openssl/commit/749691374ccf87418ca0e6664a9b9c831dcfe108
+Bug: https://github.com/openssl/openssl/pull/18151
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/2033422
+Applied-Upstream: 3.0.4
+---
+ crypto/property/property.c              |  3 ---
+ crypto/provider_core.c                  | 27 -------------------------
+ doc/internal/man3/ossl_provider_new.pod |  8 +-------
+ include/internal/provider.h             |  7 +++++--
+ 4 files changed, 6 insertions(+), 39 deletions(-)
+
+diff --git a/crypto/property/property.c b/crypto/property/property.c
+index 509191a893..523d2ba20c 100644
+--- a/crypto/property/property.c
++++ b/crypto/property/property.c
+@@ -506,7 +506,6 @@ static void ossl_method_cache_flush(OSSL_METHOD_STORE *store, int nid)
+     ALGORITHM *alg = ossl_method_store_retrieve(store, nid);
+ 
+     if (alg != NULL) {
+-        ossl_provider_clear_all_operation_bits(store->ctx);
+         store->nelem -= lh_QUERY_num_items(alg->cache);
+         impl_cache_flush_alg(0, alg, NULL);
+     }
+@@ -518,7 +517,6 @@ int ossl_method_store_flush_cache(OSSL_METHOD_STORE *store, int all)
+ 
+     if (!ossl_property_write_lock(store))
+         return 0;
+-    ossl_provider_clear_all_operation_bits(store->ctx);
+     ossl_sa_ALGORITHM_doall_arg(store->algs, &impl_cache_flush_alg, arg);
+     store->nelem = 0;
+     ossl_property_unlock(store);
+@@ -583,7 +581,6 @@ static void ossl_method_cache_flush_some(OSSL_METHOD_STORE *store)
+     state.nelem = 0;
+     if ((state.seed = OPENSSL_rdtsc()) == 0)
+         state.seed = 1;
+-    ossl_provider_clear_all_operation_bits(store->ctx);
+     store->need_flush = 0;
+     ossl_sa_ALGORITHM_doall_arg(store->algs, &impl_cache_flush_one_alg, &state);
+     store->nelem = state.nelem;
+diff --git a/crypto/provider_core.c b/crypto/provider_core.c
+index 177358f054..07fe3974ae 100644
+--- a/crypto/provider_core.c
++++ b/crypto/provider_core.c
+@@ -1538,33 +1538,6 @@ void ossl_provider_unquery_operation(const OSSL_PROVIDER *prov,
+         prov->unquery_operation(prov->provctx, operation_id, algs);
+ }
+ 
+-int ossl_provider_clear_all_operation_bits(OSSL_LIB_CTX *libctx)
+-{
+-    struct provider_store_st *store;
+-    OSSL_PROVIDER *provider;
+-    int i, num, res = 1;
+-
+-    if ((store = get_provider_store(libctx)) != NULL) {
+-        if (!CRYPTO_THREAD_read_lock(store->lock))
+-            return 0;
+-        num = sk_OSSL_PROVIDER_num(store->providers);
+-        for (i = 0; i < num; i++) {
+-            provider = sk_OSSL_PROVIDER_value(store->providers, i);
+-            if (!CRYPTO_THREAD_write_lock(provider->opbits_lock)) {
+-                res = 0;
+-                continue;
+-            }
+-            if (provider->operation_bits != NULL)
+-                memset(provider->operation_bits, 0,
+-                       provider->operation_bits_sz);
+-            CRYPTO_THREAD_unlock(provider->opbits_lock);
+-        }
+-        CRYPTO_THREAD_unlock(store->lock);
+-        return res;
+-    }
+-    return 0;
+-}
+-
+ int ossl_provider_set_operation_bit(OSSL_PROVIDER *provider, size_t bitnum)
+ {
+     size_t byte = bitnum / 8;
+diff --git a/doc/internal/man3/ossl_provider_new.pod b/doc/internal/man3/ossl_provider_new.pod
+index 0cf51a163f..3abcfc695d 100644
+--- a/doc/internal/man3/ossl_provider_new.pod
++++ b/doc/internal/man3/ossl_provider_new.pod
+@@ -16,7 +16,7 @@ ossl_provider_name, ossl_provider_dso,
+ ossl_provider_module_name, ossl_provider_module_path,
+ ossl_provider_libctx,
+ ossl_provider_teardown, ossl_provider_gettable_params,
+-ossl_provider_get_params, ossl_provider_clear_all_operation_bits,
++ossl_provider_get_params,
+ ossl_provider_query_operation, ossl_provider_unquery_operation,
+ ossl_provider_set_operation_bit, ossl_provider_test_operation_bit,
+ ossl_provider_get_capabilities
+@@ -94,7 +94,6 @@ ossl_provider_get_capabilities
+  int ossl_provider_set_operation_bit(OSSL_PROVIDER *provider, size_t bitnum);
+  int ossl_provider_test_operation_bit(OSSL_PROVIDER *provider, size_t bitnum,
+                                       int *result);
+- int ossl_provider_clear_all_operation_bits(OSSL_LIB_CTX *libctx);
+ 
+  int ossl_provider_init_as_child(OSSL_LIB_CTX *ctx,
+                                  const OSSL_CORE_HANDLE *handle,
+@@ -300,9 +299,6 @@ ossl_provider_test_operation_bit() checks if the bit operation I<bitnum>
+ is set (1) or not (0) in the internal I<provider> bitstring, and sets
+ I<*result> to 1 or 0 accorddingly.
+ 
+-ossl_provider_clear_all_operation_bits() clears all of the operation bits
+-to (0) for all providers in the library context I<libctx>.
+-
+ ossl_provider_init_as_child() stores in the library context I<ctx> references to
+ the necessary upcalls for managing child providers. The I<handle> and I<in>
+ parameters are the B<OSSL_CORE_HANDLE> and B<OSSL_DISPATCH> pointers that were
+@@ -380,8 +376,6 @@ If this function isn't available in the provider, 0 is returned.
+ ossl_provider_set_operation_bit() and ossl_provider_test_operation_bit()
+ return 1 on success, or 0 on error.
+ 
+-ossl_provider_clear_all_operation_bits() returns 1 on success, or 0 on error.
+-
+ ossl_provider_get_capabilities() returns 1 on success, or 0 on error.
+ If this function isn't available in the provider or the provider does not
+ support the requested capability then 0 is returned.
+diff --git a/include/internal/provider.h b/include/internal/provider.h
+index d09829d05e..987e1a464d 100644
+--- a/include/internal/provider.h
++++ b/include/internal/provider.h
+@@ -95,11 +95,14 @@ void ossl_provider_unquery_operation(const OSSL_PROVIDER *prov,
+                                      int operation_id,
+                                      const OSSL_ALGORITHM *algs);
+ 
+-/* Cache of bits to see if we already queried an operation */
++/*
++ * Cache of bits to see if we already added methods for an operation in
++ * the "permanent" method store.
++ * They should never be called for temporary method stores!
++ */
+ int ossl_provider_set_operation_bit(OSSL_PROVIDER *provider, size_t bitnum);
+ int ossl_provider_test_operation_bit(OSSL_PROVIDER *provider, size_t bitnum,
+                                      int *result);
+-int ossl_provider_clear_all_operation_bits(OSSL_LIB_CTX *libctx);
+ 
+ /* Configuration */
+ void ossl_provider_add_conf_module(void);
+-- 
+2.39.2
+

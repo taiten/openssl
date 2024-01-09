@@ -80,3 +80,20 @@ CVE-2023-3817.patch
 CVE-2023-2975.patch
 CVE-2023-5363-1.patch
 CVE-2023-5363-2.patch
+
+# September 2023 SRU for Jammy with the large series for performance
+
+## LP #2023545 (ibmca engine dumps core)
+lp2023545/0001-Release-the-drbg-in-the-global-default-context-befor.patch
+
+## LP #1994165 (Ignored S/MIME signature errors)
+lp1994165/0001-REGRESSION-CMS_final-do-not-ignore-CMS_dataFinal-res.patch
+
+## LP #2033422 (performance series)
+lp2033422/0001-Drop-ossl_provider_clear_all_operation_bits-and-all-.patch
+lp2033422/0002-Refactor-method-construction-pre-and-post-condition.patch
+lp2033422/0003-Don-t-empty-the-method-store-when-flushing-the-query.patch
+lp2033422/0004-Make-it-possible-to-remove-methods-by-the-provider-t.patch
+lp2033422/0005-Complete-the-cleanup-of-an-algorithm-in-OSSL_METHOD_.patch
+lp2033422/0006-For-child-libctx-provider-don-t-count-self-reference.patch
+lp2033422/0007-Add-method-store-cache-flush-and-method-removal-to-n.patch

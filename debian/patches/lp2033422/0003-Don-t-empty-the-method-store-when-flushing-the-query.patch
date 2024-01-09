@@ -1,0 +1,260 @@
+From 8b76db9e2618225f78c84ed2b338cd005f6ef310 Mon Sep 17 00:00:00 2001
+From: Richard Levitte <levitte@openssl.org>
+Date: Fri, 22 Apr 2022 11:00:36 +0200
+Subject: [PATCH 3/7] Don't empty the method store when flushing the query
+ cache
+
+When evp_method_store_flush() flushed the query cache, it also freed
+all methods in the EVP method store, through an unfortunate call of
+ossl_method_store_flush_cache() with an argument saying that all
+methods should indeed be dropped.
+
+To undo some of the confusion, ossl_method_store_flush_cache() is
+renamed to ossl_method_store_cache_flush_all(), and limited to do
+only that.  Some if the items in the internal ALGORITHM structure are
+also renamed and commented to clarify what they are for.
+
+Fixes #18150
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18151)
+
+(cherry picked from commit 60640d79ca7ea0980dc09c71fe6a297b5f8588a2)
+Origin: https://github.com/openssl/openssl/commit/8b76db9e2618225f78c84ed2b338cd005f6ef310
+Bug: https://github.com/openssl/openssl/pull/18876
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/2033422
+Applied-Upstream: 3.0.4
+---
+ crypto/evp/evp_fetch.c                  |  6 ++--
+ crypto/property/property.c              | 47 +++++++++++--------------
+ crypto/provider_core.c                  |  4 +--
+ doc/internal/man3/OSSL_METHOD_STORE.pod |  8 ++---
+ include/crypto/evp.h                    |  3 +-
+ include/internal/property.h             |  2 +-
+ 6 files changed, 33 insertions(+), 37 deletions(-)
+
+diff --git a/crypto/evp/evp_fetch.c b/crypto/evp/evp_fetch.c
+index c126ea177e..fd2b38c100 100644
+--- a/crypto/evp/evp_fetch.c
++++ b/crypto/evp/evp_fetch.c
+@@ -429,12 +429,12 @@ void *evp_generic_fetch_from_prov(OSSL_PROVIDER *prov, int operation_id,
+     return method;
+ }
+ 
+-int evp_method_store_flush(OSSL_LIB_CTX *libctx)
++int evp_method_store_cache_flush(OSSL_LIB_CTX *libctx)
+ {
+     OSSL_METHOD_STORE *store = get_evp_method_store(libctx);
+ 
+     if (store != NULL)
+-        return ossl_method_store_flush_cache(store, 1);
++        return ossl_method_store_cache_flush_all(store);
+     return 1;
+ }
+ 
+@@ -481,7 +481,7 @@ static int evp_set_parsed_default_properties(OSSL_LIB_CTX *libctx,
+         ossl_property_free(*plp);
+         *plp = def_prop;
+         if (store != NULL)
+-            return ossl_method_store_flush_cache(store, 0);
++            return ossl_method_store_cache_flush_all(store);
+     }
+     ERR_raise(ERR_LIB_EVP, ERR_R_INTERNAL_ERROR);
+     return 0;
+diff --git a/crypto/property/property.c b/crypto/property/property.c
+index 523d2ba20c..b4c0cf06d7 100644
+--- a/crypto/property/property.c
++++ b/crypto/property/property.c
+@@ -61,10 +61,16 @@ typedef struct {
+ 
+ struct ossl_method_store_st {
+     OSSL_LIB_CTX *ctx;
+-    size_t nelem;
+     SPARSE_ARRAY_OF(ALGORITHM) *algs;
+-    int need_flush;
+     CRYPTO_RWLOCK *lock;
++
++    /* query cache specific values */
++
++    /* Count of the query cache entries for all algs */
++    size_t cache_nelem;
++
++    /* Flag: 1 if query cache entries for all algs need flushing */
++    int cache_need_flush;
+ };
+ 
+ typedef struct {
+@@ -486,19 +492,10 @@ fin:
+     return ret;
+ }
+ 
+-static void impl_cache_flush_alg(ossl_uintmax_t idx, ALGORITHM *alg, void *arg)
++static void impl_cache_flush_alg(ossl_uintmax_t idx, ALGORITHM *alg)
+ {
+-    SPARSE_ARRAY_OF(ALGORITHM) *algs = arg;
+-
+     lh_QUERY_doall(alg->cache, &impl_cache_free);
+-    if (algs != NULL) {
+-        sk_IMPLEMENTATION_pop_free(alg->impls, &impl_free);
+-        lh_QUERY_free(alg->cache);
+-        OPENSSL_free(alg);
+-        ossl_sa_ALGORITHM_set(algs, idx, NULL);
+-    } else {
+-        lh_QUERY_flush(alg->cache);
+-    }
++    lh_QUERY_flush(alg->cache);
+ }
+ 
+ static void ossl_method_cache_flush(OSSL_METHOD_STORE *store, int nid)
+@@ -506,19 +503,17 @@ static void ossl_method_cache_flush(OSSL_METHOD_STORE *store, int nid)
+     ALGORITHM *alg = ossl_method_store_retrieve(store, nid);
+ 
+     if (alg != NULL) {
+-        store->nelem -= lh_QUERY_num_items(alg->cache);
+-        impl_cache_flush_alg(0, alg, NULL);
++        store->cache_nelem -= lh_QUERY_num_items(alg->cache);
++        impl_cache_flush_alg(0, alg);
+     }
+ }
+ 
+-int ossl_method_store_flush_cache(OSSL_METHOD_STORE *store, int all)
++int ossl_method_store_cache_flush_all(OSSL_METHOD_STORE *store)
+ {
+-    void *arg = (all != 0 ? store->algs : NULL);
+-
+     if (!ossl_property_write_lock(store))
+         return 0;
+-    ossl_sa_ALGORITHM_doall_arg(store->algs, &impl_cache_flush_alg, arg);
+-    store->nelem = 0;
++    ossl_sa_ALGORITHM_doall(store->algs, &impl_cache_flush_alg);
++    store->cache_nelem = 0;
+     ossl_property_unlock(store);
+     return 1;
+ }
+@@ -581,9 +576,9 @@ static void ossl_method_cache_flush_some(OSSL_METHOD_STORE *store)
+     state.nelem = 0;
+     if ((state.seed = OPENSSL_rdtsc()) == 0)
+         state.seed = 1;
+-    store->need_flush = 0;
++    store->cache_need_flush = 0;
+     ossl_sa_ALGORITHM_doall_arg(store->algs, &impl_cache_flush_one_alg, &state);
+-    store->nelem = state.nelem;
++    store->cache_nelem = state.nelem;
+ }
+ 
+ int ossl_method_store_cache_get(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
+@@ -634,7 +629,7 @@ int ossl_method_store_cache_set(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
+ 
+     if (!ossl_property_write_lock(store))
+         return 0;
+-    if (store->need_flush)
++    if (store->cache_need_flush)
+         ossl_method_cache_flush_some(store);
+     alg = ossl_method_store_retrieve(store, nid);
+     if (alg == NULL)
+@@ -645,7 +640,7 @@ int ossl_method_store_cache_set(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
+         elem.provider = prov;
+         if ((old = lh_QUERY_delete(alg->cache, &elem)) != NULL) {
+             impl_cache_free(old);
+-            store->nelem--;
++            store->cache_nelem--;
+         }
+         goto end;
+     }
+@@ -664,8 +659,8 @@ int ossl_method_store_cache_set(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
+             goto end;
+         }
+         if (!lh_QUERY_error(alg->cache)) {
+-            if (++store->nelem >= IMPL_CACHE_FLUSH_THRESHOLD)
+-                store->need_flush = 1;
++            if (++store->cache_nelem >= IMPL_CACHE_FLUSH_THRESHOLD)
++                store->cache_need_flush = 1;
+             goto end;
+         }
+         ossl_method_free(&p->method);
+diff --git a/crypto/provider_core.c b/crypto/provider_core.c
+index 07fe3974ae..a2520efa1c 100644
+--- a/crypto/provider_core.c
++++ b/crypto/provider_core.c
+@@ -15,7 +15,7 @@
+ #include <openssl/params.h>
+ #include <openssl/opensslv.h>
+ #include "crypto/cryptlib.h"
+-#include "crypto/evp.h" /* evp_method_store_flush */
++#include "crypto/evp.h" /* evp_method_store_cache_flush */
+ #include "crypto/rand.h"
+ #include "internal/nelem.h"
+ #include "internal/thread_once.h"
+@@ -1160,7 +1160,7 @@ static int provider_flush_store_cache(const OSSL_PROVIDER *prov)
+     CRYPTO_THREAD_unlock(store->lock);
+ 
+     if (!freeing)
+-        return evp_method_store_flush(prov->libctx);
++        return evp_method_store_cache_flush(prov->libctx);
+     return 1;
+ }
+ 
+diff --git a/doc/internal/man3/OSSL_METHOD_STORE.pod b/doc/internal/man3/OSSL_METHOD_STORE.pod
+index 49b3459ab2..a4c1c1bab2 100644
+--- a/doc/internal/man3/OSSL_METHOD_STORE.pod
++++ b/doc/internal/man3/OSSL_METHOD_STORE.pod
+@@ -34,7 +34,7 @@ ossl_method_store_flush_cache
+                                  int nid, const char *prop_query, void *method,
+                                  int (*method_up_ref)(void *),
+                                  void (*method_destruct)(void *));
+- void ossl_method_store_flush_cache(OSSL_METHOD_STORE *store, int all);
++ void ossl_method_store_cache_flush_all(OSSL_METHOD_STORE *store);
+ 
+ =head1 DESCRIPTION
+ 
+@@ -83,9 +83,6 @@ I<*prop> may be a pointer to a provider, which will narrow the search
+ to methods from that provider.
+ The result, if any, is returned in I<*method>, and its provider in I<*prov>.
+ 
+-ossl_method_store_flush_cache() flushes all cached entries associated with
+-I<store>.
+-
+ =head2 Cache Functions
+ 
+ ossl_method_store_cache_get() queries the cache associated with the I<store>
+@@ -102,6 +99,9 @@ The I<method_up_ref> function is called to increment the
+ reference count of the method and the I<method_destruct> function is called
+ to decrement it.
+ 
++ossl_method_store_cache_flush_all() flushes all cached entries associated with
++I<store>.
++
+ =head1 NOTES
+ 
+ The I<prop_query> argument to ossl_method_store_cache_get() and
+diff --git a/include/crypto/evp.h b/include/crypto/evp.h
+index 206ac26337..2afdd94323 100644
+--- a/include/crypto/evp.h
++++ b/include/crypto/evp.h
+@@ -893,7 +893,8 @@ int evp_pkey_ctx_get1_id_len_prov(EVP_PKEY_CTX *ctx, size_t *id_len);
+ int evp_pkey_ctx_use_cached_data(EVP_PKEY_CTX *ctx);
+ # endif /* !defined(FIPS_MODULE) */
+ 
+-int evp_method_store_flush(OSSL_LIB_CTX *libctx);
++int evp_method_store_cache_flush(OSSL_LIB_CTX *libctx);
++
+ int evp_default_properties_enable_fips_int(OSSL_LIB_CTX *libctx, int enable,
+                                            int loadconfig);
+ int evp_set_default_properties_int(OSSL_LIB_CTX *libctx, const char *propq,
+diff --git a/include/internal/property.h b/include/internal/property.h
+index 8211974595..9c68e8c346 100644
+--- a/include/internal/property.h
++++ b/include/internal/property.h
+@@ -77,7 +77,7 @@ int ossl_method_store_cache_set(OSSL_METHOD_STORE *store, OSSL_PROVIDER *prov,
+                                 int (*method_up_ref)(void *),
+                                 void (*method_destruct)(void *));
+ 
+-__owur int ossl_method_store_flush_cache(OSSL_METHOD_STORE *store, int all);
++__owur int ossl_method_store_cache_flush_all(OSSL_METHOD_STORE *store);
+ 
+ /* Merge two property queries together */
+ OSSL_PROPERTY_LIST *ossl_property_merge(const OSSL_PROPERTY_LIST *a,
+-- 
+2.39.2
+

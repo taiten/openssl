@@ -1,0 +1,240 @@
+From 37a6e9efe013f9e6a840e38beb81e44b9fee3629 Mon Sep 17 00:00:00 2001
+From: Richard Levitte <levitte@openssl.org>
+Date: Wed, 4 May 2022 09:15:29 +0200
+Subject: [PATCH 7/7] Add method store cache flush and method removal to
+ non-EVP operations
+
+evp_method_store_flush() and evp_method_store_remove_all_provided()
+only cover EVP operations, but not encoders, decoders and store loaders.
+This adds corresponding methods for those as well.  Without this, their
+method stores are never cleaned up when the corresponding providers are
+deactivated or otherwise modified.
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18151)
+
+(cherry picked from commit 32e3c071373280b69be02ba91fc3204495e2e1bf)
+Origin: https://github.com/openssl/openssl/commit/37a6e9efe013f9e6a840e38beb81e44b9fee3629
+Bug: https://github.com/openssl/openssl/pull/18876
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/2033422
+Applied-Upstream: 3.0.4
+---
+ crypto/encode_decode/decoder_meth.c | 19 ++++++++++++++
+ crypto/encode_decode/encoder_meth.c | 19 ++++++++++++++
+ crypto/provider_core.c              | 39 ++++++++++++++++++++++++++---
+ crypto/store/store_meth.c           | 19 ++++++++++++++
+ include/crypto/decoder.h            |  2 ++
+ include/crypto/encoder.h            | 10 +++++++-
+ include/crypto/store.h              |  2 ++
+ 7 files changed, 106 insertions(+), 4 deletions(-)
+
+diff --git a/crypto/encode_decode/decoder_meth.c b/crypto/encode_decode/decoder_meth.c
+index cb53343c54..434385f04f 100644
+--- a/crypto/encode_decode/decoder_meth.c
++++ b/crypto/encode_decode/decoder_meth.c
+@@ -446,6 +446,25 @@ OSSL_DECODER *ossl_decoder_fetch_by_number(OSSL_LIB_CTX *libctx, int id,
+     return method;
+ }
+ 
++int ossl_decoder_store_cache_flush(OSSL_LIB_CTX *libctx)
++{
++    OSSL_METHOD_STORE *store = get_decoder_store(libctx);
++
++    if (store != NULL)
++        return ossl_method_store_cache_flush_all(store);
++    return 1;
++}
++
++int ossl_decoder_store_remove_all_provided(const OSSL_PROVIDER *prov)
++{
++    OSSL_LIB_CTX *libctx = ossl_provider_libctx(prov);
++    OSSL_METHOD_STORE *store = get_decoder_store(libctx);
++
++    if (store != NULL)
++        return ossl_method_store_remove_all_provided(store, prov);
++    return 1;
++}
++
+ /*
+  * Library of basic method functions
+  */
+diff --git a/crypto/encode_decode/encoder_meth.c b/crypto/encode_decode/encoder_meth.c
+index eb8fd2f457..52bbd2baac 100644
+--- a/crypto/encode_decode/encoder_meth.c
++++ b/crypto/encode_decode/encoder_meth.c
+@@ -455,6 +455,25 @@ OSSL_ENCODER *ossl_encoder_fetch_by_number(OSSL_LIB_CTX *libctx, int id,
+     return method;
+ }
+ 
++int ossl_encoder_store_cache_flush(OSSL_LIB_CTX *libctx)
++{
++    OSSL_METHOD_STORE *store = get_encoder_store(libctx);
++
++    if (store != NULL)
++        return ossl_method_store_cache_flush_all(store);
++    return 1;
++}
++
++int ossl_encoder_store_remove_all_provided(const OSSL_PROVIDER *prov)
++{
++    OSSL_LIB_CTX *libctx = ossl_provider_libctx(prov);
++    OSSL_METHOD_STORE *store = get_encoder_store(libctx);
++
++    if (store != NULL)
++        return ossl_method_store_remove_all_provided(store, prov);
++    return 1;
++}
++
+ /*
+  * Library of basic method functions
+  */
+diff --git a/crypto/provider_core.c b/crypto/provider_core.c
+index fef6fdca9b..c089c1b70d 100644
+--- a/crypto/provider_core.c
++++ b/crypto/provider_core.c
+@@ -15,7 +15,10 @@
+ #include <openssl/params.h>
+ #include <openssl/opensslv.h>
+ #include "crypto/cryptlib.h"
++#include "crypto/decoder.h" /* ossl_decoder_store_cache_flush */
++#include "crypto/encoder.h" /* ossl_encoder_store_cache_flush */
+ #include "crypto/evp.h" /* evp_method_store_cache_flush */
++#include "crypto/store.h" /* ossl_store_loader_store_cache_flush */
+ #include "crypto/rand.h"
+ #include "internal/nelem.h"
+ #include "internal/thread_once.h"
+@@ -1159,8 +1162,22 @@ static int provider_flush_store_cache(const OSSL_PROVIDER *prov)
+     freeing = store->freeing;
+     CRYPTO_THREAD_unlock(store->lock);
+ 
+-    if (!freeing)
+-        return evp_method_store_cache_flush(prov->libctx);
++    if (!freeing) {
++        int acc
++            = evp_method_store_cache_flush(prov->libctx)
++#ifndef FIPS_MODULE
++            + ossl_encoder_store_cache_flush(prov->libctx)
++            + ossl_decoder_store_cache_flush(prov->libctx)
++            + ossl_store_loader_store_cache_flush(prov->libctx)
++#endif
++            ;
++
++#ifndef FIPS_MODULE
++        return acc == 4;
++#else
++        return acc == 1;
++#endif
++    }
+     return 1;
+ }
+ 
+@@ -1178,12 +1195,28 @@ static int provider_remove_store_methods(OSSL_PROVIDER *prov)
+     CRYPTO_THREAD_unlock(store->lock);
+ 
+     if (!freeing) {
++        int acc;
++
++        if (!CRYPTO_THREAD_read_lock(prov->opbits_lock))
++            return 0;
+         OPENSSL_free(prov->operation_bits);
+         prov->operation_bits = NULL;
+         prov->operation_bits_sz = 0;
+         CRYPTO_THREAD_unlock(prov->opbits_lock);
+ 
+-        return evp_method_store_remove_all_provided(prov);
++        acc = evp_method_store_remove_all_provided(prov)
++#ifndef FIPS_MODULE
++            + ossl_encoder_store_remove_all_provided(prov)
++            + ossl_decoder_store_remove_all_provided(prov)
++            + ossl_store_loader_store_remove_all_provided(prov)
++#endif
++            ;
++
++#ifndef FIPS_MODULE
++        return acc == 4;
++#else
++        return acc == 1;
++#endif
+     }
+     return 1;
+ }
+diff --git a/crypto/store/store_meth.c b/crypto/store/store_meth.c
+index db13f62c66..a472b15bb6 100644
+--- a/crypto/store/store_meth.c
++++ b/crypto/store/store_meth.c
+@@ -395,6 +395,25 @@ OSSL_STORE_LOADER *ossl_store_loader_fetch_by_number(OSSL_LIB_CTX *libctx,
+     return method;
+ }
+ 
++int ossl_store_loader_store_cache_flush(OSSL_LIB_CTX *libctx)
++{
++    OSSL_METHOD_STORE *store = get_loader_store(libctx);
++
++    if (store != NULL)
++        return ossl_method_store_cache_flush_all(store);
++    return 1;
++}
++
++int ossl_store_loader_store_remove_all_provided(const OSSL_PROVIDER *prov)
++{
++    OSSL_LIB_CTX *libctx = ossl_provider_libctx(prov);
++    OSSL_METHOD_STORE *store = get_loader_store(libctx);
++
++    if (store != NULL)
++        return ossl_method_store_remove_all_provided(store, prov);
++    return 1;
++}
++
+ /*
+  * Library of basic method functions
+  */
+diff --git a/include/crypto/decoder.h b/include/crypto/decoder.h
+index cc06ef2926..95afd25b0b 100644
+--- a/include/crypto/decoder.h
++++ b/include/crypto/decoder.h
+@@ -38,5 +38,7 @@ int ossl_decoder_ctx_setup_for_pkey(OSSL_DECODER_CTX *ctx,
+                                     const char *propquery);
+ 
+ int ossl_decoder_get_number(const OSSL_DECODER *encoder);
++int ossl_decoder_store_cache_flush(OSSL_LIB_CTX *libctx);
++int ossl_decoder_store_remove_all_provided(const OSSL_PROVIDER *prov);
+ 
+ #endif
+diff --git a/include/crypto/encoder.h b/include/crypto/encoder.h
+index 09d445d210..ae56131eb3 100644
+--- a/include/crypto/encoder.h
++++ b/include/crypto/encoder.h
+@@ -7,8 +7,16 @@
+  * https://www.openssl.org/source/license.html
+  */
+ 
+-#include <openssl/types.h>
++#ifndef OSSL_CRYPTO_ENCODER_H
++# define OSSL_CRYPTO_ENCODER_H
++# pragma once
++
++# include <openssl/types.h>
+ 
+ OSSL_ENCODER *ossl_encoder_fetch_by_number(OSSL_LIB_CTX *libctx, int id,
+                                            const char *properties);
+ int ossl_encoder_get_number(const OSSL_ENCODER *encoder);
++int ossl_encoder_store_cache_flush(OSSL_LIB_CTX *libctx);
++int ossl_encoder_store_remove_all_provided(const OSSL_PROVIDER *prov);
++
++#endif
+diff --git a/include/crypto/store.h b/include/crypto/store.h
+index 13d2646bba..9b7be71acd 100644
+--- a/include/crypto/store.h
++++ b/include/crypto/store.h
+@@ -17,5 +17,7 @@
+ 
+ void ossl_store_cleanup_int(void);
+ int ossl_store_loader_get_number(const OSSL_STORE_LOADER *loader);
++int ossl_store_loader_store_cache_flush(OSSL_LIB_CTX *libctx);
++int ossl_store_loader_store_remove_all_provided(const OSSL_PROVIDER *prov);
+ 
+ #endif
+-- 
+2.39.2
+

@@ -1,0 +1,68 @@
+From 106f5c231ccf7103564c8f81f169e372c444351b Mon Sep 17 00:00:00 2001
+From: Richard Levitte <levitte@openssl.org>
+Date: Mon, 25 Apr 2022 07:22:27 +0200
+Subject: [PATCH 5/7] Complete the cleanup of an algorithm in OSSL_METHOD_STORE
+
+The `alg_cleanup` didn't properly clear the OPENSSL_SA leaf that it
+had just freed the contents of.  Fortunately, `ossl_sa_ALGORITHM_doall_arg()`
+allows us to pass the store pointer itself as an extra argument, which
+allows a modified `alg_cleanup` to complete the job.
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18151)
+
+(cherry picked from commit 03454ba2a234197c961920f1bac37cc9f4cf3f54)
+Origin: https://github.com/openssl/openssl/commit/106f5c231ccf7103564c8f81f169e372c444351b
+Bug: https://github.com/openssl/openssl/pull/18876
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/2033422
+Applied-Upstream: 3.0.4
+---
+ crypto/property/property.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/crypto/property/property.c b/crypto/property/property.c
+index 93d12afb18..83f49d92d5 100644
+--- a/crypto/property/property.c
++++ b/crypto/property/property.c
+@@ -213,14 +213,18 @@ static void impl_cache_flush_alg(ossl_uintmax_t idx, ALGORITHM *alg)
+     lh_QUERY_flush(alg->cache);
+ }
+ 
+-static void alg_cleanup(ossl_uintmax_t idx, ALGORITHM *a)
++static void alg_cleanup(ossl_uintmax_t idx, ALGORITHM *a, void *arg)
+ {
++    OSSL_METHOD_STORE *store = arg;
++
+     if (a != NULL) {
+         sk_IMPLEMENTATION_pop_free(a->impls, &impl_free);
+         lh_QUERY_doall(a->cache, &impl_cache_free);
+         lh_QUERY_free(a->cache);
+         OPENSSL_free(a);
+     }
++    if (store != NULL)
++        ossl_sa_ALGORITHM_set(store->algs, idx, NULL);
+ }
+ 
+ /*
+@@ -250,7 +254,7 @@ OSSL_METHOD_STORE *ossl_method_store_new(OSSL_LIB_CTX *ctx)
+ void ossl_method_store_free(OSSL_METHOD_STORE *store)
+ {
+     if (store != NULL) {
+-        ossl_sa_ALGORITHM_doall(store->algs, &alg_cleanup);
++        ossl_sa_ALGORITHM_doall_arg(store->algs, &alg_cleanup, store);
+         ossl_sa_ALGORITHM_free(store->algs);
+         CRYPTO_THREAD_lock_free(store->lock);
+         OPENSSL_free(store);
+@@ -340,7 +344,7 @@ int ossl_method_store_add(OSSL_METHOD_STORE *store, const OSSL_PROVIDER *prov,
+ 
+ err:
+     ossl_property_unlock(store);
+-    alg_cleanup(0, alg);
++    alg_cleanup(0, alg, NULL);
+     impl_free(impl);
+     return 0;
+ }
+-- 
+2.39.2
+
