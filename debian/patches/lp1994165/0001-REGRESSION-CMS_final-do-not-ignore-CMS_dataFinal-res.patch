@@ -1,0 +1,59 @@
+From 6ec0318130a31372c7f7da272afee2441a5b8b94 Mon Sep 17 00:00:00 2001
+From: Alon Bar-Lev <alon.barlev@gmail.com>
+Date: Tue, 26 Jul 2022 08:53:48 +0300
+Subject: [PATCH 1/2] REGRESSION: CMS_final: do not ignore CMS_dataFinal result
+
+The CMS_dataFinal result is important as signature may fail, however, it
+is ignored while returning success from CMS_final.
+
+The SMIME_crlf_copy result is returned while it is ignored in the rest
+of the openssl code.
+
+Prefer the CMS_dataFinal result.
+
+This is regression from openssl-1.
+
+Blame finds c1669f41ei as root cause of regression.
+
+Signed-off-by: Alon Bar-Lev <alon.barlev@gmail.com>
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+Reviewed-by: Hugo Landau <hlandau@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18876)
+
+(cherry picked from commit b03756130dadb3732b460a6efd930f1b226acdad)
+Origin: https://github.com/openssl/openssl/commit/6ec0318130a31372c7f7da272afee2441a5b8b94
+Bug: https://github.com/openssl/openssl/pull/18876
+Bug-Ubuntu: https://bugs.launchpad.net/ubuntu/+source/openssl/+bug/1994165
+Applied-Upstream: 3.0.6
+---
+ crypto/cms/cms_smime.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/cms/cms_smime.c b/crypto/cms/cms_smime.c
+index 57c74f24a2..79589089c3 100644
+--- a/crypto/cms/cms_smime.c
++++ b/crypto/cms/cms_smime.c
+@@ -882,7 +882,7 @@ int CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
+         return 0;
+     }
+ 
+-    ret = SMIME_crlf_copy(data, cmsbio, flags);
++    SMIME_crlf_copy(data, cmsbio, flags);
+ 
+     (void)BIO_flush(cmsbio);
+ 
+@@ -890,6 +890,9 @@ int CMS_final(CMS_ContentInfo *cms, BIO *data, BIO *dcont, unsigned int flags)
+         ERR_raise(ERR_LIB_CMS, CMS_R_CMS_DATAFINAL_ERROR);
+         goto err;
+     }
++
++    ret = 1;
++
+ err:
+     do_free_upto(cmsbio, dcont);
+ 
+-- 
+2.39.2
+

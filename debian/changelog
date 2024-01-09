@@ -1,3 +1,23 @@
+openssl (3.0.2-0ubuntu1.13) jammy; urgency=medium
+
+  * Fix (upstream): crash when using an engine for ciphers used by DRBG
+    (LP: #2023545)
+    - lp2023545/0001-Release-the-drbg-in-the-global-default-context-befor.patch
+  * Fix (upstream): do not ignore return values for S/MIME signature
+    (LP: #1994165)
+    - lp1994165/0001-REGRESSION-CMS_final-do-not-ignore-CMS_dataFinal-res.patch
+  * Perf (upstream): don't empty method stores and provider synchronization
+    records when flushing the query cache (LP: #2033422)
+    - lp2033422/0001-Drop-ossl_provider_clear_all_operation_bits-and-all-.patch
+    - lp2033422/0002-Refactor-method-construction-pre-and-post-condition.patch
+    - lp2033422/0003-Don-t-empty-the-method-store-when-flushing-the-query.patch
+    - lp2033422/0004-Make-it-possible-to-remove-methods-by-the-provider-t.patch
+    - lp2033422/0005-Complete-the-cleanup-of-an-algorithm-in-OSSL_METHOD_.patch
+    - lp2033422/0006-For-child-libctx-provider-don-t-count-self-reference.patch
+    - lp2033422/0007-Add-method-store-cache-flush-and-method-removal-to-n.patch
+
+ -- Adrien Nader <adrien.nader@canonical.com>  Tue, 09 Jan 2024 11:42:50 +0100
+
 openssl (3.0.2-0ubuntu1.12) jammy-security; urgency=medium
 
   [ Marc Deslauriers ]
