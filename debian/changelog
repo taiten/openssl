@@ -1,3 +1,33 @@
+openssl (3.0.2-0ubuntu1.14) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: Excessive time spent in DH check / generation with
+    large Q parameter value
+    - debian/patches/CVE-2023-5678.patch: make DH_check_pub_key() and
+      DH_generate_key() safer yet in crypto/dh/dh_check.c,
+      crypto/dh/dh_err.c, crypto/dh/dh_key.c, crypto/err/openssl.txt,
+      include/crypto/dherr.h, include/openssl/dh.h,
+      include/openssl/dherr.h.
+    - CVE-2023-5678
+  * SECURITY UPDATE: POLY1305 MAC implementation corrupts vector registers
+    on PowerPC
+    - debian/patches/CVE-2023-6129.patch: fix vector register clobbering in
+      crypto/poly1305/asm/poly1305-ppc.pl.
+    - CVE-2023-6129
+  * SECURITY UPDATE: Excessive time spent checking invalid RSA public keys
+    - debian/patches/CVE-2023-6237.patch: limit the execution time of RSA
+      public key check in crypto/rsa/rsa_sp800_56b_check.c,
+      test/recipes/91-test_pkey_check.t,
+      test/recipes/91-test_pkey_check_data/rsapub_17k.pem.
+    - CVE-2023-6237
+  * SECURITY UPDATE: PKCS12 Decoding crashes
+    - debian/patches/CVE-2024-0727.patch: add NULL checks where ContentInfo
+      data can be NULL in crypto/pkcs12/p12_add.c,
+      crypto/pkcs12/p12_mutl.c, crypto/pkcs12/p12_npas.c,
+      crypto/pkcs7/pk7_mime.c.
+    - CVE-2024-0727
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 31 Jan 2024 13:43:23 -0500
+
 openssl (3.0.2-0ubuntu1.13) jammy; urgency=medium
 
   * Fix (upstream): crash when using an engine for ciphers used by DRBG

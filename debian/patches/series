@@ -97,3 +97,7 @@ lp2033422/0004-Make-it-possible-to-remove-methods-by-the-provider-t.patch
 lp2033422/0005-Complete-the-cleanup-of-an-algorithm-in-OSSL_METHOD_.patch
 lp2033422/0006-For-child-libctx-provider-don-t-count-self-reference.patch
 lp2033422/0007-Add-method-store-cache-flush-and-method-removal-to-n.patch
+CVE-2023-5678.patch
+CVE-2023-6129.patch
+CVE-2023-6237.patch
+CVE-2024-0727.patch
