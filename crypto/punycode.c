@@ -298,8 +298,7 @@ int ossl_a2ulabel(const char *in, char *out, size_t *outlen)
                     PUSHC(seed[j]);
             }
 
-            if (tmpptr != NULL)
-                PUSHC('.');
+            PUSHC(tmpptr != NULL ? '.' : '\0');
         }
 
         if (tmpptr == NULL)
@@ -323,7 +322,7 @@ int ossl_a2ulabel(const char *in, char *out, size_t *outlen)
 
 int ossl_a2ucompare(const char *a, const char *u)
 {
-    char a_ulabel[LABEL_BUF_SIZE];
+    char a_ulabel[LABEL_BUF_SIZE + 1];
     size_t a_size = sizeof(a_ulabel);
 
     if (ossl_a2ulabel(a, a_ulabel, &a_size) <= 0)
