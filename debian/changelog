@@ -1,3 +1,23 @@
+openssl (3.0.2-0ubuntu1.15) jammy-security; urgency=medium
+
+  * SECURITY UPDATE: Implicit rejection for RSA PKCS#1 (LP: #2054090)
+    - debian/patches/openssl-pkcs1-implicit-rejection.patch:
+      Return deterministic random output instead of an error in case
+      there is a padding error in crypto/cms/cms_env.c,
+      crypto/evp/ctrl_params_translate.c, crypto/pkcs7/pk7_doit.c,
+      crypto/rsa/rsa_ossl.c, crypto/rsa/rsa_pk1.c,
+      crypto/rsa/rsa_pmeth.c, doc/man1/openssl-pkeyutl.pod.in,
+      doc/man1/openssl-rsautl.pod.in, doc/man3/EVP_PKEY_CTX_ctrl.pod,
+      doc/man3/EVP_PKEY_decrypt.pod,
+      doc/man3/RSA_padding_add_PKCS1_type_1.pod,
+      doc/man3/RSA_public_encrypt.pod, doc/man7/provider-asym_cipher.pod,
+      include/crypto/rsa.h, include/openssl/core_names.h,
+      include/openssl/rsa.h,
+      providers/implementations/asymciphers/rsa_enc.c and
+      test/recipes/30-test_evp_data/evppkey_rsa_common.txt.
+
+ -- David Fernandez Gonzalez <david.fernandezgonzalez@canonical.com>  Fri, 16 Feb 2024 09:51:30 +0100
+
 openssl (3.0.2-0ubuntu1.14) jammy-security; urgency=medium
 
   * SECURITY UPDATE: Excessive time spent in DH check / generation with
