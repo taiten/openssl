@@ -448,9 +448,6 @@ void OPENSSL_cleanup(void)
     OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_trace_cleanup()\n");
     ossl_trace_cleanup();
 
-    OSSL_TRACE(INIT, "OPENSSL_cleanup: ossl_deinit_casecmp()\n");
-    ossl_deinit_casecmp();
-
     base_inited = 0;
 }
 
@@ -489,9 +486,6 @@ int OPENSSL_init_crypto(uint64_t opts, const OPENSSL_INIT_SETTINGS *settings)
             return 1;
         aloaddone = 1;
     }
-
-    if (!ossl_init_casecmp())
-        return 0;
 
     /*
      * At some point we should look at this function with a view to moving
