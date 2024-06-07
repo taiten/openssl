@@ -1,0 +1,763 @@
+From 57c854480481bd6b0900984d17db17426c44aa40 Mon Sep 17 00:00:00 2001
+From: Xu Yizhou <xuyizhou1@huawei.com>
+Date: Fri, 25 Nov 2022 13:52:49 +0800
+Subject: [PATCH 08/13] providers: Add SM4 XTS implementation
+
+Signed-off-by: Xu Yizhou <xuyizhou1@huawei.com>
+
+Reviewed-by: Hugo Landau <hlandau@openssl.org>
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/19619)
+---
+ crypto/modes/build.info                       |   2 +-
+ crypto/modes/xts128gb.c                       | 199 +++++++++++++
+ include/crypto/modes.h                        |   6 +
+ include/openssl/core_names.h                  |   1 +
+ providers/defltprov.c                         |   1 +
+ providers/implementations/ciphers/build.info  |   4 +-
+ .../implementations/ciphers/cipher_sm4_xts.c  | 281 ++++++++++++++++++
+ .../implementations/ciphers/cipher_sm4_xts.h  |  46 +++
+ .../ciphers/cipher_sm4_xts_hw.c               |  89 ++++++
+ .../include/prov/implementations.h            |   1 +
+ .../implementations/include/prov/names.h      |   1 +
+ 11 files changed, 629 insertions(+), 2 deletions(-)
+ create mode 100644 crypto/modes/xts128gb.c
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_xts.c
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_xts.h
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_xts_hw.c
+
+diff --git a/crypto/modes/build.info b/crypto/modes/build.info
+index f3558fa1a4..0ee297ced8 100644
+--- a/crypto/modes/build.info
++++ b/crypto/modes/build.info
+@@ -49,7 +49,7 @@ IF[{- !$disabled{asm} -}]
+ ENDIF
+ 
+ $COMMON=cbc128.c ctr128.c cfb128.c ofb128.c gcm128.c ccm128.c xts128.c \
+-        wrap128.c $MODESASM
++        wrap128.c xts128gb.c $MODESASM
+ SOURCE[../../libcrypto]=$COMMON \
+         cts128.c ocb128.c siv128.c
+ SOURCE[../../providers/libfips.a]=$COMMON
+diff --git a/crypto/modes/xts128gb.c b/crypto/modes/xts128gb.c
+new file mode 100644
+index 0000000000..021c0597e4
+--- /dev/null
++++ b/crypto/modes/xts128gb.c
+@@ -0,0 +1,199 @@
++/*
++ * Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++#include <string.h>
++#include <openssl/crypto.h>
++#include "internal/endian.h"
++#include "crypto/modes.h"
++
++#ifndef STRICT_ALIGNMENT
++# ifdef __GNUC__
++typedef u64 u64_a1 __attribute((__aligned__(1)));
++# else
++typedef u64 u64_a1;
++# endif
++#endif
++
++int ossl_crypto_xts128gb_encrypt(const XTS128_CONTEXT *ctx,
++                                 const unsigned char iv[16],
++                                 const unsigned char *inp, unsigned char *out,
++                                 size_t len, int enc)
++{
++    DECLARE_IS_ENDIAN;
++    union {
++        u64 u[2];
++        u32 d[4];
++        u8 c[16];
++    } tweak, scratch;
++    unsigned int i;
++
++    if (len < 16)
++        return -1;
++
++    memcpy(tweak.c, iv, 16);
++
++    (*ctx->block2) (tweak.c, tweak.c, ctx->key2);
++
++    if (!enc && (len % 16))
++        len -= 16;
++
++    while (len >= 16) {
++#if defined(STRICT_ALIGNMENT)
++        memcpy(scratch.c, inp, 16);
++        scratch.u[0] ^= tweak.u[0];
++        scratch.u[1] ^= tweak.u[1];
++#else
++        scratch.u[0] = ((u64_a1 *)inp)[0] ^ tweak.u[0];
++        scratch.u[1] = ((u64_a1 *)inp)[1] ^ tweak.u[1];
++#endif
++        (*ctx->block1) (scratch.c, scratch.c, ctx->key1);
++#if defined(STRICT_ALIGNMENT)
++        scratch.u[0] ^= tweak.u[0];
++        scratch.u[1] ^= tweak.u[1];
++        memcpy(out, scratch.c, 16);
++#else
++        ((u64_a1 *)out)[0] = scratch.u[0] ^= tweak.u[0];
++        ((u64_a1 *)out)[1] = scratch.u[1] ^= tweak.u[1];
++#endif
++        inp += 16;
++        out += 16;
++        len -= 16;
++
++        if (len == 0)
++            return 0;
++
++        if (IS_LITTLE_ENDIAN) {
++            u8 res;
++            u64 hi, lo;
++#ifdef BSWAP8
++            hi = BSWAP8(tweak.u[0]);
++            lo = BSWAP8(tweak.u[1]);
++#else
++            u8 *p = tweak.c;
++
++            hi = (u64)GETU32(p) << 32 | GETU32(p + 4);
++            lo = (u64)GETU32(p + 8) << 32 | GETU32(p + 12);
++#endif
++            res = (u8)lo & 1;
++            tweak.u[0] = (lo >> 1) | (hi << 63);
++            tweak.u[1] = hi >> 1;
++            if (res)
++                tweak.c[15] ^= 0xe1;
++#ifdef BSWAP8
++            hi = BSWAP8(tweak.u[0]);
++            lo = BSWAP8(tweak.u[1]);
++#else
++            p = tweak.c;
++
++            hi = (u64)GETU32(p) << 32 | GETU32(p + 4);
++            lo = (u64)GETU32(p + 8) << 32 | GETU32(p + 12);
++#endif
++            tweak.u[0] = lo;
++            tweak.u[1] = hi;
++        } else {
++            u8 carry, res;
++            carry = 0;
++            for (i = 0; i < 16; ++i) {
++                res = (tweak.c[i] << 7) & 0x80;
++                tweak.c[i] = ((tweak.c[i] >> 1) + carry) & 0xff;
++                carry = res;
++            }
++            if (res)
++                tweak.c[0] ^= 0xe1;
++        }
++    }
++    if (enc) {
++        for (i = 0; i < len; ++i) {
++            u8 c = inp[i];
++            out[i] = scratch.c[i];
++            scratch.c[i] = c;
++        }
++        scratch.u[0] ^= tweak.u[0];
++        scratch.u[1] ^= tweak.u[1];
++        (*ctx->block1) (scratch.c, scratch.c, ctx->key1);
++        scratch.u[0] ^= tweak.u[0];
++        scratch.u[1] ^= tweak.u[1];
++        memcpy(out - 16, scratch.c, 16);
++    } else {
++        union {
++            u64 u[2];
++            u8 c[16];
++        } tweak1;
++
++        if (IS_LITTLE_ENDIAN) {
++            u8 res;
++            u64 hi, lo;
++#ifdef BSWAP8
++            hi = BSWAP8(tweak.u[0]);
++            lo = BSWAP8(tweak.u[1]);
++#else
++            u8 *p = tweak.c;
++
++            hi = (u64)GETU32(p) << 32 | GETU32(p + 4);
++            lo = (u64)GETU32(p + 8) << 32 | GETU32(p + 12);
++#endif
++            res = (u8)lo & 1;
++            tweak1.u[0] = (lo >> 1) | (hi << 63);
++            tweak1.u[1] = hi >> 1;
++            if (res)
++                tweak1.c[15] ^= 0xe1;
++#ifdef BSWAP8
++            hi = BSWAP8(tweak1.u[0]);
++            lo = BSWAP8(tweak1.u[1]);
++#else
++            p = tweak1.c;
++
++            hi = (u64)GETU32(p) << 32 | GETU32(p + 4);
++            lo = (u64)GETU32(p + 8) << 32 | GETU32(p + 12);
++#endif
++            tweak1.u[0] = lo;
++            tweak1.u[1] = hi;
++        } else {
++            u8 carry, res;
++            carry = 0;
++            for (i = 0; i < 16; ++i) {
++                res = (tweak.c[i] << 7) & 0x80;
++                tweak1.c[i] = ((tweak.c[i] >> 1) + carry) & 0xff;
++                carry = res;
++            }
++            if (res)
++                tweak1.c[0] ^= 0xe1;
++        }
++#if defined(STRICT_ALIGNMENT)
++        memcpy(scratch.c, inp, 16);
++        scratch.u[0] ^= tweak1.u[0];
++        scratch.u[1] ^= tweak1.u[1];
++#else
++        scratch.u[0] = ((u64_a1 *)inp)[0] ^ tweak1.u[0];
++        scratch.u[1] = ((u64_a1 *)inp)[1] ^ tweak1.u[1];
++#endif
++        (*ctx->block1) (scratch.c, scratch.c, ctx->key1);
++        scratch.u[0] ^= tweak1.u[0];
++        scratch.u[1] ^= tweak1.u[1];
++
++        for (i = 0; i < len; ++i) {
++            u8 c = inp[16 + i];
++            out[16 + i] = scratch.c[i];
++            scratch.c[i] = c;
++        }
++        scratch.u[0] ^= tweak.u[0];
++        scratch.u[1] ^= tweak.u[1];
++        (*ctx->block1) (scratch.c, scratch.c, ctx->key1);
++#if defined(STRICT_ALIGNMENT)
++        scratch.u[0] ^= tweak.u[0];
++        scratch.u[1] ^= tweak.u[1];
++        memcpy(out, scratch.c, 16);
++#else
++        ((u64_a1 *)out)[0] = scratch.u[0] ^ tweak.u[0];
++        ((u64_a1 *)out)[1] = scratch.u[1] ^ tweak.u[1];
++#endif
++    }
++
++    return 0;
++}
+diff --git a/include/crypto/modes.h b/include/crypto/modes.h
+index 19f9d85959..475b77f925 100644
+--- a/include/crypto/modes.h
++++ b/include/crypto/modes.h
+@@ -148,6 +148,12 @@ struct xts128_context {
+     block128_f block1, block2;
+ };
+ 
++/* XTS mode for SM4 algorithm specified by GB/T 17964-2021 */
++int ossl_crypto_xts128gb_encrypt(const XTS128_CONTEXT *ctx,
++                                 const unsigned char iv[16],
++                                 const unsigned char *inp, unsigned char *out,
++                                 size_t len, int enc);
++
+ struct ccm128_context {
+     union {
+         u64 u[2];
+diff --git a/include/openssl/core_names.h b/include/openssl/core_names.h
+index 6bed5a8a67..a90971099d 100644
+--- a/include/openssl/core_names.h
++++ b/include/openssl/core_names.h
+@@ -97,6 +97,7 @@ extern "C" {
+ #define OSSL_CIPHER_PARAM_CTS_MODE             "cts_mode"     /* utf8_string */
+ /* For passing the AlgorithmIdentifier parameter in DER form */
+ #define OSSL_CIPHER_PARAM_ALGORITHM_ID_PARAMS  "alg_id_param" /* octet_string */
++#define OSSL_CIPHER_PARAM_XTS_STANDARD         "xts_standard" /* utf8_string */
+ 
+ #define OSSL_CIPHER_PARAM_TLS1_MULTIBLOCK_MAX_SEND_FRAGMENT                    \
+     "tls1multi_maxsndfrag" /* uint */
+diff --git a/providers/defltprov.c b/providers/defltprov.c
+index cc0b0c3b62..ab898d3f44 100644
+--- a/providers/defltprov.c
++++ b/providers/defltprov.c
+@@ -296,6 +296,7 @@ static const OSSL_ALGORITHM_CAPABLE deflt_ciphers[] = {
+     ALG(PROV_NAMES_SM4_CTR, ossl_sm4128ctr_functions),
+     ALG(PROV_NAMES_SM4_OFB, ossl_sm4128ofb128_functions),
+     ALG(PROV_NAMES_SM4_CFB, ossl_sm4128cfb128_functions),
++    ALG(PROV_NAMES_SM4_XTS, ossl_sm4128xts_functions),
+ #endif /* OPENSSL_NO_SM4 */
+ #ifndef OPENSSL_NO_CHACHA
+     ALG(PROV_NAMES_ChaCha20, ossl_chacha20_functions),
+diff --git a/providers/implementations/ciphers/build.info b/providers/implementations/ciphers/build.info
+index b5d9d4f6c1..9f6eacf5e3 100644
+--- a/providers/implementations/ciphers/build.info
++++ b/providers/implementations/ciphers/build.info
+@@ -107,7 +107,9 @@ IF[{- !$disabled{sm4} -}]
+   SOURCE[$SM4_GOAL]=\
+       cipher_sm4.c cipher_sm4_hw.c \
+       cipher_sm4_gcm.c cipher_sm4_gcm_hw.c \
+-      cipher_sm4_ccm.c cipher_sm4_ccm_hw.c
++      cipher_sm4_ccm.c cipher_sm4_ccm_hw.c \
++      cipher_sm4_xts.c cipher_sm4_xts_hw.c
++
+ ENDIF
+ 
+ IF[{- !$disabled{ocb} -}]
+diff --git a/providers/implementations/ciphers/cipher_sm4_xts.c b/providers/implementations/ciphers/cipher_sm4_xts.c
+new file mode 100644
+index 0000000000..3c568d4d18
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_xts.c
+@@ -0,0 +1,281 @@
++
++/*
++ * Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++/* Dispatch functions for SM4 XTS mode */
++
++#include <openssl/proverr.h>
++#include "cipher_sm4_xts.h"
++#include "prov/implementations.h"
++#include "prov/providercommon.h"
++
++#define SM4_XTS_FLAGS PROV_CIPHER_FLAG_CUSTOM_IV
++#define SM4_XTS_IV_BITS 128
++#define SM4_XTS_BLOCK_BITS 8
++
++/* forward declarations */
++static OSSL_FUNC_cipher_encrypt_init_fn sm4_xts_einit;
++static OSSL_FUNC_cipher_decrypt_init_fn sm4_xts_dinit;
++static OSSL_FUNC_cipher_update_fn sm4_xts_stream_update;
++static OSSL_FUNC_cipher_final_fn sm4_xts_stream_final;
++static OSSL_FUNC_cipher_cipher_fn sm4_xts_cipher;
++static OSSL_FUNC_cipher_freectx_fn sm4_xts_freectx;
++static OSSL_FUNC_cipher_dupctx_fn sm4_xts_dupctx;
++static OSSL_FUNC_cipher_set_ctx_params_fn sm4_xts_set_ctx_params;
++static OSSL_FUNC_cipher_settable_ctx_params_fn sm4_xts_settable_ctx_params;
++
++/*-
++ * Provider dispatch functions
++ */
++static int sm4_xts_init(void *vctx, const unsigned char *key, size_t keylen,
++                        const unsigned char *iv, size_t ivlen,
++                        const OSSL_PARAM params[], int enc)
++{
++    PROV_SM4_XTS_CTX *xctx = (PROV_SM4_XTS_CTX *)vctx;
++    PROV_CIPHER_CTX *ctx = &xctx->base;
++
++    if (!ossl_prov_is_running())
++        return 0;
++
++    ctx->enc = enc;
++
++    if (iv != NULL) {
++        if (!ossl_cipher_generic_initiv(vctx, iv, ivlen))
++            return 0;
++    }
++    if (key != NULL) {
++        if (keylen != ctx->keylen) {
++            ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY_LENGTH);
++            return 0;
++        }
++        if (!ctx->hw->init(ctx, key, keylen))
++            return 0;
++    }
++    return sm4_xts_set_ctx_params(xctx, params);
++}
++
++static int sm4_xts_einit(void *vctx, const unsigned char *key, size_t keylen,
++                         const unsigned char *iv, size_t ivlen,
++                         const OSSL_PARAM params[])
++{
++    return sm4_xts_init(vctx, key, keylen, iv, ivlen, params, 1);
++}
++
++static int sm4_xts_dinit(void *vctx, const unsigned char *key, size_t keylen,
++                         const unsigned char *iv, size_t ivlen,
++                         const OSSL_PARAM params[])
++{
++    return sm4_xts_init(vctx, key, keylen, iv, ivlen, params, 0);
++}
++
++static void *sm4_xts_newctx(void *provctx, unsigned int mode, uint64_t flags,
++                            size_t kbits, size_t blkbits, size_t ivbits)
++{
++    PROV_SM4_XTS_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
++
++    if (ctx != NULL) {
++        ossl_cipher_generic_initkey(&ctx->base, kbits, blkbits, ivbits, mode,
++                                    flags, ossl_prov_cipher_hw_sm4_xts(kbits),
++                                    NULL);
++    }
++    return ctx;
++}
++
++static void sm4_xts_freectx(void *vctx)
++{
++    PROV_SM4_XTS_CTX *ctx = (PROV_SM4_XTS_CTX *)vctx;
++
++    ossl_cipher_generic_reset_ctx((PROV_CIPHER_CTX *)vctx);
++    OPENSSL_clear_free(ctx, sizeof(*ctx));
++}
++
++static void *sm4_xts_dupctx(void *vctx)
++{
++    PROV_SM4_XTS_CTX *in = (PROV_SM4_XTS_CTX *)vctx;
++    PROV_SM4_XTS_CTX *ret = NULL;
++
++    if (!ossl_prov_is_running())
++        return NULL;
++
++    if (in->xts.key1 != NULL) {
++        if (in->xts.key1 != &in->ks1)
++            return NULL;
++    }
++    if (in->xts.key2 != NULL) {
++        if (in->xts.key2 != &in->ks2)
++            return NULL;
++    }
++    ret = OPENSSL_malloc(sizeof(*ret));
++    if (ret == NULL)
++        return NULL;
++    in->base.hw->copyctx(&ret->base, &in->base);
++    return ret;
++}
++
++static int sm4_xts_cipher(void *vctx, unsigned char *out, size_t *outl,
++                          size_t outsize, const unsigned char *in, size_t inl)
++{
++    PROV_SM4_XTS_CTX *ctx = (PROV_SM4_XTS_CTX *)vctx;
++
++    if (!ossl_prov_is_running()
++            || ctx->xts.key1 == NULL
++            || ctx->xts.key2 == NULL
++            || !ctx->base.iv_set
++            || out == NULL
++            || in == NULL
++            || inl < SM4_BLOCK_SIZE)
++        return 0;
++
++    /*
++     * Impose a limit of 2^20 blocks per data unit as specified by
++     * IEEE Std 1619-2018.  The earlier and obsolete IEEE Std 1619-2007
++     * indicated that this was a SHOULD NOT rather than a MUST NOT.
++     * NIST SP 800-38E mandates the same limit.
++     */
++    if (inl > XTS_MAX_BLOCKS_PER_DATA_UNIT * SM4_BLOCK_SIZE) {
++        ERR_raise(ERR_LIB_PROV, PROV_R_XTS_DATA_UNIT_IS_TOO_LARGE);
++        return 0;
++    }
++    if (ctx->xts_standard) {
++        if (ctx->stream != NULL)
++            (*ctx->stream)(in, out, inl, ctx->xts.key1, ctx->xts.key2,
++                           ctx->base.iv);
++        else if (CRYPTO_xts128_encrypt(&ctx->xts, ctx->base.iv, in, out, inl,
++                                       ctx->base.enc))
++            return 0;
++    } else {
++        if (ctx->stream_gb != NULL)
++            (*ctx->stream_gb)(in, out, inl, ctx->xts.key1, ctx->xts.key2,
++                              ctx->base.iv);
++        else if (ossl_crypto_xts128gb_encrypt(&ctx->xts, ctx->base.iv, in, out,
++                                              inl, ctx->base.enc))
++            return 0;
++    }
++    *outl = inl;
++    return 1;
++}
++
++static int sm4_xts_stream_update(void *vctx, unsigned char *out, size_t *outl,
++                                 size_t outsize, const unsigned char *in,
++                                 size_t inl)
++{
++    PROV_SM4_XTS_CTX *ctx = (PROV_SM4_XTS_CTX *)vctx;
++
++    if (outsize < inl) {
++        ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
++        return 0;
++    }
++
++    if (!sm4_xts_cipher(ctx, out, outl, outsize, in, inl)) {
++        ERR_raise(ERR_LIB_PROV, PROV_R_CIPHER_OPERATION_FAILED);
++        return 0;
++    }
++
++    return 1;
++}
++
++static int sm4_xts_stream_final(void *vctx, unsigned char *out, size_t *outl,
++                                size_t outsize)
++{
++    if (!ossl_prov_is_running())
++        return 0;
++    *outl = 0;
++    return 1;
++}
++
++static const OSSL_PARAM sm4_xts_known_settable_ctx_params[] = {
++    OSSL_PARAM_utf8_string(OSSL_CIPHER_PARAM_XTS_STANDARD, NULL, 0),
++    OSSL_PARAM_END
++};
++
++static const OSSL_PARAM *sm4_xts_settable_ctx_params(ossl_unused void *cctx,
++                                                     ossl_unused void *provctx)
++{
++    return sm4_xts_known_settable_ctx_params;
++}
++
++static int sm4_xts_set_ctx_params(void *vxctx, const OSSL_PARAM params[])
++{
++    PROV_SM4_XTS_CTX *xctx = (PROV_SM4_XTS_CTX *)vxctx;
++    const OSSL_PARAM *p;
++
++    if (params == NULL)
++        return 1;
++
++    /*-
++     * Sets the XTS standard to use with SM4-XTS algorithm.
++     *
++     * Must be utf8 string "GB" or "IEEE",
++     * "GB" means the GB/T 17964-2021 standard
++     * "IEEE" means the IEEE Std 1619-2007 standard
++     */
++    p = OSSL_PARAM_locate_const(params, OSSL_CIPHER_PARAM_XTS_STANDARD);
++
++    if (p != NULL) {
++        const char *xts_standard = NULL;
++
++        if (p->data_type != OSSL_PARAM_UTF8_STRING)
++            return 0;
++
++        if (!OSSL_PARAM_get_utf8_string_ptr(p, &xts_standard)) {
++            ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_TO_GET_PARAMETER);
++            return 0;
++        }
++        if (OPENSSL_strcasecmp(xts_standard, "GB") == 0) {
++            xctx->xts_standard = 0;
++        } else if (OPENSSL_strcasecmp(xts_standard, "IEEE") == 0) {
++            xctx->xts_standard = 1;
++        } else {
++            ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_TO_SET_PARAMETER);
++            return 0;
++        }
++    }
++
++    return 1;
++}
++
++#define IMPLEMENT_cipher(lcmode, UCMODE, kbits, flags)                         \
++static OSSL_FUNC_cipher_get_params_fn sm4_##kbits##_##lcmode##_get_params;     \
++static int sm4_##kbits##_##lcmode##_get_params(OSSL_PARAM params[])            \
++{                                                                              \
++    return ossl_cipher_generic_get_params(params, EVP_CIPH_##UCMODE##_MODE,    \
++                                          flags, 2 * kbits, SM4_XTS_BLOCK_BITS,\
++                                          SM4_XTS_IV_BITS);                    \
++}                                                                              \
++static OSSL_FUNC_cipher_newctx_fn sm4_##kbits##_xts_newctx;                    \
++static void *sm4_##kbits##_xts_newctx(void *provctx)                           \
++{                                                                              \
++    return sm4_xts_newctx(provctx, EVP_CIPH_##UCMODE##_MODE, flags, 2 * kbits, \
++                          SM4_XTS_BLOCK_BITS, SM4_XTS_IV_BITS);                \
++}                                                                              \
++const OSSL_DISPATCH ossl_sm4##kbits##xts_functions[] = {                       \
++    { OSSL_FUNC_CIPHER_NEWCTX, (void (*)(void))sm4_##kbits##_xts_newctx },     \
++    { OSSL_FUNC_CIPHER_ENCRYPT_INIT, (void (*)(void))sm4_xts_einit },          \
++    { OSSL_FUNC_CIPHER_DECRYPT_INIT, (void (*)(void))sm4_xts_dinit },          \
++    { OSSL_FUNC_CIPHER_UPDATE, (void (*)(void))sm4_xts_stream_update },        \
++    { OSSL_FUNC_CIPHER_FINAL, (void (*)(void))sm4_xts_stream_final },          \
++    { OSSL_FUNC_CIPHER_CIPHER, (void (*)(void))sm4_xts_cipher },               \
++    { OSSL_FUNC_CIPHER_FREECTX, (void (*)(void))sm4_xts_freectx },             \
++    { OSSL_FUNC_CIPHER_DUPCTX, (void (*)(void))sm4_xts_dupctx },               \
++    { OSSL_FUNC_CIPHER_GET_PARAMS,                                             \
++      (void (*)(void))sm4_##kbits##_##lcmode##_get_params },                   \
++    { OSSL_FUNC_CIPHER_GETTABLE_PARAMS,                                        \
++      (void (*)(void))ossl_cipher_generic_gettable_params },                   \
++    { OSSL_FUNC_CIPHER_GET_CTX_PARAMS,                                         \
++      (void (*)(void))ossl_cipher_generic_get_ctx_params },                    \
++    { OSSL_FUNC_CIPHER_GETTABLE_CTX_PARAMS,                                    \
++      (void (*)(void))ossl_cipher_generic_gettable_ctx_params },               \
++    { OSSL_FUNC_CIPHER_SET_CTX_PARAMS,                                         \
++      (void (*)(void))sm4_xts_set_ctx_params },                                \
++    { OSSL_FUNC_CIPHER_SETTABLE_CTX_PARAMS,                                    \
++     (void (*)(void))sm4_xts_settable_ctx_params },                            \
++    { 0, NULL }                                                                \
++}
++/* ossl_sm4128xts_functions */
++IMPLEMENT_cipher(xts, XTS, 128, SM4_XTS_FLAGS);
+diff --git a/providers/implementations/ciphers/cipher_sm4_xts.h b/providers/implementations/ciphers/cipher_sm4_xts.h
+new file mode 100644
+index 0000000000..4c369183e2
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_xts.h
+@@ -0,0 +1,46 @@
++/*
++ * Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++#include <crypto/sm4.h>
++#include "prov/ciphercommon.h"
++#include "crypto/sm4_platform.h"
++
++PROV_CIPHER_FUNC(void, xts_stream,
++                 (const unsigned char *in, unsigned char *out, size_t len,
++                  const SM4_KEY *key1, const SM4_KEY *key2,
++                  const unsigned char iv[16]));
++
++typedef struct prov_sm4_xts_ctx_st {
++    /* Must be first */
++    PROV_CIPHER_CTX base;
++
++    /* SM4 key schedules to use */
++    union {
++        OSSL_UNION_ALIGN;
++        SM4_KEY ks;
++    } ks1, ks2;
++
++    /*-
++     * XTS standard to use with SM4-XTS algorithm
++     *
++     * Must be 0 or 1,
++     * 0 for XTS mode specified by GB/T 17964-2021
++     * 1 for XTS mode specified by IEEE Std 1619-2007
++     */
++    int xts_standard;
++
++    XTS128_CONTEXT xts;
++
++    /* Stream function for XTS mode specified by GB/T 17964-2021 */
++    OSSL_xts_stream_fn stream_gb;
++    /* Stream function for XTS mode specified by IEEE Std 1619-2007 */
++    OSSL_xts_stream_fn stream;
++} PROV_SM4_XTS_CTX;
++
++const PROV_CIPHER_HW *ossl_prov_cipher_hw_sm4_xts(size_t keybits);
+diff --git a/providers/implementations/ciphers/cipher_sm4_xts_hw.c b/providers/implementations/ciphers/cipher_sm4_xts_hw.c
+new file mode 100644
+index 0000000000..403eb879b1
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_xts_hw.c
+@@ -0,0 +1,89 @@
++/*
++ * Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++#include "cipher_sm4_xts.h"
++
++#define XTS_SET_KEY_FN(fn_set_enc_key, fn_set_dec_key,                         \
++                       fn_block_enc, fn_block_dec,                             \
++                       fn_stream_enc, fn_stream_dec,                           \
++                       fn_stream_gb_enc, fn_stream_gb_dec) {                   \
++    size_t bytes = keylen / 2;                                                 \
++                                                                               \
++    if (ctx->enc) {                                                            \
++        fn_set_enc_key(key, &xctx->ks1.ks);                                    \
++        xctx->xts.block1 = (block128_f)fn_block_enc;                           \
++    } else {                                                                   \
++        fn_set_dec_key(key, &xctx->ks1.ks);                                    \
++        xctx->xts.block1 = (block128_f)fn_block_dec;                           \
++    }                                                                          \
++    fn_set_enc_key(key + bytes, &xctx->ks2.ks);                                \
++    xctx->xts.block2 = (block128_f)fn_block_enc;                               \
++    xctx->xts.key1 = &xctx->ks1;                                               \
++    xctx->xts.key2 = &xctx->ks2;                                               \
++    xctx->stream = ctx->enc ? fn_stream_enc : fn_stream_dec;                   \
++    xctx->stream_gb = ctx->enc ? fn_stream_gb_enc : fn_stream_gb_dec;          \
++}
++
++static int cipher_hw_sm4_xts_generic_initkey(PROV_CIPHER_CTX *ctx,
++                                             const unsigned char *key,
++                                             size_t keylen)
++{
++    PROV_SM4_XTS_CTX *xctx = (PROV_SM4_XTS_CTX *)ctx;
++    OSSL_xts_stream_fn stream_enc = NULL;
++    OSSL_xts_stream_fn stream_dec = NULL;
++    OSSL_xts_stream_fn stream_gb_enc = NULL;
++    OSSL_xts_stream_fn stream_gb_dec = NULL;
++#ifdef HWSM4_CAPABLE
++    if (HWSM4_CAPABLE) {
++        XTS_SET_KEY_FN(HWSM4_set_encrypt_key, HWSM4_set_decrypt_key,
++                       HWSM4_encrypt, HWSM4_decrypt, stream_enc, stream_dec,
++                       stream_gb_enc, stream_gb_dec);
++        return 1;
++    } else
++#endif /* HWSM4_CAPABLE */
++#ifdef VPSM4_CAPABLE
++    if (VPSM4_CAPABLE) {
++        XTS_SET_KEY_FN(vpsm4_set_encrypt_key, vpsm4_set_decrypt_key,
++                       vpsm4_encrypt, vpsm4_decrypt, stream_enc, stream_dec,
++                       stream_gb_enc, stream_gb_dec);
++        return 1;
++    } else
++#endif /* VPSM4_CAPABLE */
++    {
++        (void)0;
++    }
++    {
++        XTS_SET_KEY_FN(ossl_sm4_set_key, ossl_sm4_set_key, ossl_sm4_encrypt,
++                       ossl_sm4_decrypt, stream_enc, stream_dec, stream_gb_enc,
++                       stream_gb_dec);
++    }
++    return 1;
++}
++
++static void cipher_hw_sm4_xts_copyctx(PROV_CIPHER_CTX *dst,
++                                      const PROV_CIPHER_CTX *src)
++{
++    PROV_SM4_XTS_CTX *sctx = (PROV_SM4_XTS_CTX *)src;
++    PROV_SM4_XTS_CTX *dctx = (PROV_SM4_XTS_CTX *)dst;
++
++    *dctx = *sctx;
++    dctx->xts.key1 = &dctx->ks1.ks;
++    dctx->xts.key2 = &dctx->ks2.ks;
++}
++
++
++static const PROV_CIPHER_HW sm4_generic_xts = {
++    cipher_hw_sm4_xts_generic_initkey,
++    NULL,
++    cipher_hw_sm4_xts_copyctx
++};
++const PROV_CIPHER_HW *ossl_prov_cipher_hw_sm4_xts(size_t keybits)
++{
++    return &sm4_generic_xts;
++}
+diff --git a/providers/implementations/include/prov/implementations.h b/providers/implementations/include/prov/implementations.h
+index 498eab4ad4..cfa32ea3ca 100644
+--- a/providers/implementations/include/prov/implementations.h
++++ b/providers/implementations/include/prov/implementations.h
+@@ -181,6 +181,7 @@ extern const OSSL_DISPATCH ossl_sm4128cbc_functions[];
+ extern const OSSL_DISPATCH ossl_sm4128ctr_functions[];
+ extern const OSSL_DISPATCH ossl_sm4128ofb128_functions[];
+ extern const OSSL_DISPATCH ossl_sm4128cfb128_functions[];
++extern const OSSL_DISPATCH ossl_sm4128xts_functions[];
+ #endif /* OPENSSL_NO_SM4 */
+ #ifndef OPENSSL_NO_RC5
+ extern const OSSL_DISPATCH ossl_rc5128ecb_functions[];
+diff --git a/providers/implementations/include/prov/names.h b/providers/implementations/include/prov/names.h
+index 0fac23a850..5192f4f471 100644
+--- a/providers/implementations/include/prov/names.h
++++ b/providers/implementations/include/prov/names.h
+@@ -164,6 +164,7 @@
+ #define PROV_NAMES_SM4_CFB "SM4-CFB:SM4-CFB128:1.2.156.10197.1.104.4"
+ #define PROV_NAMES_SM4_GCM "SM4-GCM:1.2.156.10197.1.104.8"
+ #define PROV_NAMES_SM4_CCM "SM4-CCM:1.2.156.10197.1.104.9"
++#define PROV_NAMES_SM4_XTS "SM4-XTS:1.2.156.10197.1.104.10"
+ #define PROV_NAMES_ChaCha20 "ChaCha20"
+ #define PROV_NAMES_ChaCha20_Poly1305 "ChaCha20-Poly1305"
+ #define PROV_NAMES_CAST5_ECB "CAST5-ECB"
+-- 
+2.37.3.windows.1
+

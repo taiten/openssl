@@ -1,0 +1,67 @@
+From 8746fff8f096fa35c7157199917100aa7b547d7a Mon Sep 17 00:00:00 2001
+From: "fangming.fang" <fangming.fang@arm.com>
+Date: Tue, 18 Jan 2022 02:58:08 +0000
+Subject: [PATCH 03/13] Fix sm3ss1 translation issue in sm3-armv8.pl
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Matt Caswell <matt@openssl.org>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/17542)
+---
+ crypto/sm3/asm/sm3-armv8.pl | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/crypto/sm3/asm/sm3-armv8.pl b/crypto/sm3/asm/sm3-armv8.pl
+index bb71b2eade..f0555fd3f2 100644
+--- a/crypto/sm3/asm/sm3-armv8.pl
++++ b/crypto/sm3/asm/sm3-armv8.pl
+@@ -109,7 +109,7 @@ ___
+ 
+ $code=<<___;
+ #include "arm_arch.h"
+-.arch	armv8.2-a+sm4
++.arch	armv8.2-a
+ .text
+ ___
+ 
+@@ -222,8 +222,8 @@ my %sm3partopcode = (
+ 	"sm3partw1"         =>   0xce60C000,
+         "sm3partw2"         =>   0xce60C400);
+ 
+-my %sm3sslopcode = (
+-	"sm3ssl"            =>   0xce400000);
++my %sm3ss1opcode = (
++	"sm3ss1"            =>   0xce400000);
+ 
+ my %sm3ttopcode = (
+ 	"sm3tt1a"           =>   0xce408000,
+@@ -241,14 +241,13 @@ sub unsm3part {
+ 			$mnemonic,$arg;
+ }
+ 
+-sub unsm3ssl {
++sub unsm3ss1 {
+ 	my ($mnemonic,$arg)=@_;
+ 
+-	$arg=~ m/[qv](\d+)[^,]*,\s*[qv](\d+)[^,]*,\s*[qv](\d+)[^,]*,
+-                \s*[qv](\d+)/o
++	$arg=~ m/[qv](\d+)[^,]*,\s*[qv](\d+)[^,]*,\s*[qv](\d+)[^,]*,\s*[qv](\d+)/o
+ 	&&
+ 	sprintf ".inst\t0x%08x\t//%s %s",
+-			$sm3sslopcode{$mnemonic}|$1|($2<<5)|($3<<16)|($4<<10),
++			$sm3ss1opcode{$mnemonic}|$1|($2<<5)|($3<<16)|($4<<10),
+ 			$mnemonic,$arg;
+ }
+ 
+@@ -274,7 +273,7 @@ foreach(split("\n",$code)) {
+ 	s/\`([^\`]*)\`/eval($1)/ge;
+ 
+ 	s/\b(sm3partw[1-2])\s+([qv].*)/unsm3part($1,$2)/ge;
+-	s/\b(sm3ssl)\s+([qv].*)/unsm3ssl($1,$2)/ge;
++	s/\b(sm3ss1)\s+([qv].*)/unsm3ss1($1,$2)/ge;
+ 	s/\b(sm3tt[1-2][a-b])\s+([qv].*)/unsm3tt($1,$2)/ge;
+ 	print $_,"\n";
+ }
+-- 
+2.37.3.windows.1
+

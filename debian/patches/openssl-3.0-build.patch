@@ -1,0 +1,38 @@
+From 262bff1615d4461120327c5a9fe904ad1c6ce813 Mon Sep 17 00:00:00 2001
+From: hzero1996 <wangcheng156@huawei.com>
+Date: Sun, 29 Jan 2023 14:53:03 +0800
+Subject: [PATCH] openssl-3.0-build
+
+---
+ Configurations/10-main.conf       | 1 +
+ Configurations/unix-Makefile.tmpl | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
+index b578a3c..1ad81c3 100644
+--- a/Configurations/10-main.conf
++++ b/Configurations/10-main.conf
+@@ -772,6 +772,7 @@ my %targets = (
+         inherit_from     => [ "linux-generic64" ],
+         asm_arch         => 'aarch64',
+         perlasm_scheme   => "linux64",
++        multilib         => "64",
+     },
+     "linux-arm64ilp32" => {  # https://wiki.linaro.org/Platform/arm64-ilp32
+         inherit_from     => [ "linux-generic32" ],
+diff --git a/Configurations/unix-Makefile.tmpl b/Configurations/unix-Makefile.tmpl
+index a48fae5..56b4292 100644
+--- a/Configurations/unix-Makefile.tmpl
++++ b/Configurations/unix-Makefile.tmpl
+@@ -611,7 +611,7 @@ install_sw: install_dev install_engines install_modules install_runtime
+ 
+ uninstall_sw: uninstall_runtime uninstall_modules uninstall_engines uninstall_dev
+ 
+-install_docs: install_man_docs install_html_docs
++install_docs: install_man_docs
+ 
+ uninstall_docs: uninstall_man_docs uninstall_html_docs
+ 	$(RM) -r "$(DESTDIR)$(DOCDIR)"
+-- 
+2.27.0
+

@@ -1,0 +1,41 @@
+From e7f35b6f10599a574acb3bcca40845eeccfdc63b Mon Sep 17 00:00:00 2001
+From: Huaxin Lu <luhuaxin1@huawei.com>
+Date: Fri, 1 Sep 2023 20:08:46 +0800
+Subject: [PATCH] Support SM2 CMS signature
+
+Signed-off-by: Huaxin Lu <luhuaxin1@huawei.com>
+---
+ crypto/cms/cms_sd.c | 2 +-
+ crypto/evp/p_lib.c  | 3 +++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/cms/cms_sd.c b/crypto/cms/cms_sd.c
+index 2093657..083edd2 100644
+--- a/crypto/cms/cms_sd.c
++++ b/crypto/cms/cms_sd.c
+@@ -232,7 +232,7 @@ static int cms_sd_asn1_ctrl(CMS_SignerInfo *si, int cmd)
+     EVP_PKEY *pkey = si->pkey;
+     int i;
+ 
+-    if (EVP_PKEY_is_a(pkey, "DSA") || EVP_PKEY_is_a(pkey, "EC"))
++    if (EVP_PKEY_is_a(pkey, "DSA") || EVP_PKEY_is_a(pkey, "EC") || EVP_PKEY_is_a(pkey, "SM2"))
+         return ossl_cms_ecdsa_dsa_sign(si, cmd) > 0;
+     else if (EVP_PKEY_is_a(pkey, "RSA") || EVP_PKEY_is_a(pkey, "RSA-PSS"))
+         return ossl_cms_rsa_sign(si, cmd) > 0;
+diff --git a/crypto/evp/p_lib.c b/crypto/evp/p_lib.c
+index f6acb5b..9567bb0 100644
+--- a/crypto/evp/p_lib.c
++++ b/crypto/evp/p_lib.c
+@@ -982,6 +982,9 @@ int EVP_PKEY_type(int type)
+ 
+ int EVP_PKEY_get_id(const EVP_PKEY *pkey)
+ {
++    if (EVP_PKEY_is_a(pkey, "SM2")) {
++        return EVP_PKEY_SM2;
++    }
+     return pkey->type;
+ }
+ 
+-- 
+2.33.0
+

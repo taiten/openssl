@@ -1,0 +1,74 @@
+From 06f13f85ee86cd7fbc546060fbe2d077176b0be4 Mon Sep 17 00:00:00 2001
+From: Xu Yizhou <xuyizhou1@huawei.com>
+Date: Mon, 31 Oct 2022 11:28:15 +0800
+Subject: [PATCH 11/13] Apply SM4 optimization patch to Kunpeng-920
+
+In the ideal scenario, performance can reach up to 2.2X.
+But in single block input or CFB/OFB mode, CBC encryption,
+performance could drop about 50%.
+
+Perf data on Kunpeng-920 2.6GHz hardware, before and after optimization:
+
+Before:
+type 16 bytes 64 bytes 256 bytes 1024 bytes 8192 bytes 16384 bytes
+SM4-CTR 75318.96k 79089.62k 79736.15k 79934.12k 80325.44k 80068.61k
+SM4-ECB 80211.39k 84998.36k 86472.28k 87024.93k 87144.80k 86862.51k
+SM4-GCM 72156.19k 82012.08k 83848.02k 84322.65k 85103.65k 84896.43k
+SM4-CBC 77956.13k 80638.81k 81976.17k 81606.31k 82078.91k 81750.70k
+SM4-CFB 78078.20k 81054.87k 81841.07k 82396.38k 82203.99k 82236.76k
+SM4-OFB 78282.76k 82074.03k 82765.74k 82989.06k 83200.68k 83487.17k
+
+After:
+type    16 bytes  64 bytes   256 bytes  1024 bytes 8192 bytes 16384 bytes
+SM4-CTR 35678.07k 120687.25k 176632.27k 177192.62k 177586.18k 178295.18k
+SM4-ECB 35540.32k 122628.07k 175067.90k 178007.84k 178298.88k 178328.92k
+SM4-GCM 34215.75k 116720.50k 170275.16k 171770.88k 172714.21k 172272.30k
+SM4-CBC 35645.60k 36544.86k  36515.50k  36732.15k  36618.24k  36629.16k
+SM4-CFB 35528.14k 35690.99k  35954.86k  35843.42k  35809.18k  35809.96k
+SM4-OFB 35563.55k 35853.56k  35963.05k  36203.52k  36233.85k  36307.82k
+
+Signed-off-by: Xu Yizhou <xuyizhou1@huawei.com>
+
+Reviewed-by: Hugo Landau <hlandau@openssl.org>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/19547)
+---
+ crypto/arm_arch.h             | 4 ++++
+ include/crypto/sm4_platform.h | 3 ++-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/crypto/arm_arch.h b/crypto/arm_arch.h
+index 5b5af31d92..c10748e5f8 100644
+--- a/crypto/arm_arch.h
++++ b/crypto/arm_arch.h
+@@ -98,9 +98,13 @@ extern unsigned int OPENSSL_armv8_rsa_neonized;
+  */
+ 
+ # define ARM_CPU_IMP_ARM           0x41
++# define HISI_CPU_IMP              0x48
+ 
+ # define ARM_CPU_PART_CORTEX_A72   0xD08
+ # define ARM_CPU_PART_N1           0xD0C
++# define ARM_CPU_PART_V1           0xD40
++# define ARM_CPU_PART_N2           0xD49
++# define HISI_CPU_PART_KP920       0xD01
+ 
+ # define MIDR_PARTNUM_SHIFT       4
+ # define MIDR_PARTNUM_MASK        (0xfffU << MIDR_PARTNUM_SHIFT)
+diff --git a/include/crypto/sm4_platform.h b/include/crypto/sm4_platform.h
+index 11f9b9d88b..15d8abbcb1 100644
+--- a/include/crypto/sm4_platform.h
++++ b/include/crypto/sm4_platform.h
+@@ -20,7 +20,8 @@ static inline int vpsm4_capable(void)
+ {
+     return (OPENSSL_armcap_P & ARMV8_CPUID) &&
+             (MIDR_IS_CPU_MODEL(OPENSSL_arm_midr, ARM_CPU_IMP_ARM, ARM_CPU_PART_V1) ||
+-             MIDR_IS_CPU_MODEL(OPENSSL_arm_midr, ARM_CPU_IMP_ARM, ARM_CPU_PART_N1));
++             MIDR_IS_CPU_MODEL(OPENSSL_arm_midr, ARM_CPU_IMP_ARM, ARM_CPU_PART_N1) ||
++             MIDR_IS_CPU_MODEL(OPENSSL_arm_midr, HISI_CPU_IMP, HISI_CPU_PART_KP920));
+ }
+ #    if defined(VPSM4_ASM)
+ #     define VPSM4_CAPABLE vpsm4_capable()
+-- 
+2.37.3.windows.1
+

@@ -1,0 +1,129 @@
+From de6d5b002f8deffe39d3596e88e380eed1a3d6a4 Mon Sep 17 00:00:00 2001
+From: Xu Yizhou <xuyizhou1@huawei.com>
+Date: Thu, 18 Jan 2024 17:35:11 +0800
+Subject: [PATCH] Fix SM4-XTS aarch64 assembly implementation bug
+
+When macro VPSM4_CAPABLE or VPSM4_EX_CAPABLE is enabled,
+the GB variant of the SM4-XTS algorithm will encounter errors when
+encrypting or decrypting messages with a length greater than 16
+bytes but less than 32 bytes.
+
+The OpenSSL has similar issue,  the corresponding
+solutions can be found in this [PR]
+(https://github.com/openssl/openssl/pull/23317).
+
+Signed-off-by: Xu Yizhou <xuyizhou1@huawei.com>
+---
+ crypto/sm4/asm/vpsm4-armv8.pl    | 12 ++++++------
+ crypto/sm4/asm/vpsm4_ex-armv8.pl | 12 ++++++------
+ 2 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/crypto/sm4/asm/vpsm4-armv8.pl b/crypto/sm4/asm/vpsm4-armv8.pl
+index d30e78f..2bacf9c 100755
+--- a/crypto/sm4/asm/vpsm4-armv8.pl
++++ b/crypto/sm4/asm/vpsm4-armv8.pl
+@@ -1477,7 +1477,7 @@ $code.=<<___;
+ 	cmp $remain,0
+ 	b.eq .return${std}
+ 
+-// This brance calculates the last two tweaks, 
++// This brance calculates the last two tweaks,
+ // while the encryption/decryption length is larger than 32
+ .last_2blks_tweak${std}:
+ 	ld1	{@tweak[0].4s},[$ivp]
+@@ -1489,13 +1489,13 @@ $code.=<<___;
+ 	b .check_dec${std}
+ 
+ 
+-// This brance calculates the last two tweaks, 
++// This brance calculates the last two tweaks,
+ // while the encryption/decryption length is equal to 32, who only need two tweaks
+ .only_2blks_tweak${std}:
+ 	mov @tweak[1].16b,@tweak[0].16b
+ ___
+ 	&rev32_armeb(@tweak[1],@tweak[1]);
+-	&compute_tweak_vec(@tweak[1],@tweak[2]);
++	&compute_tweak_vec(@tweak[1],@tweak[2],$std);
+ $code.=<<___;
+ 	b .check_dec${std}
+ 
+@@ -1505,12 +1505,12 @@ $code.=<<___;
+ .check_dec${std}:
+ 	// encryption:1 decryption:0
+ 	cmp $enc,1
+-	b.eq .prcess_last_2blks${std}
++	b.eq .process_last_2blks${std}
+ 	mov @vtmp[0].16B,@tweak[1].16b
+ 	mov @tweak[1].16B,@tweak[2].16b
+ 	mov @tweak[2].16B,@vtmp[0].16b
+ 
+-.prcess_last_2blks${std}:
++.process_last_2blks${std}:
+ ___
+ 	&rev32_armeb(@tweak[1],@tweak[1]);
+ 	&rev32_armeb(@tweak[2],@tweak[2]);
+@@ -1532,7 +1532,7 @@ $code.=<<___;
+ 		strb	$wtmp1,[$lastBlk,$remain]
+ 		strb	$wtmp0,[$outp,$remain]
+ 	b.gt .loop${std}
+-	ld1		{@data[0].4s}, [$lastBlk]	
++	ld1		{@data[0].4s}, [$lastBlk]
+ 	eor @data[0].16b, @data[0].16b, @tweak[2].16b
+ ___
+ 	&rev32(@data[0],@data[0]);
+diff --git a/crypto/sm4/asm/vpsm4_ex-armv8.pl b/crypto/sm4/asm/vpsm4_ex-armv8.pl
+index f2d5b6d..727e0f2 100644
+--- a/crypto/sm4/asm/vpsm4_ex-armv8.pl
++++ b/crypto/sm4/asm/vpsm4_ex-armv8.pl
+@@ -1452,7 +1452,7 @@ $code.=<<___;
+ 	cmp $remain,0
+ 	b.eq .return${std}
+ 
+-// This brance calculates the last two tweaks, 
++// This brance calculates the last two tweaks,
+ // while the encryption/decryption length is larger than 32
+ .last_2blks_tweak${std}:
+ ___
+@@ -1463,13 +1463,13 @@ $code.=<<___;
+ 	b .check_dec${std}
+ 
+ 
+-// This brance calculates the last two tweaks, 
++// This brance calculates the last two tweaks,
+ // while the encryption/decryption length is equal to 32, who only need two tweaks
+ .only_2blks_tweak${std}:
+ 	mov @tweak[1].16b,@tweak[0].16b
+ ___
+ 	&rev32_armeb(@tweak[1],@tweak[1]);
+-	&compute_tweak_vec(@tweak[1],@tweak[2]);
++	&compute_tweak_vec(@tweak[1],@tweak[2],$std);
+ $code.=<<___;
+ 	b .check_dec${std}
+ 
+@@ -1479,12 +1479,12 @@ $code.=<<___;
+ .check_dec${std}:
+ 	// encryption:1 decryption:0
+ 	cmp $enc,1
+-	b.eq .prcess_last_2blks${std}
++	b.eq .process_last_2blks${std}
+ 	mov @vtmp[0].16B,@tweak[1].16b
+ 	mov @tweak[1].16B,@tweak[2].16b
+ 	mov @tweak[2].16B,@vtmp[0].16b
+ 
+-.prcess_last_2blks${std}:
++.process_last_2blks${std}:
+ ___
+ 	&rev32_armeb(@tweak[1],@tweak[1]);
+ 	&rev32_armeb(@tweak[2],@tweak[2]);
+@@ -1506,7 +1506,7 @@ $code.=<<___;
+ 		strb	$wtmp1,[$lastBlk,$remain]
+ 		strb	$wtmp0,[$outp,$remain]
+ 	b.gt .loop${std}
+-	ld1		{@data[0].4s}, [$lastBlk]	
++	ld1		{@data[0].4s}, [$lastBlk]
+ 	eor @data[0].16b, @data[0].16b, @tweak[2].16b
+ ___
+ 	&rev32(@data[0],@data[0]);
+-- 
+2.27.0
+

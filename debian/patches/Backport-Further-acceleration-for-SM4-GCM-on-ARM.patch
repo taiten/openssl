@@ -1,0 +1,73 @@
+From 98da8a58f964e279decc1bbbe8f07d807de05f7f Mon Sep 17 00:00:00 2001
+From: Daniel Hu <Daniel.Hu@arm.com>
+Date: Wed, 2 Mar 2022 12:55:39 +0000
+Subject: [PATCH 06/13] Further acceleration for SM4-GCM on ARM
+
+This patch will allow the SM4-GCM function to leverage the SM4
+high-performance CTR crypto interface already implemented for ARM,
+which is faster than current single block cipher routine used
+for GCM
+
+It does not address the acceleration of GHASH function of GCM,
+which can be a future task, still we can see immediate uplift of
+performance (up to 4X)
+
+Before this patch:
+type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes  16384 bytes
+SM4-GCM         186432.92k   394234.05k   587916.46k   639365.12k   648486.91k   652924.25k
+
+After the patch:
+SM4-GCM         193924.87k   860940.35k  1696083.71k  2302548.31k  2580411.73k  2607398.91k
+
+Signed-off-by: Daniel Hu <Daniel.Hu@arm.com>
+
+Reviewed-by: Tomas Mraz <tomas@openssl.org>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/17814)
+---
+ .../ciphers/cipher_sm4_gcm_hw.c               | 25 ++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/providers/implementations/ciphers/cipher_sm4_gcm_hw.c b/providers/implementations/ciphers/cipher_sm4_gcm_hw.c
+index c0c9b22bd3..b9633f83ed 100644
+--- a/providers/implementations/ciphers/cipher_sm4_gcm_hw.c
++++ b/providers/implementations/ciphers/cipher_sm4_gcm_hw.c
+@@ -42,11 +42,34 @@ static int sm4_gcm_initkey(PROV_GCM_CTX *ctx, const unsigned char *key,
+     return 1;
+ }
+ 
++static int hw_gcm_cipher_update(PROV_GCM_CTX *ctx, const unsigned char *in,
++                                size_t len, unsigned char *out)
++{
++    if (ctx->enc) {
++        if (ctx->ctr != NULL) {
++            if (CRYPTO_gcm128_encrypt_ctr32(&ctx->gcm, in, out, len, ctx->ctr))
++                return 0;
++        } else {
++            if (CRYPTO_gcm128_encrypt(&ctx->gcm, in, out, len))
++                return 0;
++        }
++    } else {
++        if (ctx->ctr != NULL) {
++            if (CRYPTO_gcm128_decrypt_ctr32(&ctx->gcm, in, out, len, ctx->ctr))
++                return 0;
++        } else {
++            if (CRYPTO_gcm128_decrypt(&ctx->gcm, in, out, len))
++                return 0;
++        }
++    }
++    return 1;
++}
++
+ static const PROV_GCM_HW sm4_gcm = {
+     sm4_gcm_initkey,
+     ossl_gcm_setiv,
+     ossl_gcm_aad_update,
+-    ossl_gcm_cipher_update,
++    hw_gcm_cipher_update,
+     ossl_gcm_cipher_final,
+     ossl_gcm_one_shot
+ };
+-- 
+2.37.3.windows.1
+

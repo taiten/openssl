@@ -1,0 +1,175 @@
+From 08ae9fa627e858b9f8e96e0c6d3cf84422a11d75 Mon Sep 17 00:00:00 2001
+From: K1 <dongbeiouba@gmail.com>
+Date: Tue, 19 Jul 2022 01:18:12 +0800
+Subject: [PATCH] Support decode SM2 parameters
+
+Reviewed-by: Hugo Landau <hlandau@openssl.org>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/18819)
+
+Signed-off-by: Huaxin Lu <luhuaxin1@huawei.com>
+---
+ apps/ecparam.c                                       | 12 ++++++++++--
+ include/openssl/pem.h                                |  1 +
+ providers/decoders.inc                               |  1 +
+ .../implementations/encode_decode/decode_der2key.c   |  1 +
+ .../implementations/encode_decode/decode_pem2der.c   |  1 +
+ .../implementations/encode_decode/encode_key2text.c  |  8 +++++---
+ .../implementations/include/prov/implementations.h   |  1 +
+ test/recipes/15-test_ecparam.t                       |  4 ++++
+ .../15-test_ecparam_data/valid/sm2-explicit.pem      |  7 +++++++
+ .../recipes/15-test_ecparam_data/valid/sm2-named.pem |  3 +++
+ 10 files changed, 34 insertions(+), 5 deletions(-)
+ create mode 100644 test/recipes/15-test_ecparam_data/valid/sm2-explicit.pem
+ create mode 100644 test/recipes/15-test_ecparam_data/valid/sm2-named.pem
+
+diff --git a/apps/ecparam.c b/apps/ecparam.c
+index 5d66b65569..71f93c4ca5 100644
+--- a/apps/ecparam.c
++++ b/apps/ecparam.c
+@@ -242,9 +242,17 @@ int ecparam_main(int argc, char **argv)
+             goto end;
+         }
+     } else {
+-        params_key = load_keyparams(infile, informat, 1, "EC", "EC parameters");
+-        if (params_key == NULL || !EVP_PKEY_is_a(params_key, "EC"))
++        params_key = load_keyparams_suppress(infile, informat, 1, "EC",
++                                             "EC parameters", 1);
++        if (params_key == NULL)
++            params_key = load_keyparams_suppress(infile, informat, 1, "SM2",
++                                                 "SM2 parameters", 1);
++
++        if (params_key == NULL) {
++            BIO_printf(bio_err, "Unable to load parameters from %s\n", infile);
+             goto end;
++        }
++
+         if (point_format
+             && !EVP_PKEY_set_utf8_string_param(
+                     params_key, OSSL_PKEY_PARAM_EC_POINT_CONVERSION_FORMAT,
+diff --git a/include/openssl/pem.h b/include/openssl/pem.h
+index ed50f081fa..0446c77019 100644
+--- a/include/openssl/pem.h
++++ b/include/openssl/pem.h
+@@ -57,6 +57,7 @@ extern "C" {
+ # define PEM_STRING_ECPRIVATEKEY "EC PRIVATE KEY"
+ # define PEM_STRING_PARAMETERS   "PARAMETERS"
+ # define PEM_STRING_CMS          "CMS"
++# define PEM_STRING_SM2PARAMETERS "SM2 PARAMETERS"
+ 
+ # define PEM_TYPE_ENCRYPTED      10
+ # define PEM_TYPE_MIC_ONLY       20
+diff --git a/providers/decoders.inc b/providers/decoders.inc
+index 2772aad05d..edca39ea36 100644
+--- a/providers/decoders.inc
++++ b/providers/decoders.inc
+@@ -69,6 +69,7 @@ DECODER_w_structure("X448", der, SubjectPublicKeyInfo, x448, yes),
+ # ifndef OPENSSL_NO_SM2
+ DECODER_w_structure("SM2", der, PrivateKeyInfo, sm2, no),
+ DECODER_w_structure("SM2", der, SubjectPublicKeyInfo, sm2, no),
++DECODER_w_structure("SM2", der, type_specific_no_pub, sm2, no),
+ # endif
+ #endif
+ DECODER_w_structure("RSA", der, PrivateKeyInfo, rsa, yes),
+diff --git a/providers/implementations/encode_decode/decode_der2key.c b/providers/implementations/encode_decode/decode_der2key.c
+index ebc2d24833..d4d3731460 100644
+--- a/providers/implementations/encode_decode/decode_der2key.c
++++ b/providers/implementations/encode_decode/decode_der2key.c
+@@ -783,6 +783,7 @@ MAKE_DECODER("ED448", ed448, ecx, SubjectPublicKeyInfo);
+ # ifndef OPENSSL_NO_SM2
+ MAKE_DECODER("SM2", sm2, ec, PrivateKeyInfo);
+ MAKE_DECODER("SM2", sm2, ec, SubjectPublicKeyInfo);
++MAKE_DECODER("SM2", sm2, sm2, type_specific_no_pub);
+ # endif
+ #endif
+ MAKE_DECODER("RSA", rsa, rsa, PrivateKeyInfo);
+diff --git a/providers/implementations/encode_decode/decode_pem2der.c b/providers/implementations/encode_decode/decode_pem2der.c
+index bc937ffb9d..648ecd4584 100644
+--- a/providers/implementations/encode_decode/decode_pem2der.c
++++ b/providers/implementations/encode_decode/decode_pem2der.c
+@@ -119,6 +119,7 @@ static int pem2der_decode(void *vctx, OSSL_CORE_BIO *cin, int selection,
+         { PEM_STRING_DSAPARAMS, OSSL_OBJECT_PKEY, "DSA", "type-specific" },
+         { PEM_STRING_ECPRIVATEKEY, OSSL_OBJECT_PKEY, "EC", "type-specific" },
+         { PEM_STRING_ECPARAMETERS, OSSL_OBJECT_PKEY, "EC", "type-specific" },
++        { PEM_STRING_SM2PARAMETERS, OSSL_OBJECT_PKEY, "SM2", "type-specific" },
+         { PEM_STRING_RSA, OSSL_OBJECT_PKEY, "RSA", "type-specific" },
+         { PEM_STRING_RSA_PUBLIC, OSSL_OBJECT_PKEY, "RSA", "type-specific" },
+ 
+diff --git a/providers/implementations/encode_decode/encode_key2text.c b/providers/implementations/encode_decode/encode_key2text.c
+index 7d983f5e51..a92e04a89d 100644
+--- a/providers/implementations/encode_decode/encode_key2text.c
++++ b/providers/implementations/encode_decode/encode_key2text.c
+@@ -512,7 +512,8 @@ static int ec_to_text(BIO *out, const void *key, int selection)
+     else if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0)
+         type_label = "Public-Key";
+     else if ((selection & OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS) != 0)
+-        type_label = "EC-Parameters";
++        if (EC_GROUP_get_curve_name(group) != NID_sm2)
++            type_label = "EC-Parameters";
+ 
+     if ((selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0) {
+         const BIGNUM *priv_key = EC_KEY_get0_private_key(ec);
+@@ -538,8 +539,9 @@ static int ec_to_text(BIO *out, const void *key, int selection)
+             goto err;
+     }
+ 
+-    if (BIO_printf(out, "%s: (%d bit)\n", type_label,
+-                   EC_GROUP_order_bits(group)) <= 0)
++    if (type_label != NULL
++        && BIO_printf(out, "%s: (%d bit)\n", type_label,
++                      EC_GROUP_order_bits(group)) <= 0)
+         goto err;
+     if (priv != NULL
+         && !print_labeled_buf(out, "priv:", priv, priv_len))
+diff --git a/providers/implementations/include/prov/implementations.h b/providers/implementations/include/prov/implementations.h
+index 03ce43719e..288808bb6f 100644
+--- a/providers/implementations/include/prov/implementations.h
++++ b/providers/implementations/include/prov/implementations.h
+@@ -508,6 +508,7 @@ extern const OSSL_DISPATCH ossl_SubjectPublicKeyInfo_der_to_ed448_decoder_functi
+ #ifndef OPENSSL_NO_SM2
+ extern const OSSL_DISPATCH ossl_PrivateKeyInfo_der_to_sm2_decoder_functions[];
+ extern const OSSL_DISPATCH ossl_SubjectPublicKeyInfo_der_to_sm2_decoder_functions[];
++extern const OSSL_DISPATCH ossl_type_specific_no_pub_der_to_sm2_decoder_functions[];
+ #endif
+ 
+ extern const OSSL_DISPATCH ossl_PrivateKeyInfo_der_to_rsa_decoder_functions[];
+diff --git a/test/recipes/15-test_ecparam.t b/test/recipes/15-test_ecparam.t
+index 37bf620f35..5dba866378 100644
+--- a/test/recipes/15-test_ecparam.t
++++ b/test/recipes/15-test_ecparam.t
+@@ -25,6 +25,10 @@ my @valid = glob(data_file("valid", "*.pem"));
+ my @noncanon = glob(data_file("noncanon", "*.pem"));
+ my @invalid = glob(data_file("invalid", "*.pem"));
+ 
++if (disabled("sm2")) {
++    @valid = grep { !/sm2-.*\.pem/} @valid;
++}
++
+ plan tests => 12;
+ 
+ sub checkload {
+diff --git a/test/recipes/15-test_ecparam_data/valid/sm2-explicit.pem b/test/recipes/15-test_ecparam_data/valid/sm2-explicit.pem
+new file mode 100644
+index 0000000000..bd07654ea4
+--- /dev/null
++++ b/test/recipes/15-test_ecparam_data/valid/sm2-explicit.pem
+@@ -0,0 +1,7 @@
++-----BEGIN SM2 PARAMETERS-----
++MIHgAgEBMCwGByqGSM49AQECIQD////+/////////////////////wAAAAD/////
++/////zBEBCD////+/////////////////////wAAAAD//////////AQgKOn6np2f
++XjRNWp5Lz2UJp/OXifUVq4+S3by9QU2UDpMEQQQyxK4sHxmBGV+ZBEZqOcmUj+ML
++v/JmC+FxWkWJM0x0x7w3NqL09necWb3O42tpIVPQqYd8xipHQALfMuUhOfCgAiEA
++/////v///////////////3ID32shxgUrU7v0CTnVQSMCAQE=
++-----END SM2 PARAMETERS-----
+diff --git a/test/recipes/15-test_ecparam_data/valid/sm2-named.pem b/test/recipes/15-test_ecparam_data/valid/sm2-named.pem
+new file mode 100644
+index 0000000000..d6e280f6c2
+--- /dev/null
++++ b/test/recipes/15-test_ecparam_data/valid/sm2-named.pem
+@@ -0,0 +1,3 @@
++-----BEGIN SM2 PARAMETERS-----
++BggqgRzPVQGCLQ==
++-----END SM2 PARAMETERS-----
+-- 
+2.33.0
+

@@ -1,0 +1,59 @@
+From 12f6ee3806c1f04a682b4c31aeb510a2dca602ef Mon Sep 17 00:00:00 2001
+From: Huaxin Lu <luhuaxin1@huawei.com>
+Date: Fri, 1 Sep 2023 20:27:45 +0800
+Subject: [PATCH] use default id if SM2 id is not set
+
+Signed-off-by: Huaxin Lu <luhuaxin1@huawei.com>
+---
+ crypto/sm2/sm2_sign.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/crypto/sm2/sm2_sign.c b/crypto/sm2/sm2_sign.c
+index ff5be9b..33d3a73 100644
+--- a/crypto/sm2/sm2_sign.c
++++ b/crypto/sm2/sm2_sign.c
+@@ -42,6 +42,8 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
+     uint8_t *buf = NULL;
+     uint16_t entl = 0;
+     uint8_t e_byte = 0;
++    const uint8_t *f_id = id;
++    size_t f_id_len = id_len;
+ 
+     hash = EVP_MD_CTX_new();
+     ctx = BN_CTX_new_ex(ossl_ec_key_get_libctx(key));
+@@ -68,15 +70,21 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
+         goto done;
+     }
+ 
++    /* if id is not set, use default id */
++    if (f_id == NULL || f_id_len == 0) {
++        f_id = (const uint8_t *)SM2_DEFAULT_USERID;
++        f_id_len = strlen(SM2_DEFAULT_USERID);
++    }
++
+     /* Z = h(ENTL || ID || a || b || xG || yG || xA || yA) */
+ 
+-    if (id_len >= (UINT16_MAX / 8)) {
++    if (f_id_len >= (UINT16_MAX / 8)) {
+         /* too large */
+         ERR_raise(ERR_LIB_SM2, SM2_R_ID_TOO_LARGE);
+         goto done;
+     }
+ 
+-    entl = (uint16_t)(8 * id_len);
++    entl = (uint16_t)(8 * f_id_len);
+ 
+     e_byte = entl >> 8;
+     if (!EVP_DigestUpdate(hash, &e_byte, 1)) {
+@@ -89,7 +97,7 @@ int ossl_sm2_compute_z_digest(uint8_t *out,
+         goto done;
+     }
+ 
+-    if (id_len > 0 && !EVP_DigestUpdate(hash, id, id_len)) {
++    if (f_id_len > 0 && !EVP_DigestUpdate(hash, f_id, f_id_len)) {
+         ERR_raise(ERR_LIB_SM2, ERR_R_EVP_LIB);
+         goto done;
+     }
+-- 
+2.33.0
+

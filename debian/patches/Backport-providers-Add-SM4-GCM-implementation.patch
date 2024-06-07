@@ -1,0 +1,360 @@
+From 2f1c0b5f1b585a307f21a70ef3ae652643c25f6d Mon Sep 17 00:00:00 2001
+From: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+Date: Wed, 1 Sep 2021 16:54:15 +0800
+Subject: [PATCH 04/13] providers: Add SM4 GCM implementation
+
+The GCM mode of the SM4 algorithm is specifieded by RFC8998.
+
+Signed-off-by: Tianjia Zhang <tianjia.zhang@linux.alibaba.com>
+
+Reviewed-by: Paul Yang <kaishen.yy@antfin.com>
+Reviewed-by: Paul Dale <pauli@openssl.org>
+(Merged from https://github.com/openssl/openssl/pull/16491)
+---
+ providers/defltprov.c                         |  2 +
+ providers/implementations/ciphers/build.info  |  4 +-
+ .../implementations/ciphers/cipher_sm4_ccm.c  | 39 +++++++++++++++++
+ .../implementations/ciphers/cipher_sm4_ccm.h  | 22 ++++++++++
+ .../ciphers/cipher_sm4_ccm_hw.c               | 41 ++++++++++++++++++
+ .../implementations/ciphers/cipher_sm4_gcm.c  | 40 +++++++++++++++++
+ .../implementations/ciphers/cipher_sm4_gcm.h  | 22 ++++++++++
+ .../ciphers/cipher_sm4_gcm_hw.c               | 43 +++++++++++++++++++
+ .../include/prov/implementations.h            |  2 +
+ .../implementations/include/prov/names.h      |  2 +
+ test/recipes/30-test_evp_data/evpciph_sm4.txt | 20 +++++++++
+ 11 files changed, 236 insertions(+), 1 deletion(-)
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_ccm.c
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_ccm.h
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_ccm_hw.c
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_gcm.c
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_gcm.h
+ create mode 100644 providers/implementations/ciphers/cipher_sm4_gcm_hw.c
+
+diff --git a/providers/defltprov.c b/providers/defltprov.c
+index ed3f4799e7..cc0b0c3b62 100644
+--- a/providers/defltprov.c
++++ b/providers/defltprov.c
+@@ -289,6 +289,8 @@ static const OSSL_ALGORITHM_CAPABLE deflt_ciphers[] = {
+     ALG(PROV_NAMES_DES_EDE_CFB, ossl_tdes_ede2_cfb_functions),
+ #endif /* OPENSSL_NO_DES */
+ #ifndef OPENSSL_NO_SM4
++    ALG(PROV_NAMES_SM4_GCM, ossl_sm4128gcm_functions),
++    ALG(PROV_NAMES_SM4_CCM, ossl_sm4128ccm_functions),
+     ALG(PROV_NAMES_SM4_ECB, ossl_sm4128ecb_functions),
+     ALG(PROV_NAMES_SM4_CBC, ossl_sm4128cbc_functions),
+     ALG(PROV_NAMES_SM4_CTR, ossl_sm4128ctr_functions),
+diff --git a/providers/implementations/ciphers/build.info b/providers/implementations/ciphers/build.info
+index e4c5f4f051..b5d9d4f6c1 100644
+--- a/providers/implementations/ciphers/build.info
++++ b/providers/implementations/ciphers/build.info
+@@ -105,7 +105,9 @@ ENDIF
+ 
+ IF[{- !$disabled{sm4} -}]
+   SOURCE[$SM4_GOAL]=\
+-      cipher_sm4.c cipher_sm4_hw.c
++      cipher_sm4.c cipher_sm4_hw.c \
++      cipher_sm4_gcm.c cipher_sm4_gcm_hw.c \
++      cipher_sm4_ccm.c cipher_sm4_ccm_hw.c
+ ENDIF
+ 
+ IF[{- !$disabled{ocb} -}]
+diff --git a/providers/implementations/ciphers/cipher_sm4_ccm.c b/providers/implementations/ciphers/cipher_sm4_ccm.c
+new file mode 100644
+index 0000000000..f0295a5ca2
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_ccm.c
+@@ -0,0 +1,39 @@
++/*
++ * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++/* Dispatch functions for SM4 CCM mode */
++
++#include "cipher_sm4_ccm.h"
++#include "prov/implementations.h"
++#include "prov/providercommon.h"
++
++static OSSL_FUNC_cipher_freectx_fn sm4_ccm_freectx;
++
++static void *sm4_ccm_newctx(void *provctx, size_t keybits)
++{
++    PROV_SM4_CCM_CTX *ctx;
++
++    if (!ossl_prov_is_running())
++        return NULL;
++
++    ctx = OPENSSL_zalloc(sizeof(*ctx));
++    if (ctx != NULL)
++        ossl_ccm_initctx(&ctx->base, keybits, ossl_prov_sm4_hw_ccm(keybits));
++    return ctx;
++}
++
++static void sm4_ccm_freectx(void *vctx)
++{
++    PROV_SM4_CCM_CTX *ctx = (PROV_SM4_CCM_CTX *)vctx;
++
++    OPENSSL_clear_free(ctx,  sizeof(*ctx));
++}
++
++/* sm4128ccm functions */
++IMPLEMENT_aead_cipher(sm4, ccm, CCM, AEAD_FLAGS, 128, 8, 96);
+diff --git a/providers/implementations/ciphers/cipher_sm4_ccm.h b/providers/implementations/ciphers/cipher_sm4_ccm.h
+new file mode 100644
+index 0000000000..189e71e9e4
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_ccm.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++#include "crypto/sm4.h"
++#include "prov/ciphercommon.h"
++#include "prov/ciphercommon_ccm.h"
++
++typedef struct prov_sm4_ccm_ctx_st {
++    PROV_CCM_CTX base; /* Must be first */
++    union {
++        OSSL_UNION_ALIGN;
++        SM4_KEY ks;
++    } ks;                       /* SM4 key schedule to use */
++} PROV_SM4_CCM_CTX;
++
++const PROV_CCM_HW *ossl_prov_sm4_hw_ccm(size_t keylen);
+diff --git a/providers/implementations/ciphers/cipher_sm4_ccm_hw.c b/providers/implementations/ciphers/cipher_sm4_ccm_hw.c
+new file mode 100644
+index 0000000000..791daf3e46
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_ccm_hw.c
+@@ -0,0 +1,41 @@
++/*
++ * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++/*-
++ * Generic support for SM4 CCM.
++ */
++
++#include "cipher_sm4_ccm.h"
++
++static int ccm_sm4_initkey(PROV_CCM_CTX *ctx,
++                           const unsigned char *key, size_t keylen)
++{
++    PROV_SM4_CCM_CTX *actx = (PROV_SM4_CCM_CTX *)ctx;
++
++    ossl_sm4_set_key(key, &actx->ks.ks);
++    CRYPTO_ccm128_init(&ctx->ccm_ctx, ctx->m, ctx->l, &actx->ks.ks,
++                       (block128_f)ossl_sm4_encrypt);
++    ctx->str = NULL;
++    ctx->key_set = 1;
++    return 1;
++}
++
++static const PROV_CCM_HW ccm_sm4 = {
++    ccm_sm4_initkey,
++    ossl_ccm_generic_setiv,
++    ossl_ccm_generic_setaad,
++    ossl_ccm_generic_auth_encrypt,
++    ossl_ccm_generic_auth_decrypt,
++    ossl_ccm_generic_gettag
++};
++
++const PROV_CCM_HW *ossl_prov_sm4_hw_ccm(size_t keybits)
++{
++    return &ccm_sm4;
++}
+diff --git a/providers/implementations/ciphers/cipher_sm4_gcm.c b/providers/implementations/ciphers/cipher_sm4_gcm.c
+new file mode 100644
+index 0000000000..7a936f00ee
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_gcm.c
+@@ -0,0 +1,40 @@
++/*
++ * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++/* Dispatch functions for SM4 GCM mode */
++
++#include "cipher_sm4_gcm.h"
++#include "prov/implementations.h"
++#include "prov/providercommon.h"
++
++static OSSL_FUNC_cipher_freectx_fn sm4_gcm_freectx;
++
++static void *sm4_gcm_newctx(void *provctx, size_t keybits)
++{
++    PROV_SM4_GCM_CTX *ctx;
++
++    if (!ossl_prov_is_running())
++        return NULL;
++
++    ctx = OPENSSL_zalloc(sizeof(*ctx));
++    if (ctx != NULL)
++        ossl_gcm_initctx(provctx, &ctx->base, keybits,
++                         ossl_prov_sm4_hw_gcm(keybits));
++    return ctx;
++}
++
++static void sm4_gcm_freectx(void *vctx)
++{
++    PROV_SM4_GCM_CTX *ctx = (PROV_SM4_GCM_CTX *)vctx;
++
++    OPENSSL_clear_free(ctx,  sizeof(*ctx));
++}
++
++/* ossl_sm4128gcm_functions */
++IMPLEMENT_aead_cipher(sm4, gcm, GCM, AEAD_FLAGS, 128, 8, 96);
+diff --git a/providers/implementations/ciphers/cipher_sm4_gcm.h b/providers/implementations/ciphers/cipher_sm4_gcm.h
+new file mode 100644
+index 0000000000..2b6b5f3ece
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_gcm.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++#include "crypto/sm4.h"
++#include "prov/ciphercommon.h"
++#include "prov/ciphercommon_gcm.h"
++
++typedef struct prov_sm4_gcm_ctx_st {
++    PROV_GCM_CTX base;              /* must be first entry in struct */
++    union {
++        OSSL_UNION_ALIGN;
++        SM4_KEY ks;
++    } ks;
++} PROV_SM4_GCM_CTX;
++
++const PROV_GCM_HW *ossl_prov_sm4_hw_gcm(size_t keybits);
+diff --git a/providers/implementations/ciphers/cipher_sm4_gcm_hw.c b/providers/implementations/ciphers/cipher_sm4_gcm_hw.c
+new file mode 100644
+index 0000000000..6bcd1ec406
+--- /dev/null
++++ b/providers/implementations/ciphers/cipher_sm4_gcm_hw.c
+@@ -0,0 +1,43 @@
++/*
++ * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
++ *
++ * Licensed under the Apache License 2.0 (the "License").  You may not use
++ * this file except in compliance with the License.  You can obtain a copy
++ * in the file LICENSE in the source distribution or at
++ * https://www.openssl.org/source/license.html
++ */
++
++/*-
++ * Generic support for SM4 GCM.
++ */
++
++#include "cipher_sm4_gcm.h"
++
++static int sm4_gcm_initkey(PROV_GCM_CTX *ctx, const unsigned char *key,
++                           size_t keylen)
++{
++    PROV_SM4_GCM_CTX *actx = (PROV_SM4_GCM_CTX *)ctx;
++    SM4_KEY *ks = &actx->ks.ks;
++
++    ctx->ks = ks;
++    ossl_sm4_set_key(key, ks);
++    CRYPTO_gcm128_init(&ctx->gcm, ks, (block128_f)ossl_sm4_encrypt);
++    ctx->ctr = (ctr128_f)NULL;
++    ctx->key_set = 1;
++
++    return 1;
++}
++
++static const PROV_GCM_HW sm4_gcm = {
++    sm4_gcm_initkey,
++    ossl_gcm_setiv,
++    ossl_gcm_aad_update,
++    ossl_gcm_cipher_update,
++    ossl_gcm_cipher_final,
++    ossl_gcm_one_shot
++};
++
++const PROV_GCM_HW *ossl_prov_sm4_hw_gcm(size_t keybits)
++{
++    return &sm4_gcm;
++}
+diff --git a/providers/implementations/include/prov/implementations.h b/providers/implementations/include/prov/implementations.h
+index 3f6dd7ee16..498eab4ad4 100644
+--- a/providers/implementations/include/prov/implementations.h
++++ b/providers/implementations/include/prov/implementations.h
+@@ -174,6 +174,8 @@ extern const OSSL_DISPATCH ossl_seed128ofb128_functions[];
+ extern const OSSL_DISPATCH ossl_seed128cfb128_functions[];
+ #endif /* OPENSSL_NO_SEED */
+ #ifndef OPENSSL_NO_SM4
++extern const OSSL_DISPATCH ossl_sm4128gcm_functions[];
++extern const OSSL_DISPATCH ossl_sm4128ccm_functions[];
+ extern const OSSL_DISPATCH ossl_sm4128ecb_functions[];
+ extern const OSSL_DISPATCH ossl_sm4128cbc_functions[];
+ extern const OSSL_DISPATCH ossl_sm4128ctr_functions[];
+diff --git a/providers/implementations/include/prov/names.h b/providers/implementations/include/prov/names.h
+index e0dbb69a9d..0fac23a850 100644
+--- a/providers/implementations/include/prov/names.h
++++ b/providers/implementations/include/prov/names.h
+@@ -162,6 +162,8 @@
+ #define PROV_NAMES_SM4_CTR "SM4-CTR:1.2.156.10197.1.104.7"
+ #define PROV_NAMES_SM4_OFB "SM4-OFB:SM4-OFB128:1.2.156.10197.1.104.3"
+ #define PROV_NAMES_SM4_CFB "SM4-CFB:SM4-CFB128:1.2.156.10197.1.104.4"
++#define PROV_NAMES_SM4_GCM "SM4-GCM:1.2.156.10197.1.104.8"
++#define PROV_NAMES_SM4_CCM "SM4-CCM:1.2.156.10197.1.104.9"
+ #define PROV_NAMES_ChaCha20 "ChaCha20"
+ #define PROV_NAMES_ChaCha20_Poly1305 "ChaCha20-Poly1305"
+ #define PROV_NAMES_CAST5_ECB "CAST5-ECB"
+diff --git a/test/recipes/30-test_evp_data/evpciph_sm4.txt b/test/recipes/30-test_evp_data/evpciph_sm4.txt
+index ec8a45bd3f..9fb16ca15c 100644
+--- a/test/recipes/30-test_evp_data/evpciph_sm4.txt
++++ b/test/recipes/30-test_evp_data/evpciph_sm4.txt
+@@ -36,3 +36,23 @@ Key = 0123456789ABCDEFFEDCBA9876543210
+ IV  = 0123456789ABCDEFFEDCBA9876543210
+ Plaintext = AAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCCDDDDDDDDDDDDDDDDEEEEEEEEEEEEEEEEFFFFFFFFFFFFFFFFEEEEEEEEEEEEEEEEAAAAAAAAAAAAAAAA
+ Ciphertext = C2B4759E78AC3CF43D0852F4E8D5F9FD7256E8A5FCB65A350EE00630912E44492A0B17E1B85B060D0FBA612D8A95831638B361FD5FFACD942F081485A83CA35D
++
++Title = SM4 GCM test vectors from RFC8998
++
++Cipher = SM4-GCM
++Key = 0123456789abcdeffedcba9876543210
++IV = 00001234567800000000abcd
++AAD = feedfacedeadbeeffeedfacedeadbeefabaddad2
++Tag = 83de3541e4c2b58177e065a9bf7b62ec
++Plaintext = aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccddddddddddddddddeeeeeeeeeeeeeeeeffffffffffffffffeeeeeeeeeeeeeeeeaaaaaaaaaaaaaaaa
++Ciphertext = 17f399f08c67d5ee19d0dc9969c4bb7d5fd46fd3756489069157b282bb200735d82710ca5c22f0ccfa7cbf93d496ac15a56834cbcf98c397b4024a2691233b8d
++
++Title = SM4 CCM test vectors from RFC8998
++
++Cipher = SM4-CCM
++Key = 0123456789abcdeffedcba9876543210
++IV = 00001234567800000000abcd
++AAD = feedfacedeadbeeffeedfacedeadbeefabaddad2
++Tag = 16842d4fa186f56ab33256971fa110f4
++Plaintext = aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccddddddddddddddddeeeeeeeeeeeeeeeeffffffffffffffffeeeeeeeeeeeeeeeeaaaaaaaaaaaaaaaa
++Ciphertext = 48af93501fa62adbcd414cce6034d895dda1bf8f132f042098661572e7483094fd12e518ce062c98acee28d95df4416bed31a2f04476c18bb40c84a74b97dc5b
+-- 
+2.37.3.windows.1
+

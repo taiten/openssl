@@ -1,0 +1,31 @@
+From 5fd4cc31c0eba0813a005d3559afc1b42df8ee32 Mon Sep 17 00:00:00 2001
+From: Shi Pujin <shipujin.t@gmail.com>
+Date: Wed, 16 Feb 2022 10:53:56 +0800
+Subject: [PATCH] Add loongarch64 target
+
+---
+ Configurations/10-main.conf | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
+index 61c6689..7102c95 100644
+--- a/Configurations/10-main.conf
++++ b/Configurations/10-main.conf
+@@ -761,6 +761,13 @@ my %targets = (
+         perlasm_scheme   => "linux64",
+     },
+ 
++    # loongarch64 below refers to contemporary LOONGARCH Architecture
++    # specifications,
++    "linux-loongarch64" => {
++        inherit_from     => [ "linux-generic64"],
++        perlasm_scheme   => "linux64",
++    },
++
+     #### IA-32 targets...
+     #### These two targets are a bit aged and are to be used on older Linux
+     #### machines where gcc doesn't understand -m32 and -m64
+-- 
+2.27.0
+
+
